@@ -13,7 +13,8 @@
         "TURSO_AUTH_TOKEN",
         "TURSO_CONNECTION_URL",
         "RESEND_API_KEY",
-        "NOTIFICATIONS_EMAIL_ADDRESS"
+        "NOTIFICATIONS_EMAIL_ADDRESS",
+        "SERVER_PRESET"
       ]
     },
     "type-check": {},
@@ -26,7 +27,8 @@
         "TURSO_AUTH_TOKEN",
         "TURSO_CONNECTION_URL",
         "RESEND_API_KEY",
-        "NOTIFICATIONS_EMAIL_ADDRESS"
+        "NOTIFICATIONS_EMAIL_ADDRESS",
+        "SERVER_PRESET"
       ]
     },
     "format": {}
