@@ -1,5 +1,6 @@
 [build]
   publish = "apps/landing/dist"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF apps/landing packages/*"
   command = "pnpm turbo build --filter landing"
 [build.processing.html]
   pretty_urls = false
