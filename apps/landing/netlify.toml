@@ -1,6 +1,6 @@
 [build]
-  publish = "dist"
-  command = "npm run build"
+  publish = "apps/landing/dist"
+  command = "pnpm turbo build --filter landing"
 [build.processing.html]
   pretty_urls = false
 [[headers]]
