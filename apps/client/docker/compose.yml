@@ -1,0 +1,20 @@
+name: 'kanban'
+
+services:
+  app:
+    build: .
+    environment:
+      - "PORT=3001"
+      - "TURSO_CONNECTION_URL=http://database:8080"
+      - "AUTH_SECRET=secret"
+    ports:
+      - "3001:3001"
+    depends_on:
+      - database
+  database:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    volumes:
+      - ./database:/var/lib/sqld
+    ports:
+      - "3002:8080"
+

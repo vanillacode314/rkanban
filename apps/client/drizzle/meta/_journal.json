@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1724181186194,
+      "tag": "20240820191306_abnormal_roughhouse",
+      "breakpoints": true
+    }
+  ]
+}
