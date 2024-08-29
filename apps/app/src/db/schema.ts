@@ -46,6 +46,9 @@ const users = sqliteTable('users', {
 	email: text('email').notNull().unique(),
 	passwordHash: text('passwordHash').notNull(),
 	emailVerified: integer('emailVerified', { mode: 'boolean' }).default(false),
+	publicKey: text('publicKey'),
+	encryptedPrivateKey: text('encryptedPrivateKey'),
+	salt: text('salt'),
 	createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
 	updatedAt: integer('updatedAt', { mode: 'timestamp' })
 		.default(sql`(unixepoch('now'))`)

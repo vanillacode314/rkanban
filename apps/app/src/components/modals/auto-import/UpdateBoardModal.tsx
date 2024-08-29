@@ -57,6 +57,7 @@ export default function UpdateBoardModal() {
 								name="title"
 								placeholder="Title"
 								value={board().title}
+								required
 							/>
 						</TextField>
 						<Button type="submit" class="self-end" onClick={close}>

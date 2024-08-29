@@ -16,6 +16,7 @@ import {
 	ContextMenuShortcut,
 	ContextMenuTrigger
 } from '~/components/ui/context-menu';
+import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TNode } from '~/db/schema';
 import { createNode, deleteNode, getNodes, isFolder } from '~/db/utils/nodes';

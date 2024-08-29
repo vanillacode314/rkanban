@@ -1,12 +1,4 @@
-import * as R from 'remeda';
-import {
-	createComputed,
-	createContext,
-	createEffect,
-	JSXElement,
-	untrack,
-	useContext
-} from 'solid-js';
+import { createComputed, createContext, JSXElement, untrack, useContext } from 'solid-js';
 import { createStore, SetStoreFunction } from 'solid-js/store';
 import { TBoard, TNode, TTask } from '~/db/schema';
 

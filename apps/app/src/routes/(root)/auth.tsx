@@ -6,6 +6,6 @@ export const route = {
 	preload: () => getUser(false)
 };
 export default function AuthLayout(props: { children: JSXElement }): JSXElement {
-	createAsync(() => getUser(false));
+	createAsync(() => getUser(false), { deferStream: true });
 	return <>{props.children}</>;
 }

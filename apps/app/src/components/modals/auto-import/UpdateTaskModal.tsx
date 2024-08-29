@@ -57,6 +57,7 @@ export default function UpdateTaskModal() {
 								name="title"
 								placeholder="Title"
 								value={task().title}
+								required
 							/>
 						</TextField>
 						<Button type="submit" class="self-end" onClick={close}>

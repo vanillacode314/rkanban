@@ -1,15 +1,17 @@
-import { A, Navigate, action, createAsync, redirect, useSubmission } from '@solidjs/router';
+import { makePersisted } from '@solid-primitives/storage';
+import { A, action, redirect, useSubmission } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
-import { Show, createEffect, createSignal, untrack } from 'solid-js';
+import { Show, createEffect, createSignal, onMount, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { getRequestEvent } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { setCookie } from 'vinxi/http';
 import { z } from 'zod';
 import ValidationErrors from '~/components/form/ValidationErrors';
+import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import {
 	Card,
@@ -25,7 +27,6 @@ import { ONE_MONTH_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
 import { nodes, refreshTokens, users, verificationTokens } from '~/db/schema';
-import { getUser } from '~/utils/auth.server';
 import { resend } from '~/utils/resend.server';
 
 const signUpSchema = z
@@ -91,14 +92,14 @@ const signUp = action(async (formData: FormData) => {
 	});
 
 	const event = getRequestEvent()!;
-	setCookie(event.nativeEvent, 'accessToken', accessToken, {
+	setCookie('accessToken', accessToken, {
 		httpOnly: true,
 		secure: true,
 		path: '/',
 		sameSite: 'lax',
 		maxAge: 2 ** 31
 	});
-	setCookie(event.nativeEvent, 'refreshToken', refreshToken, {
+	setCookie('refreshToken', refreshToken, {
 		httpOnly: true,
 		secure: true,
 		path: '/',
@@ -107,7 +108,7 @@ const signUp = action(async (formData: FormData) => {
 	});
 
 	await resend.emails.send({
-		from: 'justkanban <no-reply@notifications.raqueeb.com>',
+		from: process.env.NOTIFICATIONS_EMAIL_ADDRESS!,
 		to: [user.email],
 		subject: 'Confirm your email',
 		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/v1/public/confirm-email?token=${verificationToken}
@@ -123,8 +124,9 @@ If you did not sign up, please ignore this email.`,
 }, 'signup');
 
 export default function SignUpPage() {
-	const [passwordVisible, setPasswordVisible] = createSignal<boolean>(false);
 	const submission = useSubmission(signUp);
+
+	const [passwordVisible, setPasswordVisible] = createSignal<boolean>(false);
 	const [emailErrors, setEmailErrors] = createStore<string[]>([]);
 	const [passwordErrors, setPasswordErrors] = createStore<string[]>([]);
 	const [formErrors, setFormErrors] = createStore<string[]>([]);
@@ -164,6 +166,19 @@ export default function SignUpPage() {
 			toastId = undefined;
 		});
 	});
+
+	/* onMount(async () => {
+		const seedPhrase = await generateSeedPhrase();
+		const derivationKey = await getPasswordKey(seedPhrase);
+		const salt = window.crypto.getRandomValues(new Uint8Array(16));
+		const privateKey = await deriveKey(derivationKey, salt, ['decrypt']);
+		const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
+		const password = 'test';
+		const derivationKey2 = await getPasswordKey(password);
+		const publicKey2 = await deriveKey(derivationKey2, salt, ['encrypt']);
+		const privateKey2 = await deriveKey(derivationKey2, salt, ['decrypt']);
+		const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
+	}); */
 
 	return (
 		<form class="grid h-full place-content-center" action={signUp} method="post">
@@ -231,5 +246,19 @@ export default function SignUpPage() {
 				</CardFooter>
 			</Card>
 		</form>
+	);
+}
+
+function ShowSeedPhraseModal(props: { seedPhrase: string }) {
+	const seedPhraseModal = useSeedPhraseModal();
+
+	createEffect(() => seedPhraseModal.open({ seedPhrase: props.seedPhrase }));
+
+	return (
+		<div class="grid h-full place-content-center">
+			<Button onClick={() => seedPhraseModal.open({ seedPhrase: props.seedPhrase })}>
+				Generate Seed Phrase To Sign Up
+			</Button>
+		</div>
 	);
 }

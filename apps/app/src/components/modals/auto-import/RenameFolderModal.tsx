@@ -1,4 +1,3 @@
-import { nanoid } from 'nanoid';
 import { Show, createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { Button } from '~/components/ui/button';
@@ -33,6 +32,7 @@ export default function RenameFolderModal() {
 								value={appContext.currentNode!.name}
 								placeholder="Name"
 								autocomplete="off"
+								required
 							/>
 						</TextField>
 						<Button

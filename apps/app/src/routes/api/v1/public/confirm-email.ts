@@ -4,17 +4,18 @@ import { eq } from 'drizzle-orm';
 import { deleteCookie } from 'vinxi/http';
 import { db } from '~/db';
 import { users, verificationTokens } from '~/db/schema';
+import { getUser } from '~/utils/auth.server';
 
 export const GET = async (event: APIEvent) => {
 	'use server';
 	const token = new URL(event.request.url).searchParams.get('token');
-	if (!token) return new Response('Missing token', { status: 400 });
+	if (!token) return redirect('/');
 	const [verificationToken] = await db
 		.select({ userId: verificationTokens.userId })
 		.from(verificationTokens)
 		.where(eq(verificationTokens.token, token));
 
-	if (!verificationToken) return new Response('Invalid token', { status: 400 });
+	if (!verificationToken) return redirect('/');
 
 	await db.transaction(async (tx) => {
 		const user = await tx
@@ -27,6 +28,6 @@ export const GET = async (event: APIEvent) => {
 			.where(eq(verificationTokens.userId, verificationToken.userId));
 	});
 
-	deleteCookie(event.nativeEvent, 'accessToken');
-	return redirect('/');
+	deleteCookie('accessToken');
+	return redirect('/', { revalidate: getUser.key });
 };

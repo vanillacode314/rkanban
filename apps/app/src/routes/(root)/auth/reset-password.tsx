@@ -1,17 +1,8 @@
-import {
-	A,
-	Navigate,
-	action,
-	createAsync,
-	redirect,
-	useNavigate,
-	useSearchParams,
-	useSubmission
-} from '@solidjs/router';
+import { A, action, redirect, useNavigate, useSearchParams, useSubmission } from '@solidjs/router';
 import bcrypt from 'bcrypt';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
-import { For, Show, createEffect, createSignal, untrack } from 'solid-js';
+import { Show, createEffect, createSignal, untrack } from 'solid-js';
 import { getRequestEvent } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { setCookie } from 'vinxi/http';
@@ -34,7 +25,6 @@ import { createStore } from 'solid-js/store';
 import { z } from 'zod';
 import ValidationErrors from '~/components/form/ValidationErrors';
 import { passwordSchema } from '~/consts/zod';
-import { getUser } from '~/utils/auth.server';
 
 const resetPasswordSchema = z
 	.object({

@@ -1,11 +1,10 @@
-import { Navigate, createAsync, redirect, useNavigate, useSearchParams } from '@solidjs/router';
+import { Navigate, createAsync, useNavigate, useSearchParams } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
 import { z } from 'zod';
 import { db } from '~/db';
 import { forgotPasswordTokens, users } from '~/db/schema';
-import { getUser } from '~/utils/auth.server';
 import { resend } from '~/utils/resend.server';
 
 const sendResetPasswordEmail = async (email: string) => {

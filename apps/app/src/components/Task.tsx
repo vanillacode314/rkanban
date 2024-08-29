@@ -1,13 +1,10 @@
 import { revalidate, useAction } from '@solidjs/router';
-import { DragGesture } from '@use-gesture/vanilla';
-import { animate, spring } from 'motion';
-import { Component, createEffect, onCleanup, untrack } from 'solid-js';
+import { Component } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { useApp } from '~/context/app';
-import { useDrag } from '~/context/drag';
 import { TBoard, TTask } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
-import { deleteTask, moveTask, shiftTask } from '~/db/utils/tasks';
+import { deleteTask, shiftTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setUpdateTaskModalOpen } from './modals/auto-import/UpdateTaskModal';

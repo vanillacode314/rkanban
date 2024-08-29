@@ -1,6 +1,10 @@
 import { defineConfig } from '@solidjs/start/config';
 import { presetIcons, presetWebFonts } from 'unocss';
 import Unocss from 'unocss/vite';
+import clientEnv from './src/utils/env/client';
+import serverEnv from './src/utils/env/server';
+clientEnv;
+serverEnv;
 
 export default defineConfig({
 	server: {

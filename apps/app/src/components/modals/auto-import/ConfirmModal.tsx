@@ -1,4 +1,3 @@
-import { createEffect } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';

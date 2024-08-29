@@ -7,5 +7,5 @@ const preset = {
 } satisfies Preset;
 export default defineConfig({
 	preset,
-	images: ['public/favicon.svg']
+	images: ['public/favicon-flattened.svg']
 });

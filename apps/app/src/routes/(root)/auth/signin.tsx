@@ -1,12 +1,4 @@
-import {
-	A,
-	Navigate,
-	action,
-	createAsync,
-	redirect,
-	useNavigate,
-	useSubmission
-} from '@solidjs/router';
+import { A, action, redirect, useNavigate, useSubmission } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -31,7 +23,6 @@ import { Toggle } from '~/components/ui/toggle';
 import { ONE_MONTH_IN_SECONDS } from '~/consts';
 import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
-import { getUser } from '~/utils/auth.server';
 
 const signInSchema = z.object({
 	email: z.string().email(),
@@ -73,15 +64,14 @@ const signIn = action(async (formData: FormData) => {
 		expiresAt: new Date(Date.now() + 6 * ONE_MONTH_IN_SECONDS * 1000)
 	});
 
-	const event = getRequestEvent()!;
-	setCookie(event.nativeEvent, 'accessToken', accessToken, {
+	setCookie('accessToken', accessToken, {
 		httpOnly: true,
 		secure: true,
 		path: '/',
 		sameSite: 'lax',
 		maxAge: 2 ** 31
 	});
-	setCookie(event.nativeEvent, 'refreshToken', refreshToken, {
+	setCookie('refreshToken', refreshToken, {
 		httpOnly: true,
 		secure: true,
 		path: '/',

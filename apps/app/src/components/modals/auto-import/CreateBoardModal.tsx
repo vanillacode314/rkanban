@@ -1,6 +1,6 @@
 import { useSubmissions } from '@solidjs/router';
 import { nanoid } from 'nanoid';
-import { Show, createEffect, createSignal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
@@ -38,6 +38,7 @@ export default function CreateBoardModal() {
 							name="title"
 							placeholder="Title"
 							autocomplete="off"
+							required
 						/>
 					</TextField>
 					<Button

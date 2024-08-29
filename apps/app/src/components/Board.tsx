@@ -14,7 +14,7 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
-import { deleteBoard, getBoards, moveBoard, shiftBoard } from '~/db/utils/boards';
+import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask, moveTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';

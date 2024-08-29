@@ -1,42 +1,38 @@
+'use server';
 import { cache, redirect, reload } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
-import { H3Event, deleteCookie, getCookie, setCookie } from 'vinxi/http';
+import { deleteCookie, getCookie, setCookie } from 'vinxi/http';
 import { db } from '~/db';
 import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
 import { resend } from './resend.server';
 
 const getUser = cache(async (shouldBeAuthenticated: boolean | null = true) => {
-	'use server';
-
-	const event = getRequestEvent()!;
-	const user = await parseUser(event.nativeEvent);
+	const user = await parseUser();
 	if (shouldBeAuthenticated === null) return user;
 	if (!user && shouldBeAuthenticated) return redirect('/auth/signin');
 	if (user && !shouldBeAuthenticated) return redirect('/');
 	return user;
 }, 'get-user');
 
-async function parseUser(event: H3Event) {
-	'use server';
-	const accessToken = getCookie(event, 'accessToken');
+async function parseUser() {
+	const accessToken = getCookie('accessToken');
 
 	try {
 		if (accessToken) {
 			return jwt.verify(accessToken, process.env.AUTH_SECRET!) as Omit<TUser, 'passwordHash'>;
 		} else {
-			return parseRefreshAccessToken(event);
+			return parseRefreshAccessToken();
 		}
 	} catch (err) {
-		return parseRefreshAccessToken(event);
+		return parseRefreshAccessToken();
 	}
 }
 
-async function parseRefreshAccessToken(event: H3Event) {
-	'use server';
-	const refreshToken = getCookie(event, 'refreshToken');
+async function parseRefreshAccessToken() {
+	const refreshToken = getCookie('refreshToken');
 	if (!refreshToken) return null;
 
 	let data: string | jwt.JwtPayload;
@@ -58,7 +54,7 @@ async function parseRefreshAccessToken(event: H3Event) {
 	const accessToken = jwt.sign({ ...$user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
 		expiresIn: '1h'
 	});
-	setCookie(event, 'accessToken', accessToken, {
+	setCookie('accessToken', accessToken, {
 		httpOnly: true,
 		secure: true,
 		path: '/',
@@ -68,14 +64,11 @@ async function parseRefreshAccessToken(event: H3Event) {
 }
 
 async function refreshAccessToken() {
-	'use server';
-	const event = getRequestEvent()!;
-	deleteCookie(event.nativeEvent, 'accessToken');
-	return reload();
+	deleteCookie('accessToken');
+	return reload({ revalidate: getUser.key });
 }
 
 async function resendVerificationEmail() {
-	'use server';
 	const user = await getUser();
 	if (!user) throw new Error('Unauthorized');
 	const event = getRequestEvent()!;

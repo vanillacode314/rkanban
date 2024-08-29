@@ -1,9 +1,9 @@
 import { action, cache, redirect } from '@solidjs/router';
-import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
-import { type TBoard, type TTask, boards, nodes, tasks, TNode } from '~/db/schema';
+import { nodes, TNode } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 
 const getNodes = cache(

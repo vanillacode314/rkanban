@@ -29,6 +29,7 @@ export default function RenameFileModal() {
 								value={appContext.currentNode!.name.replace('.project', '')}
 								placeholder="Name"
 								autocomplete="off"
+								required
 							/>
 						</TextField>
 						<Button

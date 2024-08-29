@@ -1,4 +1,4 @@
-import { action, cache, redirect } from '@solidjs/router';
+import { action, cache } from '@solidjs/router';
 import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';

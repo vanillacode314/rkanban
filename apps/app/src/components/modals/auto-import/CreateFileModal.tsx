@@ -37,6 +37,7 @@ export default function CreateFileModal() {
 							name="name"
 							placeholder="Name"
 							autocomplete="off"
+							required
 						/>
 					</TextField>
 					<Button

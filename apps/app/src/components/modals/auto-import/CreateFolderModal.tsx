@@ -40,6 +40,7 @@ export default function CreateFolderModal() {
 							name="name"
 							placeholder="Name"
 							autocomplete="off"
+							required
 						/>
 					</TextField>
 					<Button

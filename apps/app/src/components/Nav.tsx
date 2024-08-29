@@ -28,7 +28,7 @@ export default function Nav(props: { class?: string }) {
 	const [user, { refetch: refetchUser }] = createResource(
 		() => location.pathname,
 		() => getUser(null),
-		{ initialValue: null }
+		{ initialValue: null, deferStream: true }
 	);
 	const { toggleColorMode } = useColorMode();
 

@@ -38,6 +38,7 @@ export default function CreateTaskModal() {
 								name="title"
 								placeholder="Title"
 								autocomplete="off"
+								required
 							/>
 						</TextField>
 						<Button
