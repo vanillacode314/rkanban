@@ -9,8 +9,7 @@ export const env = createEnv({
 		RESEND_API_KEY: z.string().min(1),
 		NOTIFICATIONS_EMAIL_ADDRESS: z.string().min(1)
 	},
-	runtimeEnv: process.env,
-	emptyStringAsUndefined: true
+	runtimeEnv: process.env
 });
 
 export default env;
