@@ -1,23 +1,33 @@
-'use server';
 import { cache, redirect, reload } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
-import { deleteCookie, getCookie, setCookie } from 'vinxi/http';
+import { deleteCookie, getCookie, getRequestURL, setCookie } from 'vinxi/http';
 import { db } from '~/db';
 import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
 import { resend } from './resend.server';
 
 const getUser = cache(async (shouldBeAuthenticated: boolean | null = true) => {
+	'use server';
+
+	const url = getRequestURL();
 	const user = await parseUser();
 	if (shouldBeAuthenticated === null) return user;
-	if (!user && shouldBeAuthenticated) return redirect('/auth/signin');
-	if (user && !shouldBeAuthenticated) return redirect('/');
+	if (!user && shouldBeAuthenticated) {
+		console.log(`Unauthorized: redirecting to /auth/signin from ${url.pathname}`);
+		throw redirect('/auth/signin');
+	}
+	if (user && !shouldBeAuthenticated) {
+		console.log(`Authorized: redirecting to / from ${url.pathname}`);
+		throw redirect('/');
+	}
 	return user;
 }, 'get-user');
 
 async function parseUser() {
+	'use server';
+
 	const accessToken = getCookie('accessToken');
 
 	try {
@@ -32,6 +42,8 @@ async function parseUser() {
 }
 
 async function parseRefreshAccessToken() {
+	'use server';
+
 	const refreshToken = getCookie('refreshToken');
 	if (!refreshToken) return null;
 
@@ -64,11 +76,15 @@ async function parseRefreshAccessToken() {
 }
 
 async function refreshAccessToken() {
+	'use server';
+
 	deleteCookie('accessToken');
 	return reload({ revalidate: getUser.key });
 }
 
 async function resendVerificationEmail() {
+	'use server';
+
 	const user = await getUser();
 	if (!user) throw new Error('Unauthorized');
 	const event = getRequestEvent()!;

@@ -34,7 +34,7 @@
 		"class-variance-authority": "^0.7.0",
 		"clsx": "^2.1.1",
 		"drizzle-orm": "^0.33.0",
-		"effect": "^3.6.6",
+		"effect": "^3.6.7",
 		"jsonwebtoken": "^9.0.2",
 		"motion": "^10.18.0",
 		"nanoid": "^5.0.7",
@@ -53,7 +53,7 @@
 		"node": ">=18"
 	},
 	"devDependencies": {
-		"@iconify/json": "^2.2.241",
+		"@iconify/json": "^2.2.242",
 		"@types/bcrypt": "^5.0.2",
 		"@types/better-sqlite3": "^7.6.11",
 		"@types/jsonwebtoken": "^9.0.6",
@@ -66,7 +66,7 @@
 		"prettier-plugin-organize-imports": "^4.0.0",
 		"prettier-plugin-tailwindcss": "^0.6.6",
 		"unocss": "^0.62.3",
-		"vite-plugin-pwa": "^0.20.1",
+		"vite-plugin-pwa": "^0.20.2",
 		"workbox-build": "^7.1.1"
 	}
 }

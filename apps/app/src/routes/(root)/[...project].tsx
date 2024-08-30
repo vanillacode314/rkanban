@@ -5,6 +5,7 @@ import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
 import { Button } from '~/components/ui/button';
+import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { createBoard, getBoards } from '~/db/utils/boards';
 
@@ -14,7 +15,7 @@ export const route = {
 		getBoards(location.pathname);
 	},
 	matchFilters: {
-		project: (value: string) => value.endsWith('.project')
+		project: (value: string) => value.endsWith('.project') && !RESERVED_PATHS.includes(value)
 	}
 };
 

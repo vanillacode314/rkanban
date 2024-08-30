@@ -12,7 +12,7 @@ const getNodes = cache(
 
 		const event = getRequestEvent()!;
 		const user = await getUser();
-		if (!user) return redirect('/auth/signin');
+		if (!user) throw redirect('/auth/signin');
 
 		const query = GET_NODES_BY_PATH_QUERY(path, user.id, includeChildren);
 		const $nodes = (await db.all(sql.raw(query))) as TNode[];

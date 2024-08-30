@@ -28,7 +28,7 @@ export const route = {
 		getNodes(decodeURIComponent(location.pathname), { includeChildren: true });
 	},
 	matchFilters: {
-		folder: (value: string) => !value.includes('.')
+		folder: (value: string) => !value.endsWith('.project') && !RESERVED_PATHS.includes(value)
 	}
 };
 
