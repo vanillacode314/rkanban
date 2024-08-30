@@ -4,7 +4,6 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { Show, createEffect, createSignal, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import { getRequestEvent } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { setCookie } from 'vinxi/http';
 import { z } from 'zod';
@@ -20,7 +19,7 @@ import {
 } from '~/components/ui/card';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
-import { ONE_MONTH_IN_SECONDS } from '~/consts';
+import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts/index';
 import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
 
@@ -51,17 +50,17 @@ const signIn = action(async (formData: FormData) => {
 		return new Error('form;;Email or password incorrect', { cause: 'VALIDATION_ERROR' });
 
 	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
-		expiresIn: '1h'
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
 	const refreshToken = jwt.sign({}, process.env.AUTH_SECRET!, {
-		expiresIn: 6 * ONE_MONTH_IN_SECONDS
+		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 
 	await db.insert(refreshTokens).values({
 		userId: user.id,
 		token: refreshToken,
-		expiresAt: new Date(Date.now() + 6 * ONE_MONTH_IN_SECONDS * 1000)
+		expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN_SECONDS * 1000)
 	});
 
 	setCookie('accessToken', accessToken, {

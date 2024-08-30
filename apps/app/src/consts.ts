@@ -1,3 +1,0 @@
-const ONE_MONTH_IN_SECONDS = 2592000;
-
-export { ONE_MONTH_IN_SECONDS };

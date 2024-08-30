@@ -1,17 +1,15 @@
-import { makePersisted } from '@solid-primitives/storage';
 import { A, action, redirect, useSubmission } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
-import { Show, createEffect, createSignal, onMount, untrack } from 'solid-js';
+import { Show, createEffect, createSignal, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { getRequestEvent } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { setCookie } from 'vinxi/http';
 import { z } from 'zod';
 import ValidationErrors from '~/components/form/ValidationErrors';
-import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import {
 	Card,
@@ -23,7 +21,7 @@ import {
 } from '~/components/ui/card';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
-import { ONE_MONTH_IN_SECONDS } from '~/consts';
+import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
 import { nodes, refreshTokens, users, verificationTokens } from '~/db/schema';
@@ -78,17 +76,17 @@ const signUp = action(async (formData: FormData) => {
 	if (!user) return new Error('Database Error', { cause: 'INTERNAL_SERVER_ERROR' });
 
 	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
-		expiresIn: '1h'
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
 	const refreshToken = jwt.sign({}, process.env.AUTH_SECRET!, {
-		expiresIn: 6 * ONE_MONTH_IN_SECONDS
+		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 
 	await db.insert(refreshTokens).values({
 		userId: user.id,
 		token: refreshToken,
-		expiresAt: new Date(Date.now() + 6 * ONE_MONTH_IN_SECONDS * 1000)
+		expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN_SECONDS * 1000)
 	});
 
 	const event = getRequestEvent()!;
@@ -246,19 +244,5 @@ export default function SignUpPage() {
 				</CardFooter>
 			</Card>
 		</form>
-	);
-}
-
-function ShowSeedPhraseModal(props: { seedPhrase: string }) {
-	const seedPhraseModal = useSeedPhraseModal();
-
-	createEffect(() => seedPhraseModal.open({ seedPhrase: props.seedPhrase }));
-
-	return (
-		<div class="grid h-full place-content-center">
-			<Button onClick={() => seedPhraseModal.open({ seedPhrase: props.seedPhrase })}>
-				Generate Seed Phrase To Sign Up
-			</Button>
-		</div>
 	);
 }

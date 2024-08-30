@@ -6,6 +6,7 @@ import { getRequestEvent } from 'solid-js/web';
 import { deleteCookie, getCookie, getRequestURL, setCookie } from 'vinxi/http';
 import { db } from '~/db';
 import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
+import { ACCESS_TOKEN_EXPIRES_IN } from '../consts';
 import { resend } from './resend.server';
 
 const getUser = cache(async (shouldBeAuthenticated: boolean | null = true) => {
@@ -51,26 +52,34 @@ async function parseRefreshAccessToken() {
 	try {
 		data = jwt.verify(refreshToken, process.env.AUTH_SECRET!);
 	} catch {
+		deleteCookie('refreshToken');
 		return null;
 	}
-	if (!data) return null;
+	if (!data) {
+		deleteCookie('refreshToken');
+		return null;
+	}
 	const [user] = await db
 		.select({ id: refreshTokens.userId })
 		.from(refreshTokens)
 		.where(eq(refreshTokens.token, refreshToken));
-	if (!user) return null;
+	if (!user) {
+		deleteCookie('refreshToken');
+		return null;
+	}
 	const [$user] = await db.select().from(users).where(eq(users.id, user.id));
 	if (!$user) {
+		deleteCookie('refreshToken');
 		return null;
 	}
 	const accessToken = jwt.sign({ ...$user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
-		expiresIn: '1h'
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 	setCookie('accessToken', accessToken, {
 		httpOnly: true,
 		secure: true,
 		path: '/',
-		maxAge: 3600
+		maxAge: 2 ** 31
 	});
 	return $user;
 }

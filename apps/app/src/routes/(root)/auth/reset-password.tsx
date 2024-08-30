@@ -17,13 +17,13 @@ import {
 } from '~/components/ui/card';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
-import { ONE_MONTH_IN_SECONDS } from '~/consts';
 import { db } from '~/db';
 import { forgotPasswordTokens, refreshTokens, users } from '~/db/schema';
 
 import { createStore } from 'solid-js/store';
 import { z } from 'zod';
 import ValidationErrors from '~/components/form/ValidationErrors';
+import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
 
 const resetPasswordSchema = z
@@ -68,17 +68,17 @@ const resetPassword = action(async (formData: FormData) => {
 	});
 
 	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
-		expiresIn: '1h'
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
 	const refreshToken = jwt.sign({}, process.env.AUTH_SECRET!, {
-		expiresIn: 6 * ONE_MONTH_IN_SECONDS
+		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 
 	await db.insert(refreshTokens).values({
 		userId: user.id,
 		token: refreshToken,
-		expiresAt: new Date(Date.now() + 6 * ONE_MONTH_IN_SECONDS * 1000)
+		expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN_SECONDS * 1000)
 	});
 
 	const event = getRequestEvent()!;
