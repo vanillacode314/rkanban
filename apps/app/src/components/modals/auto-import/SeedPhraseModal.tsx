@@ -78,7 +78,10 @@ export function SeedPhrase() {
 							</Button>
 							<Button
 								onClick={() => {
-									navigator.clipboard.writeText(seedPhraseModalState.seedPhrase);
+									const yes = confirm(
+										'Are you sure you want to copy the seed phrase? Other applications on your system can access anything you copy.'
+									);
+									if (yes) navigator.clipboard.writeText(seedPhraseModalState.seedPhrase);
 								}}
 								class="flex items-center gap-2"
 								variant="ghost"
@@ -88,18 +91,9 @@ export function SeedPhrase() {
 								<span>Copy</span>
 							</Button>
 						</div>
-						<div class="grid grid-cols-[1fr_auto_1fr_auto] grid-rows-8 rounded border p-4 font-mono">
-							<For each={Array.from({ length: 32 }, (_, i) => i + 1)}>
-								{(_, index) => (
-									<Switch>
-										<Match when={index() % 2 === 0}>
-											<span>{phrases()[index() / 2]}</span>
-										</Match>
-										<Match when={index() % 2 === 1}>
-											<span>&nbsp;</span>
-										</Match>
-									</Switch>
-								)}
+						<div class="grid select-none grid-cols-[1fr_1fr] grid-rows-8 rounded border p-4 font-mono">
+							<For each={Array.from({ length: 16 }, (_, i) => i + 1)}>
+								{(_, index) => <span>{phrases()[index()]}</span>}
 							</For>
 						</div>
 						<div class="flex justify-end gap-4">
