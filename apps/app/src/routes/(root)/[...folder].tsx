@@ -68,6 +68,19 @@ export default function Home() {
 					</Button>
 				</div>
 			</Show>
+			<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+				<Show when={appContext.path === '/'}>
+					<Button
+						variant="outline"
+						class="flex items-center justify-start gap-2"
+						as={A}
+						href="/settings"
+					>
+						<span class="i-heroicons:cog text-lg" />
+						<span>Settings</span>
+					</Button>
+				</Show>
+			</div>
 			<PathCrumbs />
 			<Show
 				when={nodes().length > 0}
