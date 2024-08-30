@@ -2,7 +2,9 @@ import { makePersisted } from '@solid-primitives/storage';
 import { action, createAsync, redirect, useAction } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import { Show, createEffect, createSignal } from 'solid-js';
+import { toast } from 'solid-sonner';
 import { deleteCookie } from 'vinxi/http';
+import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
@@ -45,8 +47,10 @@ export default function SettingsPage() {
 	const [seedPhraseVerified, setSeedPhraseVerified] = makePersisted(createSignal<boolean>(false), {
 		name: 'seed-phrase-verified'
 	});
+	const confirmModal = useConfirmModal();
 	const seedPhraseModal = useSeedPhraseModal();
 	const $disableEncryption = useAction(disableEncryption);
+	const $deleteUser = useAction(deleteUser);
 
 	async function enableEncryption() {
 		const seedPhrase = await generateSeedPhrase();
@@ -56,30 +60,62 @@ export default function SettingsPage() {
 	return (
 		<Show when={user()}>
 			<div class="flex flex-col items-start gap-4 py-4">
-				<form action={deleteUser} method="post">
-					<Button variant="destructive" type="submit">
-						Delete User
+				<header class="flex w-full flex-col gap-1 border-b pb-4">
+					<h3 class="text-2xl font-bold">Settings</h3>
+					<p class="text-muted-foreground">Manage your settings</p>
+				</header>
+				<div class="flex gap-4">
+					<form
+						action={deleteUser}
+						method="post"
+						onSubmit={(e) => {
+							e.preventDefault();
+							confirmModal.open({
+								message: 'Are you sure you want to delete your account?',
+								title: 'Delete User',
+								onYes: () => {
+									toast.promise(() => $deleteUser().then(() => window.location.reload()), {
+										loading: 'Deleting User',
+										success: 'Deleted User',
+										error: 'Error'
+									});
+								}
+							});
+						}}
+					>
+						<Button variant="destructive" type="submit">
+							Delete User
+						</Button>
+					</form>
+					<Button
+						onClick={async () => {
+							if (encryptionEnabled()) {
+								confirmModal.open({
+									message: 'Are you sure you want to disable encryption?',
+									title: 'Disable Encryption',
+									onYes: () => {
+										toast.promise(() => $disableEncryption().then(() => window.location.reload()), {
+											loading: 'Disabling Encryption',
+											success: 'Disabled Encryption',
+											error: 'Error'
+										});
+									}
+								});
+							} else {
+								enableEncryption();
+							}
+						}}
+						class="flex items-center gap-2"
+					>
+						<span
+							class={cn(
+								'text-xl',
+								encryptionEnabled() ? 'i-heroicons:lock-closed' : 'i-heroicons:lock-open'
+							)}
+						/>
+						<span>{encryptionEnabled() ? 'Disable Encryption' : 'Enable Encryption'}</span>
 					</Button>
-				</form>
-				<Button
-					onClick={async () => {
-						if (encryptionEnabled()) {
-							await $disableEncryption();
-							window.location.reload();
-						} else {
-							enableEncryption();
-						}
-					}}
-					class="flex items-center gap-2"
-				>
-					<span
-						class={cn(
-							'text-xl',
-							encryptionEnabled() ? 'i-heroicons:lock-closed' : 'i-heroicons:lock-open'
-						)}
-					/>
-					<span>{encryptionEnabled() ? 'Disable Encryption' : 'Enable Encryption'}</span>
-				</Button>
+				</div>
 			</div>
 		</Show>
 	);
