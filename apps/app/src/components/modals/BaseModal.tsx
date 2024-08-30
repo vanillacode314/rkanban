@@ -82,7 +82,7 @@ export function Modal(props: Props) {
 							}
 						}}
 					>
-						<Card class="w-full sm:min-w-96">
+						<Card class="w-full rounded-none sm:min-w-96 sm:rounded-sm">
 							<CardHeader>
 								<CardTitle>{props.title}</CardTitle>
 							</CardHeader>
