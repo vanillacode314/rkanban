@@ -14,23 +14,26 @@ export function PathCrumbs() {
 	const [appContext, _setAppContext] = useApp();
 
 	return (
-		<Breadcrumb class={cn(appContext.path === '/' && 'invisible')}>
-			<BreadcrumbList>
-				<BreadcrumbItem>
-					<BreadcrumbLink href="/">home</BreadcrumbLink>
-				</BreadcrumbItem>
-				<For each={path.splitIntoParts(appContext.path)}>
-					{({ name, path }) => (
-						<>
-							<BreadcrumbSeparator />
-							<BreadcrumbItem>
-								<BreadcrumbLink href={path}>{name}</BreadcrumbLink>
-							</BreadcrumbItem>
-						</>
-					)}
-				</For>
-			</BreadcrumbList>
-		</Breadcrumb>
+		<div class="flex gap-1">
+			<span class="mr-2 text-sm text-muted-foreground">/</span>
+			<Breadcrumb>
+				<BreadcrumbList>
+					<BreadcrumbItem>
+						<BreadcrumbLink href="/">home</BreadcrumbLink>
+					</BreadcrumbItem>
+					<For each={path.splitIntoParts(path.compressPath(appContext.path))}>
+						{({ name, path }) => (
+							<>
+								<BreadcrumbSeparator />
+								<BreadcrumbItem>
+									<BreadcrumbLink href={path}>{name}</BreadcrumbLink>
+								</BreadcrumbItem>
+							</>
+						)}
+					</For>
+				</BreadcrumbList>
+			</Breadcrumb>
+		</div>
 	);
 }
 
