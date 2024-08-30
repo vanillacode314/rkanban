@@ -69,6 +69,7 @@ export function SeedPhrase() {
 	return (
 		<BaseModal
 			title="Seed Phrase"
+			closeOnOutsideClick={false}
 			open={!!seedPhraseVerifyModalState.seedPhrase}
 			setOpen={(value) =>
 				setSeedPhraseVerifyModalState('seedPhrase', (seedPhrase) => (value ? seedPhrase : ''))
@@ -82,6 +83,7 @@ export function SeedPhrase() {
 						const testString = 'super-duper-secret';
 						let encryptedString: string;
 						const salt = window.crypto.getRandomValues(new Uint8Array(16));
+						console.log(inputs.join(' '), seedPhraseVerifyModalState.seedPhrase);
 						{
 							const derivationKey = await getPasswordKey(seedPhraseVerifyModalState.seedPhrase);
 							const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
@@ -114,20 +116,23 @@ export function SeedPhrase() {
 										const publicKeyString = btoa(
 											JSON.stringify(await window.crypto.subtle.exportKey('jwk', publicKey))
 										);
-										await $enableEncryption(encryptedString, saltString, publicKeyString);
+										await $enableEncryption(encryptedPrivateKey, saltString, publicKeyString);
 										window.location.reload();
 									},
 									{
 										loading: 'Enabling Encryption...',
 										success: 'Encryption Enabled',
-										error: 'Error'
+										error: false
 									}
 								);
 							}
 						}
 					}}
 				>
-					<p>Write down the pass phrase in the input boxes given to verify it.</p>
+					<p>
+						Either paste all the phrases in the first input box or write down the pass phrase in the
+						input boxes given to verify it.
+					</p>
 					<div class="grid grid-cols-2 grid-rows-8 gap-2 rounded font-mono">
 						<For each={Array.from({ length: 16 })}>
 							{(_, index) => (
@@ -135,8 +140,8 @@ export function SeedPhrase() {
 									<TextFieldInput
 										onPaste={(event: ClipboardEvent) => {
 											const data = event.clipboardData?.getData('text/plain');
-											queueMicrotask(() => {
-												const phrases = data?.split(' ');
+											setTimeout(() => {
+												const phrases = data?.split(' ').map((s) => s.trim());
 												if (phrases) setInputs(phrases);
 											});
 										}}
@@ -156,7 +161,7 @@ export function SeedPhrase() {
 								seedPhraseVerifyModal.close();
 							}}
 						>
-							Cancel Sign Up
+							Cancel
 						</Button>
 						<Button autofocus type="submit">
 							Verify

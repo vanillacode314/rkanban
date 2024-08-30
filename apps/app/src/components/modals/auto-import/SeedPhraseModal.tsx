@@ -33,6 +33,7 @@ export function SeedPhrase() {
 	return (
 		<>
 			<BaseModal
+				closeOnOutsideClick={false}
 				title="Seed Phrase"
 				open={!!seedPhraseModalState.seedPhrase}
 				setOpen={(value) =>
@@ -58,7 +59,35 @@ export function SeedPhrase() {
 							If you lose your seed phrase and forget your password, you will lose access to all
 							your data.
 						</p>
-
+						<div class="flex items-center justify-end gap-2">
+							<Button
+								onClick={() => {
+									const a = document.createElement('a');
+									a.href = 'data:text/plain;charset=utf-8,' + seedPhraseModalState.seedPhrase;
+									const date = new Date();
+									const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}_${date.getHours()}h${date.getMinutes()}m${date.getSeconds()}s`;
+									a.download = `rkanban-seed-phrase-${dateString}.txt`;
+									a.click();
+								}}
+								class="flex items-center gap-2"
+								variant="ghost"
+								size="sm"
+							>
+								<span class="i-heroicons:arrow-down-circle-solid"></span>
+								<span>Download</span>
+							</Button>
+							<Button
+								onClick={() => {
+									navigator.clipboard.writeText(seedPhraseModalState.seedPhrase);
+								}}
+								class="flex items-center gap-2"
+								variant="ghost"
+								size="sm"
+							>
+								<span class="i-heroicons:clipboard"></span>
+								<span>Copy</span>
+							</Button>
+						</div>
 						<div class="grid grid-cols-[1fr_auto_1fr_auto] grid-rows-8 rounded border p-4 font-mono">
 							<For each={Array.from({ length: 32 }, (_, i) => i + 1)}>
 								{(_, index) => (

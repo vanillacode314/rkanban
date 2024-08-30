@@ -11,21 +11,21 @@ import {
 import { Portal } from 'solid-js/web';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
-type Props =
+type Props = {
+	id?: string;
+	title: string;
+	children: (close: () => void) => JSXElement;
+	closeOnOutsideClick?: boolean;
+} & (
 	| {
-			title: string;
-			children: (close: () => void) => JSXElement;
 			trigger: JSXElement;
-			id?: string;
 	  }
 	| {
-			title: string;
-			children: (close: () => void) => JSXElement;
 			trigger?: JSXElement;
 			open: boolean;
 			setOpen: (open: boolean) => void;
-			id?: string;
-	  };
+	  }
+);
 
 export function Modal(props: Props) {
 	const internalId = createUniqueId();
@@ -36,7 +36,8 @@ export function Modal(props: Props) {
 				return internalOpen();
 			},
 			id: internalId,
-			setOpen: setInternalOpen
+			setOpen: setInternalOpen,
+			closeOnOutsideClick: true
 		},
 		props
 	);
@@ -76,7 +77,7 @@ export function Modal(props: Props) {
 					<div
 						class="grid h-full w-full items-end sm:place-content-center"
 						onClick={(event) => {
-							if (event.target === event.currentTarget) {
+							if (mergedProps.closeOnOutsideClick && event.target === event.currentTarget) {
 								mergedProps.setOpen(false);
 							}
 						}}
