@@ -3,6 +3,9 @@ module.exports = {
 	darkMode: ['class', '[data-kb-theme="dark"]'],
 	content: ['./src/**/*.{ts,tsx}'],
 	theme: {
+		fontFamily: {
+			sans: ['Inter', 'sans-serif']
+		},
 		container: {
 			center: true,
 			padding: '2rem',
