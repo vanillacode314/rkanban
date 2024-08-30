@@ -12,6 +12,12 @@ import * as path from '~/utils/path';
 
 export function PathCrumbs() {
 	const [appContext, _setAppContext] = useApp();
+	const parts = () => {
+		const compressedParts = path.splitIntoParts(path.compressPath(appContext.path));
+		return path
+			.splitIntoParts(appContext.path)
+			.map((part, index) => ({ name: compressedParts[index].name, path: part.path }));
+	};
 
 	return (
 		<div class="flex gap-1">
@@ -21,7 +27,7 @@ export function PathCrumbs() {
 					<BreadcrumbItem>
 						<BreadcrumbLink href="/">home</BreadcrumbLink>
 					</BreadcrumbItem>
-					<For each={path.splitIntoParts(path.compressPath(appContext.path))}>
+					<For each={parts()}>
 						{({ name, path }) => (
 							<>
 								<BreadcrumbSeparator />
