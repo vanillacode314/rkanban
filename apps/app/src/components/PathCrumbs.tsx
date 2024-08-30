@@ -7,7 +7,6 @@ import {
 	BreadcrumbSeparator
 } from '~/components/ui/breadcrumb';
 import { useApp } from '~/context/app';
-import { cn } from '~/lib/utils';
 import * as path from '~/utils/path';
 
 export function PathCrumbs() {
