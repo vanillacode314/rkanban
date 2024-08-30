@@ -129,10 +129,29 @@ export function SeedPhrase() {
 						}
 					}}
 				>
-					<p>
-						Either paste all the phrases in the first input box or write down the pass phrase in the
-						input boxes given to verify it.
-					</p>
+					<p>Paste or write down the pass phrase in the input boxes given to verify it.</p>
+					<div class="flex items-center justify-end gap-2">
+						<Button
+							onClick={async () => {
+								const clipText = await navigator.clipboard.readText();
+								const phrases = clipText
+									.trim()
+									.split(' ')
+									.map((s) => s.trim());
+								if (phrases.length !== 16) {
+									alert('Invalid seed phrase in clipboard');
+									return;
+								}
+								setInputs(phrases);
+							}}
+							class="flex items-center gap-2"
+							variant="ghost"
+							size="sm"
+						>
+							<span class="i-heroicons:clipboard"></span>
+							<span>Paste</span>
+						</Button>
+					</div>
 					<div class="grid grid-cols-2 grid-rows-8 gap-2 rounded font-mono">
 						<For each={Array.from({ length: 16 })}>
 							{(_, index) => (
@@ -141,7 +160,10 @@ export function SeedPhrase() {
 										onPaste={(event: ClipboardEvent) => {
 											const data = event.clipboardData?.getData('text/plain');
 											setTimeout(() => {
-												const phrases = data?.split(' ').map((s) => s.trim());
+												const phrases = data
+													?.trim()
+													.split(' ')
+													.map((s) => s.trim());
 												if (phrases) setInputs(phrases);
 											});
 										}}
