@@ -93,6 +93,16 @@ export default function SettingsPage() {
 								onYes: () => {
 									toast.promise(
 										async () => {
+											const password = prompt('Please enter your password to disable encryption');
+											if (!password) {
+												alert('Cannot disable encryption without password');
+												throw new Error('Cannot disable encryption without password');
+											}
+											const isPasswordCorrect = await verifyPassword(password);
+											if (!isPasswordCorrect) {
+												alert('Incorrect password');
+												throw new Error('Incorrect password');
+											}
 											await $deleteUser();
 											await idb.delMany(['privateKey', 'publicKey', 'salt']);
 										},
