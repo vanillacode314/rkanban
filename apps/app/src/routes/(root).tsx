@@ -6,14 +6,22 @@ import {
 } from '@kobalte/core/color-mode';
 import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
-import { RouteSectionProps, useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
-import { For, JSXElement, createEffect } from 'solid-js';
+import {
+	RouteSectionProps,
+	createAsync,
+	useBeforeLeave,
+	useLocation,
+	useNavigate
+} from '@solidjs/router';
+import { For, JSXElement, createEffect, onMount, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { getCookie } from 'vinxi/http';
 import Nav from '~/components/Nav';
 import { Toaster } from '~/components/ui/sonner';
 import { AppProvider } from '~/context/app';
+import { getUser } from '~/utils/auth.server';
+import { idb } from '~/utils/idb';
 
 function AutoImportModals() {
 	const modals = import.meta.glob('~/components/modals/auto-import/*.tsx', {
@@ -29,6 +37,16 @@ function getServerCookies() {
 	return colorMode ? `kb-color-mode=${colorMode}` : '';
 }
 const RootLayout = (props: RouteSectionProps) => {
+	const user = createAsync(() => getUser());
+	createEffect(() => {
+		const $user = user();
+		if (!$user) return;
+		untrack(() => {
+			if ($user.encryptedPrivateKey === null) {
+				void idb.delMany(['privateKey', 'publicKey', 'salt']);
+			}
+		});
+	});
 	const location = useLocation();
 	const path = () => decodeURIComponent(location.pathname);
 	const storageManager = cookieStorageManagerSSR(isServer ? getServerCookies() : document.cookie);
