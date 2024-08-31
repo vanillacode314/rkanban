@@ -1,4 +1,5 @@
-import { cache, redirect, reload } from '@solidjs/router';
+import { action, cache, redirect, reload, useAction } from '@solidjs/router';
+import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
@@ -97,6 +98,28 @@ async function refreshAccessToken() {
 	return reload({ revalidate: getUser.key });
 }
 
+async function verifyPassword(password: string): Promise<boolean | Error> {
+	'use server';
+
+	const user = await getUser();
+	if (!user) return new Error('Unauthorized');
+	const [$user] = await db
+		.select({ passwordHash: users.passwordHash })
+		.from(users)
+		.where(eq(users.id, user.id));
+	return await bcrypt.compare(password, $user.passwordHash);
+}
+
+const signOut = action(async () => {
+	'use server';
+
+	deleteCookie('accessToken');
+	const refreshToken = getCookie('refreshToken');
+	deleteCookie('refreshToken');
+	if (refreshToken) await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken));
+	return redirect('/auth/signin');
+}, 'sign-out');
+
 async function resendVerificationEmail() {
 	'use server';
 
@@ -138,6 +161,9 @@ async function getUserEncryptionKeys(): Promise<{
 	if (isServer) return null;
 	const [$publicKey, $privateKey, salt] = await idb.getMany(['publicKey', 'privateKey', 'salt']);
 	if (!$publicKey || !$privateKey || !salt) {
+		const user = (await getUser())!;
+		if (user.salt === null) return null;
+		useAction(signOut)();
 		return null;
 	}
 	const [publicKey, privateKey] = await Promise.all([
@@ -163,6 +189,10 @@ async function decryptWithUserKeys(data: string) {
 	return decryptedData;
 }
 
+async function decryptObjectKeys<T extends Record<string, unknown>>(
+	objs: T,
+	keys: Array<keyof T>
+): Promise<T>;
 async function decryptObjectKeys<T extends Record<string, unknown>>(
 	objs: T[],
 	keys: Array<keyof T>
@@ -196,5 +226,7 @@ export {
 	getUser,
 	getUserEncryptionKeys,
 	refreshAccessToken,
-	resendVerificationEmail
+	resendVerificationEmail,
+	signOut,
+	verifyPassword
 };

@@ -10,7 +10,7 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput } from '~/components/ui/text-field';
 import { db } from '~/db';
 import { boards, nodes, tasks, users } from '~/db/schema';
-import { getUser } from '~/utils/auth.server';
+import { getUser, verifyPassword } from '~/utils/auth.server';
 import {
 	decryptDataWithKey,
 	deriveKey,
@@ -115,6 +115,9 @@ export function SeedPhrase() {
 
 	return (
 		<BaseModal
+			onOpenChange={(value) => {
+				if (value) setInputs(Array(16).fill(''));
+			}}
 			title="Seed Phrase"
 			closeOnOutsideClick={false}
 			open={!!seedPhraseVerifyModalState.seedPhrase}
@@ -154,22 +157,27 @@ export function SeedPhrase() {
 										const salt = window.crypto.getRandomValues(new Uint8Array(16));
 										const privateKey = await deriveKey(derivationKey, salt, ['decrypt']);
 										const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
-										const password = 'test';
+										let password = prompt('Enter your password');
+										if (!password) {
+											alert('You need to enter your password to enable encryption');
+											throw new Error('No password');
+										}
+										const isPasswordCorrect = await verifyPassword(password);
+										if (!isPasswordCorrect) {
+											alert('Incorrect password');
+											throw new Error('Incorrect password');
+										}
 										const derivationKey2 = await getPasswordKey(password);
 										const publicKey2 = await deriveKey(derivationKey2, salt, ['encrypt']);
 										const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
 										const saltString = btoa(salt.toString());
 										const publicKeyString = btoa(await exportKey(publicKey));
 										await $enableEncryption(encryptedPrivateKey, saltString, publicKeyString);
-										try {
-											await idb.setMany([
-												['privateKey', await exportKey(privateKey)],
-												['salt', salt],
-												['publicKey', await exportKey(publicKey)]
-											]);
-										} catch (e) {
-											console.error(e);
-										}
+										await idb.setMany([
+											['privateKey', await exportKey(privateKey)],
+											['salt', salt],
+											['publicKey', await exportKey(publicKey)]
+										]);
 									},
 									{
 										loading: 'Enabling Encryption...',

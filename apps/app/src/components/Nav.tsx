@@ -1,27 +1,12 @@
 import { useColorMode } from '@kobalte/core/color-mode';
-import { A, action, redirect, useLocation } from '@solidjs/router';
+import { A, useAction, useLocation } from '@solidjs/router';
 import { RequestEventLocals } from '@solidjs/start/server';
-import { eq } from 'drizzle-orm';
 import { Show, Suspense, createResource, createSignal } from 'solid-js';
-import { getRequestEvent } from 'solid-js/web';
-import { deleteCookie, getCookie } from 'vinxi/http';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
-import { db } from '~/db';
-import { refreshTokens } from '~/db/schema';
 import { cn } from '~/lib/utils';
-import { getUser, refreshAccessToken, resendVerificationEmail } from '~/utils/auth.server';
+import { getUser, refreshAccessToken, resendVerificationEmail, signOut } from '~/utils/auth.server';
+import { idb } from '~/utils/idb';
 import { Button } from './ui/button';
-
-const signOut = action(async () => {
-	'use server';
-
-	const event = getRequestEvent()!;
-	deleteCookie(event.nativeEvent, 'accessToken');
-	const refreshToken = getCookie(event.nativeEvent, 'refreshToken');
-	deleteCookie(event.nativeEvent, 'refreshToken');
-	if (refreshToken) await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken));
-	return redirect('/auth/signin');
-}, 'signout');
 
 export default function Nav(props: { class?: string }) {
 	const location = useLocation();
@@ -31,6 +16,7 @@ export default function Nav(props: { class?: string }) {
 		{ initialValue: null, deferStream: true }
 	);
 	const { toggleColorMode } = useColorMode();
+	const $signOut = useAction(signOut);
 
 	return (
 		<nav class={cn('border-offset-background border-b bg-background py-4', props.class)}>
@@ -41,7 +27,13 @@ export default function Nav(props: { class?: string }) {
 				<span class="grow" />
 				<Suspense>
 					<Show when={user()}>
-						<form action={signOut} method="post">
+						<form
+							onClick={async (event) => {
+								event.preventDefault();
+								await $signOut();
+								await idb.delMany(['privateKey', 'publicKey', 'salt']);
+							}}
+						>
 							<Button type="submit" class="flex items-center gap-2" variant="outline">
 								<span>Sign Out</span>
 								<span class="i-heroicons:arrow-right-end-on-rectangle text-xl"></span>

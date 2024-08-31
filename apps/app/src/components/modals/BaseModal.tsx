@@ -16,6 +16,7 @@ type Props = {
 	title: string;
 	children: (close: () => void) => JSXElement;
 	closeOnOutsideClick?: boolean;
+	onOpenChange?: (value: boolean) => void;
 } & (
 	| {
 			trigger: JSXElement;
@@ -37,7 +38,8 @@ export function Modal(props: Props) {
 			},
 			id: internalId,
 			setOpen: setInternalOpen,
-			closeOnOutsideClick: true
+			closeOnOutsideClick: true,
+			onOpenChange: () => {}
 		},
 		props
 	);
@@ -49,6 +51,7 @@ export function Modal(props: Props) {
 	createEffect(() => {
 		const { open } = mergedProps;
 		untrack(() => {
+			mergedProps.onOpenChange(open);
 			if (open) {
 				el()?.showPopover();
 			} else {

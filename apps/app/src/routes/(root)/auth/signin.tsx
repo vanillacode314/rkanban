@@ -1,4 +1,4 @@
-import { A, action, redirect, useNavigate, useSubmission } from '@solidjs/router';
+import { A, action, useAction, useNavigate, useSubmission } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -22,6 +22,8 @@ import { Toggle } from '~/components/ui/toggle';
 import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts/index';
 import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
+import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
+import { idb } from '~/utils/idb';
 
 const signInSchema = z.object({
 	email: z.string().email(),
@@ -77,12 +79,13 @@ const signIn = action(async (formData: FormData) => {
 		sameSite: 'lax',
 		maxAge: 2 ** 31
 	});
-	return redirect('/');
+	return { ...user, passwordHash: undefined };
 }, 'signin');
 
 export default function SignInPage() {
 	const [passwordVisible, setPasswordVisible] = createSignal<boolean>(false);
 	const submission = useSubmission(signIn);
+	const $signIn = useAction(signIn);
 	const [email, setEmail] = createSignal('');
 	const navigate = useNavigate();
 	const [formErrors, setFormErrors] = createStore<string[]>([]);
@@ -120,7 +123,30 @@ export default function SignInPage() {
 	});
 
 	return (
-		<form class="grid h-full place-content-center" action={signIn} method="post">
+		<form
+			class="grid h-full place-content-center"
+			onSubmit={async (event) => {
+				event.preventDefault();
+				const form = event.target as HTMLFormElement;
+				const formData = new FormData(form);
+				const result = await $signIn(formData);
+				if (result instanceof Error) return;
+				const { encryptedPrivateKey, salt, publicKey } = result;
+				if (encryptedPrivateKey === null || salt === null || publicKey === null) {
+					navigate('/');
+					return;
+				}
+				const parsedSalt = new Uint8Array(atob(salt).split(',').map(Number));
+				const derivationKey = await getPasswordKey(formData.get('password') as string);
+				const privateKey = await deriveKey(derivationKey, parsedSalt, ['decrypt']);
+				const decryptedPrivateKey = await decryptDataWithKey(encryptedPrivateKey, privateKey);
+				await idb.setMany([
+					['privateKey', decryptedPrivateKey],
+					['salt', parsedSalt],
+					['publicKey', atob(publicKey)]
+				]);
+			}}
+		>
 			<Card class="w-full max-w-sm">
 				<CardHeader>
 					<CardTitle class="text-2xl">Sign In</CardTitle>
