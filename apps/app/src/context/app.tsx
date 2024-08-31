@@ -6,11 +6,13 @@ const DEFAULT_APP_CONTEXT = {
 	currentBoard: null,
 	currentTask: null,
 	currentNode: null,
+	boards: [],
 	path: '/'
 } satisfies TAppContext;
 type TAppContext = {
 	currentBoard: null | TBoard;
 	currentTask: null | TTask;
+	boards: Array<TBoard & { tasks: TTask[] }>;
 	path: string;
 	currentNode: TNode | null;
 };

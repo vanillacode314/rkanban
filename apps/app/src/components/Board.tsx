@@ -3,7 +3,7 @@ import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction, useSubmissions } from '@solidjs/router';
 import { animate, spring } from 'motion';
-import { Component, createEffect } from 'solid-js';
+import { Component, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -48,10 +48,13 @@ export const Board: Component<{
 					submission.pending && String(submission.input[0].get('boardId')) === props.board.id
 			)
 			.map((submission) => ({
-				title: submission.input[0].get('title'),
+				title: String(submission.input[0].get('title')),
 				id: String(submission.input[0].get('id')),
 				userId: 'pending',
-				index: props.board.tasks.length + 1
+				index: props.board.tasks.length + 1,
+				createdAt: new Date(),
+				updatedAt: new Date(),
+				boardId: props.board.id
 			}));
 
 	const [_appContext, setAppContext] = useApp();
@@ -111,7 +114,7 @@ export const Board: Component<{
 						>
 							<span class="i-heroicons:plus text-lg"></span>
 						</Button>
-						<BoardContextMenu board={props.board} />
+						<BoardContextMenu board={props.board} index={props.index} />
 					</div>
 				</div>
 			</CardHeader>
@@ -122,10 +125,7 @@ export const Board: Component<{
 	);
 };
 
-const AnimatedTaskList = (props: {
-	boardId: TBoard['id'];
-	tasks: Pick<TTask, 'id' | 'title' | 'index'>[];
-}) => {
+const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 	const resolved = resolveElements(
 		() => (
 			<div class="flex h-full flex-col gap-2 overflow-auto">
@@ -177,8 +177,8 @@ const AnimatedTaskList = (props: {
 	return <>{transition()}</>;
 };
 
-function BoardContextMenu(props: { board: ReturnType<typeof getBoards> }) {
-	const [_appContext, setAppContext] = useApp();
+function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: number }) {
+	const [appContext, setAppContext] = useApp();
 	const confirmModal = useConfirmModal();
 	const $deleteBoard = useAction(deleteBoard);
 
@@ -226,50 +226,54 @@ function BoardContextMenu(props: { board: ReturnType<typeof getBoards> }) {
 							<span class="i-heroicons:trash"></span>
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
-					<DropdownMenuItem
-						as="button"
-						class="w-full"
-						onClick={() => {
-							toast.promise(
-								async () => {
-									await shiftBoard(props.board.id, 1);
-									await revalidate(getBoards.key);
-								},
-								{
-									loading: 'Moving Board',
-									success: 'Moved Board',
-									error: 'Error'
-								}
-							);
-						}}
-					>
-						<span>Shift Right</span>
-						<DropdownMenuShortcut>
-							<span class="i-heroicons:arrow-long-right-solid"></span>
-						</DropdownMenuShortcut>
-					</DropdownMenuItem>
-					<DropdownMenuItem
-						as="button"
-						class="w-full"
-						onClick={() => {
-							toast.promise(
-								async () => {
-									await shiftBoard(props.board.id, -1);
-									await revalidate(getBoards.key);
-								},
-								{
-									loading: 'Moving Board',
-									success: 'Moved Board',
-									error: 'Error'
-								}
-							);
-						}}
-					>
-						<span>Shift Left</span>
-						<DropdownMenuShortcut>
-							<span class="i-heroicons:arrow-long-left-solid"></span>
-						</DropdownMenuShortcut>
-					</DropdownMenuItem>
+					<Show when={props.index < appContext.boards.length - 1}>
+						<DropdownMenuItem
+							as="button"
+							class="w-full"
+							onClick={() => {
+								toast.promise(
+									async () => {
+										await shiftBoard(props.board.id, 1);
+										await revalidate(getBoards.key);
+									},
+									{
+										loading: 'Moving Board',
+										success: 'Moved Board',
+										error: 'Error'
+									}
+								);
+							}}
+						>
+							<span>Shift Right</span>
+							<DropdownMenuShortcut>
+								<span class="i-heroicons:arrow-long-right-solid"></span>
+							</DropdownMenuShortcut>
+						</DropdownMenuItem>
+					</Show>
+					<Show when={props.index > 0}>
+						<DropdownMenuItem
+							as="button"
+							class="w-full"
+							onClick={() => {
+								toast.promise(
+									async () => {
+										await shiftBoard(props.board.id, -1);
+										await revalidate(getBoards.key);
+									},
+									{
+										loading: 'Moving Board',
+										success: 'Moved Board',
+										error: 'Error'
+									}
+								);
+							}}
+						>
+							<span>Shift Left</span>
+							<DropdownMenuShortcut>
+								<span class="i-heroicons:arrow-long-left-solid"></span>
+							</DropdownMenuShortcut>
+						</DropdownMenuItem>
+					</Show>
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</div>

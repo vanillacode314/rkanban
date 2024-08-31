@@ -1,6 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
 import { createAsync, useLocation, useSubmissions } from '@solidjs/router';
-import { Show, createEffect } from 'solid-js';
+import { Show, createComputed, createEffect, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
@@ -8,6 +8,7 @@ import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateB
 import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
+import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
 import { decryptObjectKeys, decryptWithUserKeys } from '~/utils/auth.server';
 
@@ -22,7 +23,7 @@ export const route = {
 };
 
 export default function Home() {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, setAppContext] = useApp();
 	const serverBoards = createAsync(async () => await getBoards(appContext.path));
 	const submissions = useSubmissions(createBoard);
 
@@ -32,20 +33,29 @@ export default function Home() {
 			.map((submission) => ({
 				id: String(submission.input[0].get('id')),
 				title: String(submission.input[0].get('title')),
-				tasks: [],
+				tasks: [] as TTask[],
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				userId: 'pending',
-				index: serverBoards()!.length
+				index: serverBoards()!.length,
+				nodeId: 'pending'
 			}));
 
 	const boards = createAsync(
 		async () => {
-			const boards = serverBoards() ? [...serverBoards()!, ...pendingBoards()] : [];
+			const boards: Array<TBoard & { tasks: TTask[] }> =
+				serverBoards() ? [...serverBoards()!, ...pendingBoards()] : [];
 			return await decryptObjectKeys(structuredClone(boards), ['title']);
 		},
 		{ initialValue: [] }
 	);
+
+	createComputed(() => {
+		const $boards = boards();
+		untrack(() => {
+			setAppContext('boards', $boards);
+		});
+	});
 
 	return (
 		<div class="flex h-full flex-col gap-4 overflow-hidden py-4">

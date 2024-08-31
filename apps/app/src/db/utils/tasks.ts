@@ -99,7 +99,6 @@ const moveTask = async (taskId: TTask['id'], toBoardId: TBoard['id'], toIndex?: 
 const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) throw new Error('Unauthorized');
 
