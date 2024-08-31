@@ -75,7 +75,7 @@ async function parseRefreshAccessToken() {
 		deleteCookie('refreshToken');
 		return null;
 	}
-	if ($user.salt && data.salt && $user.salt !== data.salt) {
+	if ($user.salt && $user.salt !== data.salt) {
 		deleteCookie('refreshToken');
 		return null;
 	}
