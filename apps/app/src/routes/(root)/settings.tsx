@@ -1,7 +1,6 @@
-import { makePersisted } from '@solid-primitives/storage';
 import { action, createAsync, redirect, useAction } from '@solidjs/router';
 import { eq, sql } from 'drizzle-orm';
-import { Show, createEffect, createSignal } from 'solid-js';
+import { Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { deleteCookie } from 'vinxi/http';
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
@@ -12,7 +11,7 @@ import { TBoard, TTask, boards, tasks, users } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
 import { getTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { decryptObjectKeys, getUser } from '~/utils/auth.server';
+import { decryptObjectKeys, getUser, verifyPassword } from '~/utils/auth.server';
 import { generateSeedPhrase } from '~/utils/crypto';
 import { idb } from '~/utils/idb';
 
@@ -120,6 +119,16 @@ export default function SettingsPage() {
 									onYes: () => {
 										toast.promise(
 											async () => {
+												const password = prompt('Please enter your password to disable encryption');
+												if (!password) {
+													alert('Cannot disable encryption without password');
+													throw new Error('Cannot disable encryption without password');
+												}
+												const isPasswordCorrect = await verifyPassword(password);
+												if (!isPasswordCorrect) {
+													alert('Incorrect password');
+													throw new Error('Incorrect password');
+												}
 												const [$boards, $tasks] = await Promise.all([getBoards(null), getTasks()]);
 												const [decryptedBoards, decryptedTasks] = await Promise.all([
 													decryptObjectKeys($boards, ['title']),
