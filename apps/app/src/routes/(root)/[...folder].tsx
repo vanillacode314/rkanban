@@ -158,7 +158,7 @@ function FolderContextMenu(props: { children: JSXElement; node: TNode }) {
 
 	return (
 		<ContextMenu>
-			<ContextMenuTrigger>{props.children}</ContextMenuTrigger>
+			<ContextMenuTrigger class="select-none">{props.children}</ContextMenuTrigger>
 			<ContextMenuPortal>
 				<ContextMenuContent class="w-48">
 					<ContextMenuItem
@@ -200,7 +200,7 @@ function FileContextMenu(props: { children: JSXElement; node: TNode }) {
 
 	return (
 		<ContextMenu>
-			<ContextMenuTrigger>{props.children}</ContextMenuTrigger>
+			<ContextMenuTrigger class="select-none">{props.children}</ContextMenuTrigger>
 			<ContextMenuPortal>
 				<ContextMenuContent class="w-48">
 					<ContextMenuItem
