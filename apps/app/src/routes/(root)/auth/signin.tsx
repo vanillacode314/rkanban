@@ -23,6 +23,7 @@ import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/con
 import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
+import env from '~/utils/env/server';
 import { idb } from '~/utils/idb';
 
 const signInSchema = z.object({
@@ -51,11 +52,11 @@ const signIn = action(async (formData: FormData) => {
 	if (!(await bcrypt.compare(password, user.passwordHash)))
 		return new Error('form;;Email or password incorrect', { cause: 'VALIDATION_ERROR' });
 
-	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
+	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
 		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
-	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
+	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
 		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 

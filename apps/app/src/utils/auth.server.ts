@@ -9,6 +9,7 @@ import { db } from '~/db';
 import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
 import { ACCESS_TOKEN_EXPIRES_IN } from '../consts';
 import { decryptDataWithKey, encryptDataWithKey, importKey } from './crypto';
+import env from './env/server';
 import { idb } from './idb';
 import { resend } from './resend.server';
 
@@ -36,7 +37,7 @@ async function parseUser() {
 
 	try {
 		if (accessToken) {
-			return jwt.verify(accessToken, process.env.AUTH_SECRET!) as Omit<TUser, 'passwordHash'>;
+			return jwt.verify(accessToken, env.AUTH_SECRET) as Omit<TUser, 'passwordHash'>;
 		} else {
 			return parseRefreshAccessToken();
 		}
@@ -53,7 +54,7 @@ async function parseRefreshAccessToken() {
 
 	let data: string | jwt.JwtPayload;
 	try {
-		data = jwt.verify(refreshToken, process.env.AUTH_SECRET!) as TUser;
+		data = jwt.verify(refreshToken, env.AUTH_SECRET) as TUser;
 	} catch {
 		deleteCookie('refreshToken');
 		return null;
@@ -79,7 +80,7 @@ async function parseRefreshAccessToken() {
 		deleteCookie('refreshToken');
 		return null;
 	}
-	const accessToken = jwt.sign({ ...$user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
+	const accessToken = jwt.sign({ ...$user, passwordHash: undefined }, env.AUTH_SECRET, {
 		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 	setCookie('accessToken', accessToken, {

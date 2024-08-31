@@ -25,6 +25,7 @@ import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/con
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
 import { nodes, refreshTokens, users, verificationTokens } from '~/db/schema';
+import env from '~/utils/env/server';
 import { resend } from '~/utils/resend.server';
 
 const signUpSchema = z
@@ -75,11 +76,11 @@ const signUp = action(async (formData: FormData) => {
 
 	if (!user) return new Error('Database Error', { cause: 'INTERNAL_SERVER_ERROR' });
 
-	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
+	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
 		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
-	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
+	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
 		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 
@@ -106,7 +107,7 @@ const signUp = action(async (formData: FormData) => {
 	});
 
 	await resend.emails.send({
-		from: process.env.NOTIFICATIONS_EMAIL_ADDRESS!,
+		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
 		to: [user.email],
 		subject: 'Confirm your email',
 		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/v1/public/confirm-email?token=${verificationToken}

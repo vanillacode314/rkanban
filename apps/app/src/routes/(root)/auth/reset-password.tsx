@@ -25,6 +25,7 @@ import { z } from 'zod';
 import ValidationErrors from '~/components/form/ValidationErrors';
 import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
+import env from '~/utils/env/server';
 
 const resetPasswordSchema = z
 	.object({
@@ -67,11 +68,11 @@ const resetPassword = action(async (formData: FormData) => {
 		await tx.delete(forgotPasswordTokens).where(eq(forgotPasswordTokens.userId, user.id));
 	});
 
-	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
+	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
 		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
-	const refreshToken = jwt.sign({}, process.env.AUTH_SECRET!, {
+	const refreshToken = jwt.sign({}, env.AUTH_SECRET, {
 		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 
