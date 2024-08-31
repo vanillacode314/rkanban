@@ -53,7 +53,7 @@ const signIn = action(async (formData: FormData) => {
 		expiresIn: ACCESS_TOKEN_EXPIRES_IN
 	});
 
-	const refreshToken = jwt.sign({}, process.env.AUTH_SECRET!, {
+	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, process.env.AUTH_SECRET!, {
 		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
 	});
 

@@ -1,5 +1,4 @@
-import { WindowEventListener } from '@solid-primitives/event-listener';
-import { For, Match, Switch, createEffect } from 'solid-js';
+import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
@@ -91,7 +90,7 @@ export function SeedPhrase() {
 								<span>Copy</span>
 							</Button>
 						</div>
-						<div class="grid select-none grid-cols-[1fr_1fr] grid-rows-8 rounded border p-4 font-mono">
+						<div class="font-mono grid select-none grid-cols-[1fr_1fr] grid-rows-8 rounded border p-4">
 							<For each={Array.from({ length: 16 }, (_, i) => i + 1)}>
 								{(_, index) => <span>{phrases()[index()]}</span>}
 							</For>

@@ -5,6 +5,7 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { createNode } from '~/db/utils/nodes';
+import { encryptWithUserKeys } from '~/utils/auth.server';
 import BaseModal from '../BaseModal';
 
 export const [createFolderModalOpen, setCreateFolderModalOpen] = createSignal<boolean>(false);
@@ -23,10 +24,14 @@ export default function CreateFolderModal() {
 					action={createNode}
 					method="post"
 					class="flex flex-col gap-4"
-					onSubmit={(event) => {
+					onSubmit={async (event) => {
+						event.preventDefault();
 						const form = event.target as HTMLFormElement;
 						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
+						const nameInput = form.querySelector('input[name="name"]') as HTMLInputElement;
 						idInput.value = nanoid();
+						nameInput.value = await encryptWithUserKeys(nameInput.value);
+						(event.target as HTMLFormElement).submit();
 					}}
 				>
 					<input type="hidden" name="parentPath" value={appContext.path} />

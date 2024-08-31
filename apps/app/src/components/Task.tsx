@@ -20,7 +20,7 @@ import {
 
 export const Task: Component<{
 	boardId: TBoard['id'];
-	task: Pick<TTask, 'id' | 'title' | 'index'>;
+	task: Pick<TTask, 'id' | 'title' | 'index' | 'userId'>;
 	class?: string;
 	index: number;
 }> = (props) => {
@@ -32,7 +32,15 @@ export const Task: Component<{
 				event.dataTransfer?.setData('text/plain', String(props.task.id));
 			}}
 		>
-			<span>{props.task.title}</span>
+			<span class="flex items-center gap-2">
+				<span
+					class={cn(
+						'i-heroicons:arrow-path-rounded-square animate-spin',
+						props.task.userId === 'pending' ? 'inline-block' : 'hidden'
+					)}
+				/>
+				<span>{props.task.title}</span>
+			</span>
 			<span class="grow" />
 			<TaskContextMenu
 				task={props.task}

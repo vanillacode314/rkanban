@@ -1,10 +1,20 @@
-import { action } from '@solidjs/router';
+import { action, cache, redirect } from '@solidjs/router';
 import { and, eq, gt, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
 import { type TBoard, type TTask, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
+
+const getTasks = cache(async function () {
+	'use server';
+
+	const user = await getUser();
+	if (!user) throw redirect('/auth/signin');
+
+	const $tasks = await db.select().from(tasks).where(eq(tasks.userId, user.id));
+	return $tasks;
+}, 'get-tasks');
 
 const moveTask = async (taskId: TTask['id'], toBoardId: TBoard['id'], toIndex?: TTask['index']) => {
 	'use server';
@@ -191,4 +201,4 @@ const deleteTask = action(async (formData: FormData) => {
 	});
 }, 'delete-task');
 
-export { createTask, deleteTask, moveTask, shiftTask, updateTask };
+export { createTask, deleteTask, getTasks, moveTask, shiftTask, updateTask };

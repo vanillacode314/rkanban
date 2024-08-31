@@ -1,6 +1,7 @@
 import { Key } from '@solid-primitives/keyed';
 import { createAsync, useLocation, useSubmissions } from '@solidjs/router';
-import { Show } from 'solid-js';
+import { Show, createEffect } from 'solid-js';
+import { isServer } from 'solid-js/web';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
@@ -8,6 +9,7 @@ import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { createBoard, getBoards } from '~/db/utils/boards';
+import { decryptObjectKeys, decryptWithUserKeys } from '~/utils/auth.server';
 
 export const route = {
 	preload: () => {
@@ -21,7 +23,7 @@ export const route = {
 
 export default function Home() {
 	const [appContext, _setAppContext] = useApp();
-	const serverBoards = createAsync(() => getBoards(appContext.path));
+	const serverBoards = createAsync(async () => await getBoards(appContext.path));
 	const submissions = useSubmissions(createBoard);
 
 	const pendingBoards = () =>
@@ -29,7 +31,7 @@ export default function Home() {
 			.filter((submission) => submission.pending)
 			.map((submission) => ({
 				id: String(submission.input[0].get('id')),
-				title: String(submission.input[0].get('title')) + ' (pending)',
+				title: String(submission.input[0].get('title')),
 				tasks: [],
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -37,7 +39,13 @@ export default function Home() {
 				index: serverBoards()!.length
 			}));
 
-	const boards = () => (serverBoards() ? [...serverBoards()!, ...pendingBoards()] : []);
+	const boards = createAsync(
+		async () => {
+			const boards = serverBoards() ? [...serverBoards()!, ...pendingBoards()] : [];
+			return await decryptObjectKeys(structuredClone(boards), ['title']);
+		},
+		{ initialValue: [] }
+	);
 
 	return (
 		<div class="flex h-full flex-col gap-4 overflow-hidden py-4">

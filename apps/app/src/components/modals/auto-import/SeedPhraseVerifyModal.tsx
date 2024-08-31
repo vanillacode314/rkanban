@@ -1,6 +1,6 @@
 import { makePersisted } from '@solid-primitives/storage';
-import { action, reload, useAction } from '@solidjs/router';
-import { eq } from 'drizzle-orm';
+import { action, useAction } from '@solidjs/router';
+import { eq, sql } from 'drizzle-orm';
 import { For, createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
@@ -9,15 +9,18 @@ import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput } from '~/components/ui/text-field';
 import { db } from '~/db';
-import { users } from '~/db/schema';
-import { getUser, refreshAccessToken } from '~/utils/auth.server';
+import { boards, nodes, tasks, users } from '~/db/schema';
+import { getUser } from '~/utils/auth.server';
 import {
 	decryptDataWithKey,
 	deriveKey,
 	encryptDataWithKey,
 	encryptKey,
-	getPasswordKey
+	exportKey,
+	getPasswordKey,
+	importKey
 } from '~/utils/crypto';
+import { idb } from '~/utils/idb';
 import { useSeedPhraseModal } from './SeedPhraseModal';
 
 type TSeedPhraseState = {
@@ -44,13 +47,57 @@ const enableEncryption = action(
 	async (encryptedPrivateKey: string, salt: string, publicKey: string) => {
 		'use server';
 
-		const user = await getUser();
+		let user = await getUser();
 		if (!user) return new Error('Unauthorized');
 
-		await db
-			.update(users)
-			.set({ encryptedPrivateKey, publicKey, salt })
-			.where(eq(users.id, user.id));
+		await db.transaction(async (tx) => {
+			await tx
+				.update(users)
+				.set({ encryptedPrivateKey, publicKey, salt })
+				.where(eq(users.id, user.id))
+				.returning();
+
+			const $publicKey = await importKey(atob(publicKey), ['encrypt']);
+			const [$boards, $tasks] = await Promise.all([
+				tx.select().from(boards).where(eq(boards.userId, user.id)),
+				tx.select().from(tasks).where(eq(tasks.userId, user.id))
+			]);
+			const encryptedBoards = await Promise.all(
+				$boards.map(async (board) => {
+					board.title = await encryptDataWithKey(board.title, $publicKey);
+					return board;
+				})
+			);
+
+			const encryptedTasks = await Promise.all(
+				$tasks.map(async (task) => {
+					task.title = await encryptDataWithKey(task.title, $publicKey);
+					return task;
+				})
+			);
+			await Promise.all([
+				$tasks.length > 0 ?
+					tx
+						.insert(tasks)
+						.values(encryptedTasks)
+						.onConflictDoUpdate({
+							set: { title: sql`excluded.title` },
+							target: tasks.id
+						})
+				:	Promise.resolve(),
+
+				$boards.length > 0 ?
+					tx
+						.insert(boards)
+						.values(encryptedBoards)
+						.onConflictDoUpdate({
+							set: { title: sql`excluded.title` },
+							target: boards.id
+						})
+				:	Promise.resolve()
+			]);
+		});
+
 		deleteCookie('accessToken');
 	},
 	'enable-encryption'
@@ -83,7 +130,6 @@ export function SeedPhrase() {
 						const testString = 'super-duper-secret';
 						let encryptedString: string;
 						const salt = window.crypto.getRandomValues(new Uint8Array(16));
-						console.log(inputs.join(' '), seedPhraseVerifyModalState.seedPhrase);
 						{
 							const derivationKey = await getPasswordKey(seedPhraseVerifyModalState.seedPhrase);
 							const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
@@ -113,16 +159,22 @@ export function SeedPhrase() {
 										const publicKey2 = await deriveKey(derivationKey2, salt, ['encrypt']);
 										const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
 										const saltString = btoa(salt.toString());
-										const publicKeyString = btoa(
-											JSON.stringify(await window.crypto.subtle.exportKey('jwk', publicKey))
-										);
+										const publicKeyString = btoa(await exportKey(publicKey));
 										await $enableEncryption(encryptedPrivateKey, saltString, publicKeyString);
-										window.location.reload();
+										try {
+											await idb.setMany([
+												['privateKey', await exportKey(privateKey)],
+												['salt', salt],
+												['publicKey', await exportKey(publicKey)]
+											]);
+										} catch (e) {
+											console.error(e);
+										}
 									},
 									{
 										loading: 'Enabling Encryption...',
 										success: 'Encryption Enabled',
-										error: false
+										error: null
 									}
 								);
 							}
@@ -152,7 +204,7 @@ export function SeedPhrase() {
 							<span>Paste</span>
 						</Button>
 					</div>
-					<div class="grid grid-cols-2 grid-rows-8 gap-2 rounded font-mono">
+					<div class="font-mono grid grid-cols-2 grid-rows-8 gap-2 rounded">
 						<For each={Array.from({ length: 16 })}>
 							{(_, index) => (
 								<TextField>

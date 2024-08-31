@@ -1,11 +1,12 @@
-import { useSubmission } from '@solidjs/router';
-import { Show, createEffect, createSignal, untrack } from 'solid-js';
+import { useAction, useSubmission } from '@solidjs/router';
+import { createEffect, createSignal, untrack } from 'solid-js';
 import { toast } from 'solid-sonner';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateBoard } from '~/db/utils/boards';
+import { encryptWithUserKeys } from '~/utils/auth.server';
 
 export const [updateBoardModalOpen, setUpdateBoardModalOpen] = createSignal<boolean>(false);
 
@@ -14,6 +15,7 @@ export default function UpdateBoardModal() {
 	const submission = useSubmission(updateBoard);
 
 	const board = () => appContext.currentBoard;
+	const $updateBoard = useAction(updateBoard);
 
 	let toastId: string | number | undefined;
 	createEffect(() => {
@@ -45,26 +47,34 @@ export default function UpdateBoardModal() {
 	return (
 		<BaseModal title="Update Board" open={updateBoardModalOpen()} setOpen={setUpdateBoardModalOpen}>
 			{(close) => (
-				<Show when={board()}>
-					<form action={updateBoard} method="post" class="flex flex-col gap-4">
-						<input type="hidden" name="id" value={board().id} />
-						<TextField class="grid w-full items-center gap-1.5">
-							<TextFieldLabel for="title">Title</TextFieldLabel>
-							<TextFieldInput
-								autofocus
-								type="text"
-								id="title"
-								name="title"
-								placeholder="Title"
-								value={board().title}
-								required
-							/>
-						</TextField>
-						<Button type="submit" class="self-end" onClick={close}>
-							Submit
-						</Button>
-					</form>
-				</Show>
+				<form
+					class="flex flex-col gap-4"
+					onSubmit={async (event) => {
+						event.preventDefault();
+						const form = event.target as HTMLFormElement;
+						const formData = new FormData(form);
+						const title = String(formData.get('title'));
+						formData.set('title', await encryptWithUserKeys(title));
+						await $updateBoard(formData);
+					}}
+				>
+					<input type="hidden" name="id" value={board()?.id} />
+					<TextField class="grid w-full items-center gap-1.5">
+						<TextFieldLabel for="title">Title</TextFieldLabel>
+						<TextFieldInput
+							autofocus
+							type="text"
+							id="title"
+							name="title"
+							placeholder="Title"
+							value={board()?.title}
+							required
+						/>
+					</TextField>
+					<Button type="submit" class="self-end" onClick={close}>
+						Submit
+					</Button>
+				</form>
 			)}
 		</BaseModal>
 	);

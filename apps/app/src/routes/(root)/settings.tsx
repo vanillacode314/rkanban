@@ -1,6 +1,6 @@
 import { makePersisted } from '@solid-primitives/storage';
 import { action, createAsync, redirect, useAction } from '@solidjs/router';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Show, createEffect, createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { deleteCookie } from 'vinxi/http';
@@ -8,10 +8,13 @@ import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
-import { users } from '~/db/schema';
+import { TBoard, TTask, boards, tasks, users } from '~/db/schema';
+import { getBoards } from '~/db/utils/boards';
+import { getTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { getUser } from '~/utils/auth.server';
+import { decryptObjectKeys, getUser } from '~/utils/auth.server';
 import { generateSeedPhrase } from '~/utils/crypto';
+import { idb } from '~/utils/idb';
 
 const deleteUser = action(async () => {
 	'use server';
@@ -24,15 +27,33 @@ const deleteUser = action(async () => {
 	throw redirect('/auth/signup');
 }, 'delete-user');
 
-const disableEncryption = action(async () => {
+const disableEncryption = action(async (decryptedBoards: TBoard[], decryptedTasks: TTask[]) => {
 	'use server';
 
 	const user = await getUser();
 	if (!user) throw redirect('/auth/signin');
-	await db
-		.update(users)
-		.set({ encryptedPrivateKey: null, publicKey: null, salt: null })
-		.where(eq(users.id, user.id));
+	await db.transaction(async (tx) => {
+		await Promise.all([
+			tx
+				.insert(boards)
+				.values(decryptedBoards)
+				.onConflictDoUpdate({
+					target: boards.id,
+					set: { title: sql`excluded.title` }
+				}),
+			tx
+				.insert(tasks)
+				.values(decryptedTasks)
+				.onConflictDoUpdate({
+					target: tasks.id,
+					set: { title: sql`excluded.title` }
+				}),
+			tx
+				.update(users)
+				.set({ encryptedPrivateKey: null, publicKey: null, salt: null })
+				.where(eq(users.id, user.id))
+		]);
+	});
 	deleteCookie('accessToken');
 }, 'disable-encryption');
 
@@ -44,9 +65,6 @@ export default function SettingsPage() {
 	const user = createAsync(() => getUser(), { deferStream: true });
 	const encryptionEnabled = () =>
 		user()?.encryptedPrivateKey !== null && user()?.publicKey !== null && user()?.salt !== null;
-	const [seedPhraseVerified, setSeedPhraseVerified] = makePersisted(createSignal<boolean>(false), {
-		name: 'seed-phrase-verified'
-	});
 	const confirmModal = useConfirmModal();
 	const seedPhraseModal = useSeedPhraseModal();
 	const $disableEncryption = useAction(disableEncryption);
@@ -74,11 +92,17 @@ export default function SettingsPage() {
 								message: 'Are you sure you want to delete your account?',
 								title: 'Delete User',
 								onYes: () => {
-									toast.promise(() => $deleteUser().then(() => window.location.reload()), {
-										loading: 'Deleting User',
-										success: 'Deleted User',
-										error: 'Error'
-									});
+									toast.promise(
+										async () => {
+											await $deleteUser();
+											await idb.delMany(['privateKey', 'publicKey', 'salt']);
+										},
+										{
+											loading: 'Deleting User',
+											success: 'Deleted User',
+											error: 'Error'
+										}
+									);
 								}
 							});
 						}}
@@ -94,11 +118,22 @@ export default function SettingsPage() {
 									message: 'Are you sure you want to disable encryption?',
 									title: 'Disable Encryption',
 									onYes: () => {
-										toast.promise(() => $disableEncryption().then(() => window.location.reload()), {
-											loading: 'Disabling Encryption',
-											success: 'Disabled Encryption',
-											error: 'Error'
-										});
+										toast.promise(
+											async () => {
+												const [$boards, $tasks] = await Promise.all([getBoards(null), getTasks()]);
+												const [decryptedBoards, decryptedTasks] = await Promise.all([
+													decryptObjectKeys($boards, ['title']),
+													decryptObjectKeys($tasks, ['title'])
+												]);
+												await $disableEncryption(decryptedBoards, decryptedTasks);
+												await idb.delMany(['privateKey', 'publicKey', 'salt']);
+											},
+											{
+												loading: 'Disabling Encryption',
+												success: 'Disabled Encryption',
+												error: 'Error'
+											}
+										);
 									}
 								});
 							} else {

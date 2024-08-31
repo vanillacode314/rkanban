@@ -1,10 +1,10 @@
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const getPasswordKey = (password: string) =>
-	window.crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']);
+	crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']);
 
 const deriveKey = (passwordKey: CryptoKey, salt: Uint8Array, keyUsage: KeyUsage[]) =>
-	window.crypto.subtle.deriveKey(
+	crypto.subtle.deriveKey(
 		{
 			name: 'PBKDF2',
 			salt,
@@ -19,8 +19,8 @@ const deriveKey = (passwordKey: CryptoKey, salt: Uint8Array, keyUsage: KeyUsage[
 
 async function encryptDataWithKey(secretData: string, aesKey: CryptoKey) {
 	try {
-		const iv = window.crypto.getRandomValues(new Uint8Array(12));
-		const encryptedContent = await window.crypto.subtle.encrypt(
+		const iv = crypto.getRandomValues(new Uint8Array(12));
+		const encryptedContent = await crypto.subtle.encrypt(
 			{
 				name: 'AES-GCM',
 				iv: iv
@@ -51,7 +51,7 @@ async function decryptDataWithKey(encryptedData: string, aesKey: CryptoKey) {
 		const encryptedDataBuff = base64_to_buf(encryptedData);
 		const iv = encryptedDataBuff.slice(0, 12);
 		const data = encryptedDataBuff.slice(12);
-		const decryptedContent = await window.crypto.subtle.decrypt(
+		const decryptedContent = await crypto.subtle.decrypt(
 			{
 				name: 'AES-GCM',
 				iv: iv
@@ -71,14 +71,14 @@ const generateSeedPhrase = async (n: number = 16) => {
 		.then((res) => res.text())
 		.then((lines) => lines.split('\n'));
 
-	const seedPhrase: string = Array.from(window.crypto.getRandomValues(new Uint32Array(n)))
+	const seedPhrase: string = Array.from(crypto.getRandomValues(new Uint32Array(n)))
 		.map((n) => words[n % words.length])
 		.join(' ');
 	return seedPhrase;
 };
 
 async function encryptKey(key: CryptoKey, encryptionKey: CryptoKey): Promise<string> {
-	const passwordKeyString = JSON.stringify(await window.crypto.subtle.exportKey('jwk', key));
+	const passwordKeyString = await exportKey(key);
 	return encryptDataWithKey(passwordKeyString, encryptionKey);
 }
 
@@ -88,13 +88,21 @@ async function decryptKey(
 	keyUsage: KeyUsage[]
 ): Promise<CryptoKey> {
 	const passwordKeyString = await decryptDataWithKey(encryptedKey, decryptionKey);
-	return window.crypto.subtle.importKey(
+	return importKey(passwordKeyString, keyUsage);
+}
+
+async function importKey(key: string, keyUsage: KeyUsage[]) {
+	return crypto.subtle.importKey(
 		'jwk',
-		JSON.parse(passwordKeyString),
+		JSON.parse(key),
 		{ name: 'AES-GCM', length: 256 },
 		false,
 		keyUsage
 	);
+}
+
+async function exportKey(key: CryptoKey) {
+	return JSON.stringify(await crypto.subtle.exportKey('jwk', key));
 }
 
 export {
@@ -105,6 +113,8 @@ export {
 	deriveKey,
 	encryptDataWithKey,
 	encryptKey,
+	exportKey,
 	generateSeedPhrase,
-	getPasswordKey
+	getPasswordKey,
+	importKey
 };

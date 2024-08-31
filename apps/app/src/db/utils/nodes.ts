@@ -1,7 +1,6 @@
 import { action, cache, redirect } from '@solidjs/router';
 import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
 import { nodes, TNode } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
@@ -10,7 +9,6 @@ const getNodes = cache(
 	async (path: string, { includeChildren = false }: Partial<{ includeChildren: boolean }> = {}) => {
 		'use server';
 
-		const event = getRequestEvent()!;
 		const user = await getUser();
 		if (!user) throw redirect('/auth/signin');
 
@@ -26,7 +24,6 @@ const getNodes = cache(
 const createNode = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
@@ -35,8 +32,6 @@ const createNode = action(async (formData: FormData) => {
 	const parentPath = String(formData.get('parentPath')).trim();
 	if (!parentPath) throw new Error('parentPath is required');
 	if (!parentPath.startsWith('/')) throw new Error('parentPath must start with /');
-	const extension = formData.get('extension');
-
 	const id = String(formData.get('id') ?? nanoid()).trim();
 
 	const [parentNode] = (await db.all(
@@ -47,7 +42,7 @@ const createNode = action(async (formData: FormData) => {
 		.values({
 			id,
 			parentId: parentNode.id,
-			name: extension ? name + '.' + String(extension).trim() : name,
+			name: name,
 			userId: user.id
 		})
 		.returning();
@@ -58,19 +53,17 @@ const createNode = action(async (formData: FormData) => {
 const updateNode = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
 	const parentId = String(formData.get('parentId')).trim();
-	const extension = formData.get('extension');
 
 	const $node = await db
 		.update(nodes)
 		.set({
-			name: extension ? name + '.' + String(extension).trim() : name,
+			name,
 			parentId
 		})
 		.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
@@ -82,7 +75,6 @@ const updateNode = action(async (formData: FormData) => {
 const deleteNode = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 

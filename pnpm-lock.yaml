@@ -58,7 +58,7 @@ importers:
         version: 0.14.3(solid-js@1.8.22)
       '@solidjs/start':
         specifier: ^1.0.6
-        version: 1.0.6(rollup@4.21.2)(solid-js@1.8.22)(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))(vite@5.4.2(@types/node@22.5.1)(lightningcss@1.26.0)(terser@5.31.6))
+        version: 1.0.6(rollup@4.21.2)(solid-js@1.8.22)(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))(vite@5.4.2(@types/node@22.5.1)(lightningcss@1.26.0)(terser@5.31.6))
       '@t3-oss/env-core':
         specifier: ^0.11.1
         version: 0.11.1(typescript@5.5.4)(zod@3.23.8)
@@ -86,6 +86,9 @@ importers:
       effect:
         specifier: ^3.6.7
         version: 3.6.7
+      idb-keyval:
+        specifier: ^6.2.1
+        version: 6.2.1
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -121,7 +124,7 @@ importers:
         version: 1.0.7(tailwindcss@3.4.10)
       vinxi:
         specifier: ^0.4.2
-        version: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
+        version: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -176,7 +179,7 @@ importers:
     dependencies:
       '@libsql/client':
         specifier: ^0.9.0
-        version: 0.10.0
+        version: 0.9.0
       '@netlify/functions':
         specifier: ^2.8.1
         version: 2.8.1
@@ -185,10 +188,10 @@ importers:
         version: 16.4.5
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1)
+        version: 0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1)
       drizzle-valibot:
         specifier: ^0.2.0
-        version: 0.2.0(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(valibot@0.40.0(typescript@5.5.4))
+        version: 0.2.0(drizzle-orm@0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(valibot@0.40.0(typescript@5.5.4))
       typescript:
         specifier: ^5.0.0
         version: 5.5.4
@@ -2088,8 +2091,14 @@ packages:
   '@libsql/client@0.10.0':
     resolution: {integrity: sha512-2ERn08T4XOVx34yBtUPq0RDjAdd9TJ5qNH/izugr208ml2F94mk92qC64kXyDVQINodWJvp3kAdq6P4zTtCZ7g==}
 
+  '@libsql/client@0.9.0':
+    resolution: {integrity: sha512-mT+91wtb8pxK9SWd566D5W2VUCemksUMqICRBtf0WXiS7XzNcQhWyrwYOnVrVmTSze/SCCsNNEKIkCRwk/pr2Q==}
+
   '@libsql/core@0.10.0':
     resolution: {integrity: sha512-rqynAXGaiSpTsykOZdBtI1N4z4O+KZ6mt33K/aHeXAY0gSIfK/ctxuWa0Y1Bjo4FMz1idBTCXz4Ps5kITOvZZw==}
+
+  '@libsql/core@0.9.0':
+    resolution: {integrity: sha512-rCsS/EC32K8ARjDQJGqauGZmkR6orOOY4I7898PyQ/mmltAkMwRgz5kjEmYRZ42o7mP0ayJfbw28qgv7SRFEgg==}
 
   '@libsql/darwin-arm64@0.3.19':
     resolution: {integrity: sha512-rmOqsLcDI65zzxlUOoEiPJLhqmbFsZF6p4UJQ2kMqB+Kc0Rt5/A1OAdOZ/Wo8fQfJWjR1IbkbpEINFioyKf+nQ==}
@@ -4620,6 +4629,9 @@ packages:
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
+
+  idb-keyval@6.2.1:
+    resolution: {integrity: sha512-8Sb3veuYCyrZL+VBt9LJfZjLUPWVvqn8tG28VqYNFCo43KHcKuq+b4EiXGeuaLAQWL2YmyDgMp2aSpH9JHsEQg==}
 
   idb@7.1.1:
     resolution: {integrity: sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ==}
@@ -9105,7 +9117,22 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@libsql/client@0.9.0':
+    dependencies:
+      '@libsql/core': 0.9.0
+      '@libsql/hrana-client': 0.6.2
+      js-base64: 3.7.7
+      libsql: 0.4.1
+      promise-limit: 2.7.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@libsql/core@0.10.0':
+    dependencies:
+      js-base64: 3.7.7
+
+  '@libsql/core@0.9.0':
     dependencies:
       js-base64: 3.7.7
 
@@ -9651,11 +9678,11 @@ snapshots:
     dependencies:
       solid-js: 1.8.22
 
-  '@solidjs/start@1.0.6(rollup@4.21.2)(solid-js@1.8.22)(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))(vite@5.4.2(@types/node@22.5.1)(lightningcss@1.26.0)(terser@5.31.6))':
+  '@solidjs/start@1.0.6(rollup@4.21.2)(solid-js@1.8.22)(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))(vite@5.4.2(@types/node@22.5.1)(lightningcss@1.26.0)(terser@5.31.6))':
     dependencies:
-      '@vinxi/plugin-directives': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
-      '@vinxi/server-components': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
-      '@vinxi/server-functions': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
+      '@vinxi/plugin-directives': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
+      '@vinxi/server-components': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
+      '@vinxi/server-functions': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
       defu: 6.1.4
       error-stack-parser: 2.1.4
       glob: 10.4.5
@@ -10176,7 +10203,7 @@ snapshots:
     transitivePeerDependencies:
       - uWebSockets.js
 
-  '@vinxi/plugin-directives@0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))':
+  '@vinxi/plugin-directives@0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))':
     dependencies:
       '@babel/parser': 7.25.6
       acorn: 8.12.1
@@ -10187,29 +10214,29 @@ snapshots:
       magicast: 0.2.11
       recast: 0.23.9
       tslib: 2.7.0
-      vinxi: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
+      vinxi: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
 
-  '@vinxi/server-components@0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))':
+  '@vinxi/server-components@0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))':
     dependencies:
-      '@vinxi/plugin-directives': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
+      '@vinxi/plugin-directives': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
       acorn: 8.12.1
       acorn-loose: 8.4.0
       acorn-typescript: 1.4.13(acorn@8.12.1)
       astring: 1.9.0
       magicast: 0.2.11
       recast: 0.23.9
-      vinxi: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
+      vinxi: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
 
-  '@vinxi/server-functions@0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))':
+  '@vinxi/server-functions@0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))':
     dependencies:
-      '@vinxi/plugin-directives': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
+      '@vinxi/plugin-directives': 0.4.2(vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6))
       acorn: 8.12.1
       acorn-loose: 8.4.0
       acorn-typescript: 1.4.13(acorn@8.12.1)
       astring: 1.9.0
       magicast: 0.2.11
       recast: 0.23.9
-      vinxi: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
+      vinxi: 0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6)
 
   '@vite-pwa/assets-generator@0.2.4':
     dependencies:
@@ -11276,9 +11303,17 @@ snapshots:
       bun-types: 1.1.26
       react: 18.3.1
 
-  drizzle-valibot@0.2.0(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(valibot@0.40.0(typescript@5.5.4)):
+  drizzle-orm@0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1):
+    optionalDependencies:
+      '@libsql/client': 0.9.0
+      '@types/better-sqlite3': 7.6.11
+      better-sqlite3: 11.2.1
+      bun-types: 1.1.26
+      react: 18.3.1
+
+  drizzle-valibot@0.2.0(drizzle-orm@0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(valibot@0.40.0(typescript@5.5.4)):
     dependencies:
-      drizzle-orm: 0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1)
+      drizzle-orm: 0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1)
       valibot: 0.40.0(typescript@5.5.4)
 
   dset@3.1.3: {}
@@ -12301,6 +12336,8 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
+
+  idb-keyval@6.2.1: {}
 
   idb@7.1.1: {}
 
@@ -13445,7 +13482,7 @@ snapshots:
 
   neotraverse@0.6.18: {}
 
-  nitropack@2.9.7(@libsql/client@0.10.0)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(magicast@0.3.5):
+  nitropack@2.9.7(@libsql/client@0.10.0)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(magicast@0.3.5):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.3.4
       '@netlify/functions': 2.8.1
@@ -13511,7 +13548,7 @@ snapshots:
       unctx: 2.3.1
       unenv: 1.10.0
       unimport: 3.11.1(rollup@4.21.2)
-      unstorage: 1.10.2(ioredis@5.4.1)
+      unstorage: 1.10.2(idb-keyval@6.2.1)(ioredis@5.4.1)
       unwasm: 0.3.9
     transitivePeerDependencies:
       - '@azure/app-configuration'
@@ -15235,7 +15272,7 @@ snapshots:
       webpack-sources: 3.2.3
       webpack-virtual-modules: 0.6.2
 
-  unstorage@1.10.2(ioredis@5.4.1):
+  unstorage@1.10.2(idb-keyval@6.2.1)(ioredis@5.4.1):
     dependencies:
       anymatch: 3.1.3
       chokidar: 3.6.0
@@ -15248,6 +15285,7 @@ snapshots:
       ofetch: 1.3.4
       ufo: 1.5.4
     optionalDependencies:
+      idb-keyval: 6.2.1
       ioredis: 5.4.1
     transitivePeerDependencies:
       - uWebSockets.js
@@ -15320,7 +15358,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.2
 
-  vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6):
+  vinxi@0.4.2(@libsql/client@0.10.0)(@types/node@22.5.1)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(ioredis@5.4.1)(lightningcss@1.26.0)(magicast@0.3.5)(terser@5.31.6):
     dependencies:
       '@babel/core': 7.25.2
       '@babel/plugin-syntax-jsx': 7.24.7(@babel/core@7.25.2)
@@ -15342,7 +15380,7 @@ snapshots:
       hookable: 5.5.3
       http-proxy: 1.18.1
       micromatch: 4.0.8
-      nitropack: 2.9.7(@libsql/client@0.10.0)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(magicast@0.3.5)
+      nitropack: 2.9.7(@libsql/client@0.10.0)(better-sqlite3@11.2.1)(drizzle-orm@0.33.0(@libsql/client@0.10.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.2.1)(bun-types@1.1.26)(react@18.3.1))(idb-keyval@6.2.1)(magicast@0.3.5)
       node-fetch-native: 1.6.4
       path-to-regexp: 6.2.2
       pathe: 1.1.2
@@ -15353,7 +15391,7 @@ snapshots:
       ufo: 1.5.4
       unctx: 2.3.1
       unenv: 1.10.0
-      unstorage: 1.10.2(ioredis@5.4.1)
+      unstorage: 1.10.2(idb-keyval@6.2.1)(ioredis@5.4.1)
       vite: 5.4.2(@types/node@22.5.1)(lightningcss@1.26.0)(terser@5.31.6)
       zod: 3.23.8
     transitivePeerDependencies:

@@ -7,6 +7,7 @@ clientEnv;
 serverEnv;
 
 export default defineConfig({
+	ssr: false,
 	server: {
 		prerender: {
 			routes: ['/offline', '/manifest.webmanifest']

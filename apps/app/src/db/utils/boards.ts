@@ -7,10 +7,15 @@ import { type TBoard, type TTask, boards, tasks, TNode } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 import { getNodes } from './nodes';
 
-const getBoards = cache(async (path: string) => {
+const getBoards = cache(async (path: string | null) => {
 	'use server';
 
 	const user = (await getUser())!;
+
+	if (path === null) {
+		const $boards = await db.select().from(boards).where(eq(boards.userId, user.id));
+		return $boards;
+	}
 
 	let node: TNode;
 	try {

@@ -1,6 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
 import { A, createAsync, useAction, useLocation, useSubmissions } from '@solidjs/router';
-import { JSXElement, Show } from 'solid-js';
+import { createEffect, JSXElement, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFileModal';
 import { setCreateFolderModalOpen } from '~/components/modals/auto-import/CreateFolderModal';

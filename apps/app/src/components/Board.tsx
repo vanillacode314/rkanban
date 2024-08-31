@@ -1,9 +1,9 @@
 import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { revalidate, useAction, useSubmissions } from '@solidjs/router';
+import { createAsync, revalidate, useAction, useSubmissions } from '@solidjs/router';
 import { animate, spring } from 'motion';
-import { Component } from 'solid-js';
+import { Component, createEffect } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -17,6 +17,7 @@ import { TBoard, TTask } from '~/db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask, moveTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
+import { decryptObjectKeys } from '~/utils/auth.server';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setCreateTaskModalOpen } from './modals/auto-import/CreateTaskModal';
 import { setUpdateBoardModalOpen } from './modals/auto-import/UpdateBoardModal';
@@ -47,14 +48,23 @@ export const Board: Component<{
 					submission.pending && String(submission.input[0].get('boardId')) === props.board.id
 			)
 			.map((submission) => ({
-				title: submission.input[0].get('title') + ' (pending)',
+				title: submission.input[0].get('title'),
 				id: String(submission.input[0].get('id')),
+				userId: 'pending',
 				index: props.board.tasks.length + 1
 			}));
 
 	const [_appContext, setAppContext] = useApp();
-	const tasks = () =>
-		uniqBy(props.board.tasks ? [...props.board.tasks, ...pendingTasks()] : [], (task) => task.id);
+	const tasks = createAsync(
+		async () => {
+			const tasks = uniqBy(
+				props.board.tasks ? [...props.board.tasks, ...pendingTasks()] : [],
+				(task) => task.id
+			);
+			return await decryptObjectKeys(structuredClone(tasks), ['title']);
+		},
+		{ initialValue: [] }
+	);
 
 	return (
 		<Card
@@ -80,7 +90,15 @@ export const Board: Component<{
 		>
 			<CardHeader>
 				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
-					<CardTitle>{props.board.title}</CardTitle>
+					<CardTitle class="flex items-center gap-2">
+						<span
+							class={cn(
+								'i-heroicons:arrow-path-rounded-square animate-spin',
+								props.board.userId === 'pending' ? 'inline-block' : 'hidden'
+							)}
+						/>
+						<span>{props.board.title}</span>
+					</CardTitle>
 					<div class="flex items-center justify-end gap-2">
 						<Button
 							class="flex items-center gap-2"
