@@ -25,13 +25,9 @@ export default function CreateFolderModal() {
 					method="post"
 					class="flex flex-col gap-4"
 					onSubmit={async (event) => {
-						event.preventDefault();
 						const form = event.target as HTMLFormElement;
 						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
-						const nameInput = form.querySelector('input[name="name"]') as HTMLInputElement;
 						idInput.value = nanoid();
-						nameInput.value = await encryptWithUserKeys(nameInput.value);
-						(event.target as HTMLFormElement).submit();
 					}}
 				>
 					<input type="hidden" name="parentPath" value={appContext.path} />
