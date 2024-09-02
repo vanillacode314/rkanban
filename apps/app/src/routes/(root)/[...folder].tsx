@@ -191,13 +191,13 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 					</Show>
 					<Key each={folders()} by="id">
 						{(node) => (
-							<div class="flex h-10 overflow-hidden rounded-md border border-input">
+							<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
 								<A
-									class="flex h-10 grow items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+									class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:folder text-lg" />
-									<span class="grow">{node().name}</span>
+									<span class="truncate">{node().name}</span>
 								</A>
 								<FolderDropdownMenu node={node()} />
 							</div>
@@ -205,13 +205,13 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 					</Key>
 					<Key each={files()} by="id">
 						{(node) => (
-							<div class="flex h-10 overflow-hidden rounded-md border border-input">
+							<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
 								<A
-									class="flex h-10 grow items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+									class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 overflow-hidden px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:document text-lg" />
-									<span class="grow">{node().name}</span>
+									<span class="truncate">{node().name}</span>
 								</A>
 								<FileDropdownMenu node={node()} />
 							</div>
