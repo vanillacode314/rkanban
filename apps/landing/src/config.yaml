@@ -10,7 +10,7 @@ metadata:
   title:
     default: RKanban
     template: '%s — RKanban'
-  description: "\U0001F680 Suitable for Startups, Small Business, Sass Websites, Professional Portfolios, Marketing Websites, Landing Pages & Blogs."
+  description: "\U0001F680 Suitable for Freelancers, Small Business & Professionals."
   robots:
     index: true
     follow: true
