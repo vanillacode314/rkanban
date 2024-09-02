@@ -6,13 +6,7 @@ import {
 } from '@kobalte/core/color-mode';
 import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
-import {
-	RouteSectionProps,
-	createAsync,
-	useBeforeLeave,
-	useLocation,
-	useNavigate
-} from '@solidjs/router';
+import { createAsync, useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
 import { For, JSXElement, createEffect, onMount, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
@@ -36,7 +30,7 @@ function getServerCookies() {
 	const colorMode = getCookie('kb-color-mode');
 	return colorMode ? `kb-color-mode=${colorMode}` : '';
 }
-const RootLayout = (props: RouteSectionProps) => {
+const RootLayout = (props: { children: JSXElement }) => {
 	const user = createAsync(() => getUser());
 	createEffect(() => {
 		const $user = user();

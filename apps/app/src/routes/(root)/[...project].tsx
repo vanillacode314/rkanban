@@ -1,5 +1,5 @@
 import { Key } from '@solid-primitives/keyed';
-import { createAsync, useLocation, useSubmissions } from '@solidjs/router';
+import { RouteDefinition, createAsync, useLocation, useSubmissions } from '@solidjs/router';
 import { Show, createComputed, createEffect, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import Board from '~/components/Board';
@@ -12,13 +12,13 @@ import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
 import { decryptObjectKeys, decryptWithUserKeys } from '~/utils/auth.server';
 
-export const route = {
-	preload: () => {
-		const location = useLocation();
+export const route: RouteDefinition = {
+	preload: ({ location }) => {
 		getBoards(location.pathname);
 	},
 	matchFilters: {
-		project: (value: string) => value.endsWith('.project') && !RESERVED_PATHS.includes(value)
+		project: (pathname: string) =>
+			pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
 	}
 };
 

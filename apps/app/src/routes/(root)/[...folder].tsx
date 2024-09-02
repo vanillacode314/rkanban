@@ -1,5 +1,12 @@
 import { Key } from '@solid-primitives/keyed';
-import { A, createAsync, useAction, useLocation, useSubmissions } from '@solidjs/router';
+import {
+	A,
+	createAsync,
+	RouteDefinition,
+	useAction,
+	useLocation,
+	useSubmissions
+} from '@solidjs/router';
 import { createEffect, JSXElement, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFileModal';
@@ -16,19 +23,26 @@ import {
 	ContextMenuShortcut,
 	ContextMenuTrigger
 } from '~/components/ui/context-menu';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuShortcut,
+	DropdownMenuTrigger
+} from '~/components/ui/dropdown-menu';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TNode } from '~/db/schema';
 import { createNode, deleteNode, getNodes, isFolder } from '~/db/utils/nodes';
 import * as path from '~/utils/path';
 
-export const route = {
-	preload: () => {
-		const location = useLocation();
+export const route: RouteDefinition = {
+	preload: ({ location }) => {
 		getNodes(decodeURIComponent(location.pathname), { includeChildren: true });
 	},
 	matchFilters: {
-		folder: (value: string) => !value.endsWith('.project') && !RESERVED_PATHS.includes(value)
+		folder: (pathname: string) =>
+			!pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
 	}
 };
 
@@ -118,32 +132,30 @@ export default function Home() {
 					</Show>
 					<Key each={folders()} by="id">
 						{(node) => (
-							<FolderContextMenu node={node()}>
-								<Button
-									variant="outline"
-									class="flex items-center justify-start gap-2"
-									as={A}
+							<div class="flex h-10 overflow-hidden rounded-md border border-input">
+								<A
+									class="flex h-10 grow items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:folder text-lg" />
-									<span>{node().name}</span>
-								</Button>
-							</FolderContextMenu>
+									<span class="grow">{node().name}</span>
+								</A>
+								<FolderDropdownMenu node={node()} />
+							</div>
 						)}
 					</Key>
 					<Key each={files()} by="id">
 						{(node) => (
-							<FileContextMenu node={node()}>
-								<Button
-									variant="outline"
-									class="flex items-center justify-start gap-2"
-									as={A}
+							<div class="flex h-10 overflow-hidden rounded-md border border-input">
+								<A
+									class="flex h-10 grow items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:document text-lg" />
-									<span>{node().name}</span>
-								</Button>
-							</FileContextMenu>
+									<span class="grow">{node().name}</span>
+								</A>
+								<FileDropdownMenu node={node()} />
+							</div>
 						)}
 					</Key>
 				</div>
@@ -152,86 +164,86 @@ export default function Home() {
 	);
 }
 
-function FolderContextMenu(props: { children: JSXElement; node: TNode }) {
+function FolderDropdownMenu(props: { node: TNode }) {
 	const [_appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger class="select-none">{props.children}</ContextMenuTrigger>
-			<ContextMenuPortal>
-				<ContextMenuContent class="w-48">
-					<ContextMenuItem
-						onClick={() => {
-							setAppContext('currentNode', props.node);
-							setRenameFolderModalOpen(true);
-						}}
-					>
-						<span>Rename</span>
-						<ContextMenuShortcut>
-							<span class="i-heroicons:pencil-solid"></span>
-						</ContextMenuShortcut>
-					</ContextMenuItem>
-					<ContextMenuItem
-						onClick={() => {
-							const formData = new FormData();
-							formData.set('id', props.node.id);
-							toast.promise(() => $deleteNode(formData), {
-								loading: 'Deleting Folder',
-								success: 'Deleted Folder',
-								error: 'Error'
-							});
-						}}
-					>
-						<span>Delete</span>
-						<ContextMenuShortcut>
-							<span class="i-heroicons:trash"></span>
-						</ContextMenuShortcut>
-					</ContextMenuItem>
-				</ContextMenuContent>
-			</ContextMenuPortal>
-		</ContextMenu>
+		<DropdownMenu>
+			<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost" class="rounded-none">
+				<span class="i-heroicons:ellipsis-vertical text-lg"></span>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent class="w-48">
+				<DropdownMenuItem
+					onClick={() => {
+						setAppContext('currentNode', props.node);
+						setRenameFolderModalOpen(true);
+					}}
+				>
+					<span>Rename</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:pencil-solid"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						const formData = new FormData();
+						formData.set('id', props.node.id);
+						toast.promise(() => $deleteNode(formData), {
+							loading: 'Deleting Folder',
+							success: 'Deleted Folder',
+							error: 'Error'
+						});
+					}}
+				>
+					<span>Delete</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:trash"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
 
-function FileContextMenu(props: { children: JSXElement; node: TNode }) {
+function FileDropdownMenu(props: { node: TNode }) {
 	const [_appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger class="select-none">{props.children}</ContextMenuTrigger>
-			<ContextMenuPortal>
-				<ContextMenuContent class="w-48">
-					<ContextMenuItem
-						onClick={() => {
-							setAppContext('currentNode', props.node);
-							setRenameFileModalOpen(true);
-						}}
-					>
-						<span>Rename</span>
-						<ContextMenuShortcut>
-							<span class="i-heroicons:pencil-solid"></span>
-						</ContextMenuShortcut>
-					</ContextMenuItem>
-					<ContextMenuItem
-						onClick={() => {
-							const formData = new FormData();
-							formData.set('id', props.node.id);
-							toast.promise(() => $deleteNode(formData), {
-								loading: 'Deleting File',
-								success: 'Deleted File',
-								error: 'Error'
-							});
-						}}
-					>
-						<span>Delete</span>
-						<ContextMenuShortcut>
-							<span class="i-heroicons:trash"></span>
-						</ContextMenuShortcut>
-					</ContextMenuItem>
-				</ContextMenuContent>
-			</ContextMenuPortal>
-		</ContextMenu>
+		<DropdownMenu>
+			<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost" class="rounded-none">
+				<span class="i-heroicons:ellipsis-vertical text-lg"></span>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent class="w-48">
+				<DropdownMenuItem
+					onClick={() => {
+						setAppContext('currentNode', props.node);
+						setRenameFileModalOpen(true);
+					}}
+				>
+					<span>Rename</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:pencil-solid"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						const formData = new FormData();
+						formData.set('id', props.node.id);
+						toast.promise(() => $deleteNode(formData), {
+							loading: 'Deleting File',
+							success: 'Deleted File',
+							error: 'Error'
+						});
+					}}
+				>
+					<span>Delete</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:trash"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }

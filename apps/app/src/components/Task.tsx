@@ -9,7 +9,6 @@ import { cn } from '~/lib/utils';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setUpdateTaskModalOpen } from './modals/auto-import/UpdateTaskModal';
 import { Button } from './ui/button';
-import { Card } from './ui/card';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -25,8 +24,11 @@ export const Task: Component<{
 	index: number;
 }> = (props) => {
 	return (
-		<Card
-			class={cn('group/task relative flex items-center gap-2 rounded p-4', props.class)}
+		<div
+			class={cn(
+				'group/task relative flex items-center gap-2 rounded-none border-b-0 border-l-4 border-r-0 border-t-0 p-4 py-1 pr-0 transition-colors hover:border-l-blue-400',
+				props.class
+			)}
 			draggable="true"
 			onDragStart={(event) => {
 				event.dataTransfer?.setData('text/plain', String(props.task.id));
@@ -42,12 +44,8 @@ export const Task: Component<{
 				<span>{props.task.title}</span>
 			</span>
 			<span class="grow" />
-			<TaskContextMenu
-				task={props.task}
-				index={props.index}
-				class="pointer-events-none opacity-0 transition-opacity group-hover/task:pointer-events-auto group-hover/task:opacity-100"
-			/>
-		</Card>
+			<TaskContextMenu task={props.task} index={props.index} />
+		</div>
 	);
 };
 

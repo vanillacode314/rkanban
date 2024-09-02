@@ -1,8 +1,8 @@
-import { createAsync } from '@solidjs/router';
+import { RouteDefinition, createAsync } from '@solidjs/router';
 import { JSXElement } from 'solid-js';
 import { getUser } from '~/utils/auth.server';
 
-export const route = {
+export const route: RouteDefinition = {
 	preload: () => getUser(false)
 };
 export default function AuthLayout(props: { children: JSXElement }): JSXElement {

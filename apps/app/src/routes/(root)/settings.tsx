@@ -1,4 +1,4 @@
-import { action, createAsync, redirect, useAction } from '@solidjs/router';
+import { RouteDefinition, action, createAsync, redirect, useAction } from '@solidjs/router';
 import { eq, sql } from 'drizzle-orm';
 import { Show } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -56,7 +56,7 @@ const disableEncryption = action(async (decryptedBoards: TBoard[], decryptedTask
 	deleteCookie('accessToken');
 }, 'disable-encryption');
 
-export const route = {
+export const route: RouteDefinition = {
 	preload: () => getUser()
 };
 
