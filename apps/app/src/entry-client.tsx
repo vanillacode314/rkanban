@@ -1,5 +1,6 @@
 // @refresh reload
 import { mount, StartClient } from '@solidjs/start/client';
+import { toast } from 'solid-sonner';
 
 function listenForWaitingServiceWorker(registration: ServiceWorkerRegistration): Promise<void> {
 	return new Promise<void>((resolve, reject) => {
@@ -22,11 +23,12 @@ navigator.serviceWorker.addEventListener('controllerchange', function () {
 });
 
 function promptUserToRefresh(registration: ServiceWorkerRegistration) {
-	// this is just an example
-	// don't use window.confirm in real life; it's terrible
-	if (confirm('New version available! OK to refresh?')) {
-		registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-	}
+	toast('New version available!', {
+		action: {
+			label: 'Update',
+			onClick: () => registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
+		}
+	});
 }
 
 if ('serviceWorker' in navigator) {
