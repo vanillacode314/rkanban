@@ -23,6 +23,8 @@ export default function CreateFileModal() {
 					onSubmit={async (event) => {
 						const form = event.target as HTMLFormElement;
 						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
+						const nameInput = form.querySelector('input[name="name"]') as HTMLInputElement;
+						nameInput.value = nameInput.value + '.project';
 						idInput.value = nanoid();
 					}}
 				>
