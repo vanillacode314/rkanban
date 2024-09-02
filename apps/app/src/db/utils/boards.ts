@@ -27,7 +27,7 @@ async function _getBoards(path: string | null) {
 		.select()
 		.from(boards)
 		.where(and(eq(boards.userId, user.id), eq(boards.nodeId, node.id)))
-		.leftJoin(tasks, and(eq(boards.id, tasks.boardId)))
+		.leftJoin(tasks, eq(boards.id, tasks.boardId))
 		.orderBy(asc(boards.index), asc(tasks.index));
 
 	const $boards: (TBoard & { tasks: TTask[] })[] = [];

@@ -11,7 +11,7 @@ import BaseModal from '../BaseModal';
 export const [createFileModalOpen, setCreateFileModalOpen] = createSignal<boolean>(false);
 
 export default function CreateFileModal() {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, _setAppContext] = useApp();
 
 	return (
 		<BaseModal title="Create File" open={createFileModalOpen()} setOpen={setCreateFileModalOpen}>

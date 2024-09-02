@@ -208,6 +208,7 @@ async function decryptObjectKeys<T extends Record<string, unknown>>(
 ): Promise<T | T[]> {
 	if (keys.length === 0) throw new Error('No keys provided');
 
+	const wasOriginallyArray = Array.isArray(objs);
 	if (!Array.isArray(objs)) objs = [objs];
 
 	await Promise.all(
@@ -217,7 +218,7 @@ async function decryptObjectKeys<T extends Record<string, unknown>>(
 			})
 		)
 	);
-	return objs.length === 1 ? objs[0] : objs;
+	return wasOriginallyArray ? objs : objs[0];
 }
 
 export {

@@ -2,7 +2,7 @@ import { action, cache, redirect } from '@solidjs/router';
 import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from '~/db';
-import { nodes, TNode } from '~/db/schema';
+import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 
 const getNodes = cache(
@@ -86,6 +86,88 @@ const deleteNode = action(async (formData: FormData) => {
 		.returning();
 }, 'delete-node');
 
+async function $copyNode(formData: FormData) {
+	'use server';
+
+	const user = await getUser();
+	if (!user) return new Error('Unauthorized');
+
+	const id = String(formData.get('id')).trim();
+	const parentId = String(formData.get('parentId')).trim();
+
+	const [rows, children] = await Promise.all([
+		db
+			.select()
+			.from(nodes)
+			.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
+			.leftJoin(boards, eq(boards.nodeId, nodes.id))
+			.leftJoin(tasks, eq(tasks.boardId, boards.id)),
+		db
+			.select()
+			.from(nodes)
+			.where(and(eq(nodes.parentId, id), eq(nodes.userId, user.id)))
+	]);
+	if (rows.length === 0) throw new Error('Not Found', { cause: 'NOT_FOUND' });
+
+	const $node = rows[0].nodes;
+	const $boards = rows.map((row) => row.boards).filter(Boolean) as TBoard[];
+	const $tasks = rows.map((row) => row.tasks).filter(Boolean) as TTask[];
+	const $newNode = await db.transaction(async (tx) => {
+		const [$newNode] = await tx
+			.insert(nodes)
+			.values({
+				name:
+					parentId === $node.parentId ?
+						$node.name.endsWith('.project') ?
+							$node.name.slice(0, -'.project'.length) + ' (copy)' + '.project'
+						:	$node.name + ' (copy)'
+					:	$node.name,
+				id: nanoid(),
+				parentId,
+				userId: user.id
+			})
+			.returning({ id: nodes.id, name: nodes.name });
+		if ($newNode.name.endsWith('.project')) {
+			await Promise.all(
+				$boards.map(async (board) => {
+					const [$newBoard] = await tx
+						.insert(boards)
+						.values({
+							id: nanoid(),
+							index: board.index,
+							title: board.title,
+							userId: user.id,
+							nodeId: $newNode.id
+						})
+						.returning({ id: boards.id });
+					await Promise.all(
+						$tasks.map((task) =>
+							tx.insert(tasks).values({
+								id: nanoid(),
+								index: task.index,
+								title: task.title,
+								userId: user.id,
+								boardId: $newBoard.id
+							})
+						)
+					);
+				})
+			);
+		}
+		return $newNode;
+	});
+
+	await Promise.all(
+		children.map((node) => {
+			const formData = new FormData();
+			formData.set('id', node.id);
+			formData.set('parentId', $newNode.id);
+			return $copyNode(formData);
+		})
+	);
+}
+const copyNode = action($copyNode, 'copy-node');
+
 function isFolder(node: TNode): boolean {
 	return !node.name.includes('.');
 }
@@ -166,4 +248,4 @@ const GET_NODES_BY_PATH_QUERY = (
 		);
 };
 
-export { createNode, deleteNode, getNodes, isFolder, updateNode };
+export { copyNode, createNode, deleteNode, getNodes, isFolder, updateNode };

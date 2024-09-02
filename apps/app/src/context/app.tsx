@@ -2,16 +2,24 @@ import { createComputed, createContext, JSXElement, untrack, useContext } from '
 import { createStore, SetStoreFunction } from 'solid-js/store';
 import { TBoard, TNode, TTask } from '~/db/schema';
 
+type TClipboardItem = {
+	type: `${string}/${string}`;
+	data: string;
+	meta?: unknown;
+	mode: 'move' | 'copy';
+};
 const DEFAULT_APP_CONTEXT = {
 	currentBoard: null,
 	currentTask: null,
 	currentNode: null,
+	clipboard: [],
 	boards: [],
 	path: '/'
 } satisfies TAppContext;
 type TAppContext = {
 	currentBoard: null | TBoard;
 	currentTask: null | TTask;
+	clipboard: TClipboardItem[];
 	boards: Array<TBoard & { tasks: TTask[] }>;
 	path: string;
 	currentNode: TNode | null;

@@ -1,13 +1,7 @@
 import { Key } from '@solid-primitives/keyed';
-import {
-	A,
-	createAsync,
-	RouteDefinition,
-	useAction,
-	useLocation,
-	useSubmissions
-} from '@solidjs/router';
-import { createEffect, JSXElement, Show } from 'solid-js';
+import { A, createAsync, RouteDefinition, useAction, useSubmissions } from '@solidjs/router';
+import { Show } from 'solid-js';
+import { produce, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFileModal';
 import { setCreateFolderModalOpen } from '~/components/modals/auto-import/CreateFolderModal';
@@ -15,14 +9,6 @@ import { setRenameFileModalOpen } from '~/components/modals/auto-import/RenameFi
 import { setRenameFolderModalOpen } from '~/components/modals/auto-import/RenameFolderModal';
 import PathCrumbs from '~/components/PathCrumbs';
 import { Button } from '~/components/ui/button';
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuPortal,
-	ContextMenuShortcut,
-	ContextMenuTrigger
-} from '~/components/ui/context-menu';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -33,7 +19,7 @@ import {
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TNode } from '~/db/schema';
-import { createNode, deleteNode, getNodes, isFolder } from '~/db/utils/nodes';
+import { copyNode, createNode, deleteNode, getNodes, isFolder, updateNode } from '~/db/utils/nodes';
 import * as path from '~/utils/path';
 
 export const route: RouteDefinition = {
@@ -66,8 +52,10 @@ export default function Home() {
 }
 
 function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, setAppContext] = useApp();
 	const submissions = useSubmissions(createNode);
+	const $updateNode = useAction(updateNode);
+	const $copyNode = useAction(copyNode);
 
 	const pendingNodes = () =>
 		[...submissions.values()]
@@ -86,11 +74,63 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 	const currentNode = () => props.serverNodes!.node;
 	const folders = () => nodes()?.filter(isFolder) ?? [];
 	const files = () => nodes()?.filter((node) => !isFolder(node)) ?? [];
+	const nodesInClipboard = () => appContext.clipboard.filter((item) => item.type === 'id/node');
 
 	return (
 		<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-			<Show when={nodes().length > 0}>
-				<div class="flex justify-end gap-4">
+			<div class="flex justify-end gap-4 empty:hidden">
+				<Show when={nodesInClipboard().length > 0}>
+					<Button
+						class="flex items-center gap-2"
+						onClick={() => {
+							const items = structuredClone(unwrap(nodesInClipboard()));
+							for (const [index, item] of items.toReversed().entries()) {
+								const { node, path } = item.meta as { node: TNode; path: string };
+								if (node.id === currentNode().id && item.mode === 'move') {
+									toast.info(`Skipping ${path} because it is the current folder`);
+									items.splice(items.length - index - 1, 1);
+								} else if (node.parentId === currentNode().id && item.mode === 'move') {
+									toast.info(`Skipping ${path} because it is already in the current folder`);
+									items.splice(items.length - index - 1, 1);
+								}
+							}
+							if (items.length > 0)
+								toast.promise(
+									async () => {
+										await Promise.all(
+											items.map((item) => {
+												const formData = new FormData();
+												formData.set('id', item.data);
+												const { node } = item.meta as { node: TNode; path: string };
+												formData.set('parentId', currentNode().id);
+												if (item.mode === 'move') formData.set('name', node.name);
+												try {
+													const x =
+														item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
+													return x;
+												} catch (error) {
+													console.error(error);
+												}
+											})
+										);
+										setAppContext('clipboard', ($items) =>
+											$items.filter(($item) => !items.some((item) => $item.data === item.data))
+										);
+									},
+									{
+										loading: 'Pasting...',
+										success: 'Pasted',
+										error: 'Paste Failed'
+									}
+								);
+						}}
+						variant="secondary"
+					>
+						<span class="i-heroicons:document-plus text-lg"></span>
+						<span>Paste</span>
+					</Button>
+				</Show>
+				<Show when={nodes().length > 0}>
 					<Button class="flex items-center gap-2" onClick={() => setCreateFileModalOpen(true)}>
 						<span class="i-heroicons:document-plus text-lg"></span>
 						<span>Create Project</span>
@@ -99,8 +139,8 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 						<span class="i-heroicons:plus text-lg"></span>
 						<span>Create Folder</span>
 					</Button>
-				</div>
-			</Show>
+				</Show>
+			</div>
 			<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 				<Show when={appContext.path === '/'}>
 					<Button
@@ -184,7 +224,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 }
 
 function FolderDropdownMenu(props: { node: TNode }) {
-	const [_appContext, setAppContext] = useApp();
+	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 
 	return (
@@ -202,6 +242,52 @@ function FolderDropdownMenu(props: { node: TNode }) {
 					<span>Rename</span>
 					<DropdownMenuShortcut>
 						<span class="i-heroicons:pencil-solid"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						setAppContext(
+							'clipboard',
+							produce((clipboard) => {
+								clipboard.push({
+									mode: 'copy',
+									type: 'id/node',
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									}
+								});
+							})
+						);
+					}}
+				>
+					<span>Copy</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:clipboard"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						setAppContext(
+							'clipboard',
+							produce((clipboard) => {
+								clipboard.push({
+									mode: 'move',
+									type: 'id/node',
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									}
+								});
+							})
+						);
+					}}
+				>
+					<span>Cut</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:scissors"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -226,7 +312,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 }
 
 function FileDropdownMenu(props: { node: TNode }) {
-	const [_appContext, setAppContext] = useApp();
+	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 
 	return (
@@ -244,6 +330,52 @@ function FileDropdownMenu(props: { node: TNode }) {
 					<span>Rename</span>
 					<DropdownMenuShortcut>
 						<span class="i-heroicons:pencil-solid"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						setAppContext(
+							'clipboard',
+							produce((clipboard) => {
+								clipboard.push({
+									mode: 'copy',
+									type: 'id/node',
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									}
+								});
+							})
+						);
+					}}
+				>
+					<span>Copy</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:clipboard"></span>
+					</DropdownMenuShortcut>
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						setAppContext(
+							'clipboard',
+							produce((clipboard) => {
+								clipboard.push({
+									mode: 'move',
+									type: 'id/node',
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									}
+								});
+							})
+						);
+					}}
+				>
+					<span>Cut</span>
+					<DropdownMenuShortcut>
+						<span class="i-heroicons:scissors"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem

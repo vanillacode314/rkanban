@@ -1,6 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
 import { A, RouteDefinition, createAsync, useSubmissions } from '@solidjs/router';
-import { Show, createComputed, untrack } from 'solid-js';
+import { Show, createComputed, createEffect, untrack } from 'solid-js';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
