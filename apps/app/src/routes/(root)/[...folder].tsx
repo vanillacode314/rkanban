@@ -20,6 +20,7 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TNode } from '~/db/schema';
 import { copyNode, createNode, deleteNode, getNodes, isFolder, updateNode } from '~/db/utils/nodes';
+import { cn } from '~/lib/utils';
 import * as path from '~/utils/path';
 
 export const route: RouteDefinition = {
@@ -62,7 +63,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 			.filter((submission) => submission.pending)
 			.map((submission) => ({
 				id: String(submission.input[0].get('id')),
-				name: String(submission.input[0].get('name')) + ' (pending)',
+				name: String(submission.input[0].get('name')),
 				parentId: props.serverNodes!.node.id,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -152,7 +153,11 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 			<Show
 				when={nodes().length > 0}
 				fallback={
-					<div class="grid h-full place-content-center place-items-center gap-4 font-medium">
+					<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
+						<img
+							src="/empty.svg"
+							class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+						/>
 						<span>Empty Folder</span>
 						<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
 							<Button class="flex items-center gap-2" onClick={() => setCreateFileModalOpen(true)}>
@@ -191,7 +196,15 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:folder text-lg" />
-									<span class="truncate">{node().name}</span>
+									<span class="flex items-center gap-2">
+										<span
+											class={cn(
+												'i-heroicons:arrow-path-rounded-square animate-spin',
+												node().userId === 'pending' ? 'inline-block' : 'hidden'
+											)}
+										/>
+										<span class="truncate">{node().name}</span>
+									</span>
 								</A>
 								<FolderDropdownMenu node={node()} />
 							</div>
@@ -205,7 +218,15 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:document text-lg" />
-									<span class="truncate">{node().name}</span>
+									<span class="flex items-center gap-2">
+										<span
+											class={cn(
+												'i-heroicons:arrow-path-rounded-square animate-spin',
+												node().userId === 'pending' ? 'inline-block' : 'hidden'
+											)}
+										/>
+										<span class="truncate">{node().name}</span>
+									</span>
 								</A>
 								<FileDropdownMenu node={node()} />
 							</div>

@@ -87,7 +87,11 @@ function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
 			<Show
 				when={boards().length > 0}
 				fallback={
-					<div class="grid h-full place-content-center place-items-center gap-4 font-medium">
+					<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
+						<img
+							src="/empty.svg"
+							class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+						/>
 						<span>Empty Project</span>
 						<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
 							<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
