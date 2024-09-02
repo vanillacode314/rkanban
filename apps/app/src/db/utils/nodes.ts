@@ -214,7 +214,19 @@ const GET_NODES_BY_PATH_QUERY = (
 	    FROM
 	      nodes n
 	      JOIN CTE ON n.parentId = CTE.id
-	  ) __includeChildren
+	  ) SELECT
+				  *
+				FROM
+				  nodes
+				WHERE
+				  id = (
+				    SELECT
+				      id
+				    FROM
+				      CTE
+				    WHERE
+				      parent_path = __path 
+				  ) __includeChildren
 	`;
 
 	path = path === '/' ? 'root' : 'root' + path;
@@ -226,44 +238,22 @@ const GET_NODES_BY_PATH_QUERY = (
 			/__includeChildren/g,
 			includeChildren ?
 				// with children
-				`
-				SELECT
-				  *
-				FROM
-				  nodes
-				WHERE
-				  id = (
+				`UNION ALL
+				SELECT 
+					* 
+				FROM 
+					nodes 
+				WHERE 
+					parentId = (
 				    SELECT
 				      id
 				    FROM
 				      CTE
 				    WHERE
 				      parent_path = __path 
-				  ) OR parentId = (
-				    SELECT
-				      id
-				    FROM
-				      CTE
-				    WHERE
-				      parent_path = __path 
-				  ) 
+				  )
 					`.replace(/__path/g, `'${path}'`)
-				// no children
-			:	`
-				SELECT
-				  *
-				FROM
-				  nodes
-				WHERE
-				  id = (
-				    SELECT
-				      id
-				    FROM
-				      CTE
-				    WHERE
-				      parent_path = __path 
-				  ) 
-				`.replace(/__path/g, `'${path}'`)
+			:	''
 		);
 };
 
