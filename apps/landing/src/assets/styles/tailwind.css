@@ -90,3 +90,13 @@
 .dd *:first-child {
   margin-top: 0;
 }
+
+.dark-only {
+  display: none;
+}
+.dark .dark-only {
+  display: block;
+}
+.dark .light-only {
+  display: none;
+}
