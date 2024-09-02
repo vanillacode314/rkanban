@@ -7,8 +7,21 @@
    viewBox="0 0 1024 1024"
    version="1.1"
    id="svg1"
+   sodipodi:docname="favicon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm" />
   <defs
      id="defs1" />
   <g
@@ -27,9 +40,9 @@
        x="300.52609"
        y="385.36792"
        id="text1"
-       transform="matrix(3.5192233,0,0,3.5192233,-977.86858,-595.14918)"><tspan
+       transform="matrix(3.5192233,0,0,3.5192233,-987.39359,-595.14918)"><tspan
          x="300.52609"
          y="385.36792"
-         id="tspan1">JK</tspan></text>
+         id="tspan2">RK</tspan></text>
   </g>
 </svg>
