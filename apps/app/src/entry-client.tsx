@@ -24,6 +24,7 @@ navigator.serviceWorker.addEventListener('controllerchange', function () {
 
 function promptUserToRefresh(registration: ServiceWorkerRegistration) {
 	toast('New version available!', {
+		duration: Number.POSITIVE_INFINITY,
 		action: {
 			label: 'Update',
 			onClick: () => registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
