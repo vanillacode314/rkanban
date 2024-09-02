@@ -208,7 +208,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 						onClick={() => {
 							confirmModal.open({
 								title: 'Delete Board',
-								message: "Are you sure you want to delete this board and all it's tasks?",
+								message: 'Are you sure you want to delete this board and all its tasks?',
 								onYes: async () => {
 									const formData = new FormData();
 									formData.set('id', props.board.id.toString());
