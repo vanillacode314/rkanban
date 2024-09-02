@@ -68,14 +68,14 @@ const signIn = action(async (formData: FormData) => {
 
 	setCookie('accessToken', accessToken, {
 		httpOnly: true,
-		secure: true,
+		secure: import.meta.env.PROD,
 		path: '/',
 		sameSite: 'lax',
 		maxAge: 2 ** 31
 	});
 	setCookie('refreshToken', refreshToken, {
 		httpOnly: true,
-		secure: true,
+		secure: import.meta.env.PROD,
 		path: '/',
 		sameSite: 'lax',
 		maxAge: 2 ** 31
