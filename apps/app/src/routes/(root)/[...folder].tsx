@@ -49,6 +49,24 @@ export const route: RouteDefinition = {
 export default function Home() {
 	const [appContext, _setAppContext] = useApp();
 	const serverNodes = createAsync(() => getNodes(appContext.path, { includeChildren: true }));
+
+	return (
+		<Show
+			when={serverNodes() instanceof Error}
+			fallback={<Folder serverNodes={serverNodes() as { node: TNode; children: TNode[] }} />}
+		>
+			<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
+				<div>Folder Not Found</div>
+				<Button as={A} href="/">
+					Go Home
+				</Button>
+			</div>
+		</Show>
+	);
+}
+
+function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
+	const [appContext, _setAppContext] = useApp();
 	const submissions = useSubmissions(createNode);
 
 	const pendingNodes = () =>
@@ -57,14 +75,15 @@ export default function Home() {
 			.map((submission) => ({
 				id: String(submission.input[0].get('id')),
 				name: String(submission.input[0].get('name')) + ' (pending)',
-				parentId: serverNodes()!.node.id,
+				parentId: props.serverNodes!.node.id,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				userId: 'pending'
 			}));
 
-	const nodes = () => (serverNodes() ? [...serverNodes()!.children, ...pendingNodes()] : []);
-	const currentNode = () => serverNodes()!.node;
+	const nodes = () =>
+		props.serverNodes ? [...props.serverNodes!.children, ...pendingNodes()] : [];
+	const currentNode = () => props.serverNodes!.node;
 	const folders = () => nodes()?.filter(isFolder) ?? [];
 	const files = () => nodes()?.filter((node) => !isFolder(node)) ?? [];
 

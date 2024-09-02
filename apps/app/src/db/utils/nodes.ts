@@ -14,7 +14,7 @@ const getNodes = cache(
 
 		const query = GET_NODES_BY_PATH_QUERY(path, user.id, includeChildren);
 		const $nodes = (await db.all(sql.raw(query))) as TNode[];
-		if ($nodes.length === 0) throw new Error(`Invalid path: ${path}`);
+		if ($nodes.length === 0) return new Error(`Not Found`, { cause: 'NOT_FOUND' });
 		const node = $nodes.shift()!;
 		return { node, children: $nodes };
 	},

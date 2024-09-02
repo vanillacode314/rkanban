@@ -19,12 +19,9 @@ async function _getBoards(path: string | null) {
 		return $boards;
 	}
 
-	let node: TNode;
-	try {
-		({ node } = await getNodes(path));
-	} catch (e) {
-		throw redirect('/');
-	}
+	const result = await getNodes(path);
+	if (result instanceof Error) return result;
+	const node = result.node;
 
 	const rows = await db
 		.select()

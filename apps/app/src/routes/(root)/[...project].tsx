@@ -1,7 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
-import { RouteDefinition, createAsync, useLocation, useSubmissions } from '@solidjs/router';
-import { Show, createComputed, createEffect, untrack } from 'solid-js';
-import { isServer } from 'solid-js/web';
+import { A, RouteDefinition, createAsync, useSubmissions } from '@solidjs/router';
+import { Show, createComputed, untrack } from 'solid-js';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
@@ -10,7 +9,7 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
-import { decryptObjectKeys, decryptWithUserKeys } from '~/utils/auth.server';
+import { decryptObjectKeys } from '~/utils/auth.server';
 
 export const route: RouteDefinition = {
 	preload: ({ location }) => {
@@ -23,6 +22,24 @@ export const route: RouteDefinition = {
 };
 
 export default function Home() {
+	const [appContext, _setAppContext] = useApp();
+	const serverBoards = createAsync(async () => await getBoards(appContext.path));
+
+	return (
+		<Show
+			when={serverBoards() instanceof Error}
+			fallback={<Project serverBoards={serverBoards() as Array<TBoard & { tasks: TTask[] }>} />}
+		>
+			<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
+				<div>Project Not Found</div>
+				<Button as={A} href="/">
+					Go Home
+				</Button>
+			</div>
+		</Show>
+	);
+}
+function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
 	const [appContext, setAppContext] = useApp();
 	const serverBoards = createAsync(async () => await getBoards(appContext.path));
 	const submissions = useSubmissions(createBoard);
@@ -37,14 +54,14 @@ export default function Home() {
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				userId: 'pending',
-				index: serverBoards()!.length,
+				index: props.serverBoards!.length,
 				nodeId: 'pending'
 			}));
 
 	const boards = createAsync(
 		async () => {
 			const boards: Array<TBoard & { tasks: TTask[] }> =
-				serverBoards() ? [...serverBoards()!, ...pendingBoards()] : [];
+				props.serverBoards ? [...props.serverBoards!, ...pendingBoards()] : [];
 			return await decryptObjectKeys(structuredClone(boards), ['title']);
 		},
 		{ initialValue: [] }
