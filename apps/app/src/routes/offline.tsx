@@ -21,12 +21,12 @@ function OfflinePage() {
 
 	return (
 		<>
-			<Title>Offline | JustKanban</Title>
+			<Title>Offline | RKanban</Title>
 			<nav
 				class={cn('border-offset-background full-width content-grid border-b bg-background py-4')}
 			>
 				<div class="flex items-center gap-4">
-					<p class="font-bold uppercase tracking-wide">JustKanban</p>
+					<p class="font-bold uppercase tracking-wide">RKanban</p>
 					<span class="grow" />
 					<Button onClick={() => toggleColorMode()} variant="outline" size="icon">
 						<div class="i-heroicons:sun rotate-0 scale-100 text-xl transition-all dark:-rotate-90 dark:scale-0" />

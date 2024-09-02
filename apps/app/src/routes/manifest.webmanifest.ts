@@ -3,8 +3,8 @@ import iconsJson from '~/data/icons.json';
 export function GET() {
 	return {
 		id: 'com.raqueeb.kanban',
-		short_name: 'justkanban',
-		name: 'justkanban',
+		short_name: 'rkanban',
+		name: 'RKanban',
 		start_url: '/',
 		background_color: '#000000',
 		display: 'standalone',

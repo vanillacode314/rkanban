@@ -5,6 +5,7 @@ import { getRequestEvent } from 'solid-js/web';
 import { z } from 'zod';
 import { db } from '~/db';
 import { forgotPasswordTokens, users } from '~/db/schema';
+import env from '~/utils/env/server';
 import { resend } from '~/utils/resend.server';
 
 const sendResetPasswordEmail = async (email: string) => {
@@ -28,10 +29,10 @@ const sendResetPasswordEmail = async (email: string) => {
 		.returning({ token: forgotPasswordTokens.token });
 	const event = getRequestEvent()!;
 	await resend.emails.send({
-		from: 'justkanban <no-reply@notifications.raqueeb.com>',
+		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
 		to: [user.email],
 		subject: 'Reset Password',
-		text: `Goto this link to resset your password for justkanban: ${new URL(event.request.url).origin}/auth/reset-password?token=${token}
+		text: `Goto this link to resset your password for rkanban: ${new URL(event.request.url).origin}/auth/reset-password?token=${token}
 If you did not request a password resset, you can safely ignore this email.`,
 		tags: [
 			{

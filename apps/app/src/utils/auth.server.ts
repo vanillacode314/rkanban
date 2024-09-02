@@ -141,7 +141,7 @@ async function resendVerificationEmail() {
 	if (verificationToken instanceof Error) throw verificationToken;
 
 	await resend.emails.send({
-		from: 'justkanban <no-reply@notifications.raqueeb.com>',
+		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
 		to: [user.email],
 		subject: 'Confirm your email',
 		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/public/confirm-email?token=${verificationToken}`,

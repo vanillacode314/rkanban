@@ -38,7 +38,7 @@ const RootLayout = (props: { children: JSXElement }) => {
 	return (
 		<ColorModeProvider storageManager={storageManager}>
 			<AppProvider path={path()}>
-				<Title>JustKanban</Title>
+				<Title>RKanban</Title>
 				<Toaster expand={true} closeButton />
 				<div class="flex h-full flex-col overflow-hidden">
 					<Nav class="full-width content-grid" />
