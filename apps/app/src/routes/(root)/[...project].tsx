@@ -1,6 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
 import { A, RouteDefinition, createAsync, useSubmissions } from '@solidjs/router';
-import { Show, createComputed, createEffect, untrack } from 'solid-js';
+import { Show, createComputed, untrack } from 'solid-js';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
@@ -23,7 +23,7 @@ export const route: RouteDefinition = {
 
 export default function Home() {
 	const [appContext, _setAppContext] = useApp();
-	const serverBoards = createAsync(async () => await getBoards(appContext.path));
+	const serverBoards = createAsync(() => getBoards(appContext.path));
 
 	return (
 		<Show
@@ -40,8 +40,7 @@ export default function Home() {
 	);
 }
 function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
-	const [appContext, setAppContext] = useApp();
-	const serverBoards = createAsync(async () => await getBoards(appContext.path));
+	const [_appContext, setAppContext] = useApp();
 	const submissions = useSubmissions(createBoard);
 
 	const pendingBoards = () =>
