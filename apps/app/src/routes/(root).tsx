@@ -97,7 +97,9 @@ function Clipboard() {
 										</span>
 										<span
 											class={cn(
-												item.mode === 'move' ? 'i-heroicons:scissors' : 'i-heroicons:clipboard'
+												item.mode === 'move' ?
+													'i-heroicons:scissors'
+												:	'i-heroicons:document-duplicate'
 											)}
 										/>
 									</Button>

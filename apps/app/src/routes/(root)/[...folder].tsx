@@ -120,7 +120,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 						}}
 						variant="secondary"
 					>
-						<span class="i-heroicons:document-plus text-lg"></span>
+						<span class="i-heroicons:clipboard text-lg"></span>
 						<span>Paste</span>
 					</Button>
 				</Show>
@@ -264,7 +264,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Copy</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:clipboard"></span>
+						<span class="i-heroicons:document-duplicate"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -358,7 +358,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Copy</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:clipboard"></span>
+						<span class="i-heroicons:document-duplicate"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
