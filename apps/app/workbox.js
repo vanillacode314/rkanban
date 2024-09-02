@@ -6,8 +6,6 @@ generateSW({
 	swDest: 'dist/sw.js',
 	globDirectory: 'dist',
 	globIgnores: ['_server/**'],
-	skipWaiting: true,
-	clientsClaim: true,
 	sourcemap: false,
 	inlineWorkboxRuntime: true,
 	navigationPreload: true,
