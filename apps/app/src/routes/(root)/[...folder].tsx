@@ -240,7 +240,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Rename</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:pencil-solid"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -263,7 +263,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Copy</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:clipboard"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -286,7 +286,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Cut</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:scissors"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -302,7 +302,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Delete</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:trash"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -328,7 +328,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Rename</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:pencil-solid"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -351,7 +351,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Copy</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:clipboard"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -374,7 +374,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Cut</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:scissors"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
@@ -390,7 +390,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 					}}
 				>
 					<span>Delete</span>
-					<DropdownMenuShortcut>
+					<DropdownMenuShortcut class="text-base">
 						<span class="i-heroicons:trash"></span>
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>

@@ -198,7 +198,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 						}}
 					>
 						<span>Edit</span>
-						<DropdownMenuShortcut>
+						<DropdownMenuShortcut class="text-base">
 							<span class="i-heroicons:pencil-solid"></span>
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
@@ -222,7 +222,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 						}}
 					>
 						<span>Delete</span>
-						<DropdownMenuShortcut>
+						<DropdownMenuShortcut class="text-base">
 							<span class="i-heroicons:trash"></span>
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
@@ -245,7 +245,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 							}}
 						>
 							<span>Shift Right</span>
-							<DropdownMenuShortcut>
+							<DropdownMenuShortcut class="text-base">
 								<span class="i-heroicons:arrow-long-right-solid"></span>
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
@@ -269,7 +269,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 							}}
 						>
 							<span>Shift Left</span>
-							<DropdownMenuShortcut>
+							<DropdownMenuShortcut class="text-base">
 								<span class="i-heroicons:arrow-long-left-solid"></span>
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>

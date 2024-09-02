@@ -71,7 +71,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 						}}
 					>
 						<span>Edit</span>
-						<DropdownMenuShortcut>
+						<DropdownMenuShortcut class="text-base">
 							<span class="i-heroicons:pencil-solid"></span>
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
@@ -95,7 +95,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 						}}
 					>
 						<span>Delete</span>
-						<DropdownMenuShortcut>
+						<DropdownMenuShortcut class="text-base">
 							<span class="i-heroicons:trash"></span>
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
@@ -118,7 +118,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 							}}
 						>
 							<span>Shift Down</span>
-							<DropdownMenuShortcut>
+							<DropdownMenuShortcut class="text-base">
 								<span class="i-heroicons:arrow-long-down-solid"></span>
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
@@ -142,7 +142,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 							}}
 						>
 							<span>Shift Up</span>
-							<DropdownMenuShortcut>
+							<DropdownMenuShortcut class="text-base">
 								<span class="i-heroicons:arrow-long-up-solid"></span>
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
