@@ -9,7 +9,7 @@ export default createHandler(() => (
 					<meta charset="utf-8" />
 					<meta
 						name="viewport"
-						content="width=device-width, initial-scale=1; interactive-widget=resizes-content"
+						content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
 					/>
 					<meta name="description" content="The best way to manage your projects" />
 					<link rel="manifest" href="/manifest.webmanifest" />
