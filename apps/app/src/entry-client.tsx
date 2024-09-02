@@ -8,7 +8,6 @@ function listenForWaitingServiceWorker(registration: ServiceWorkerRegistration):
 				if (this.state === 'installed') resolve();
 			});
 		}
-		if (!registration) return;
 		if (registration.waiting) return resolve();
 		if (registration.installing) awaitStateChange();
 		registration.addEventListener('updatefound', awaitStateChange);
