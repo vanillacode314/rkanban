@@ -104,13 +104,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 												const { node } = item.meta as { node: TNode; path: string };
 												formData.set('parentId', currentNode().id);
 												if (item.mode === 'move') formData.set('name', node.name);
-												try {
-													const x =
-														item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
-													return x;
-												} catch (error) {
-													console.error(error);
-												}
+												return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
 											})
 										);
 										setAppContext('clipboard', ($items) =>
@@ -246,6 +240,12 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => {
+						if (
+							appContext.clipboard.some(
+								(item) => item.type === 'id/node' && item.data === props.node.id
+							)
+						)
+							return;
 						setAppContext(
 							'clipboard',
 							produce((clipboard) => {
@@ -269,6 +269,12 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => {
+						if (
+							appContext.clipboard.some(
+								(item) => item.type === 'id/node' && item.data === props.node.id
+							)
+						)
+							return;
 						setAppContext(
 							'clipboard',
 							produce((clipboard) => {
