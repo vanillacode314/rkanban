@@ -16,7 +16,7 @@ export default createHandler(() => (
 					<meta name="theme-color" content="#000000" />
 					{assets}
 				</head>
-				<body>
+				<body style="background: #09090b">
 					<div id="app">{children}</div>
 					{scripts}
 				</body>
