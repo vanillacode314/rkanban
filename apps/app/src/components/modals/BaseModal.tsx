@@ -58,6 +58,8 @@ export function Modal(props: Props) {
 				ref={setEl}
 				onClose={() => {
 					mergedProps.setOpen(false);
+					const forms = el()?.querySelectorAll('form');
+					forms?.forEach((form) => form.reset());
 				}}
 				class="m-0 h-full w-full max-w-full bg-transparent"
 			>
