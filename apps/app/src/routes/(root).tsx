@@ -97,21 +97,18 @@ const RootLayout = (props: { children: JSXElement }) => {
 	createEffect(() => !isOnline() && navigate('/offline'));
 
 	return (
-		<>
-			<ColorModeScript storageType={storageManager.type} />
-			<ColorModeProvider storageManager={storageManager}>
-				<AppProvider path={path()}>
-					<Title>JustKanban</Title>
-					<Toaster expand={true} closeButton />
-					<div class="flex h-full flex-col overflow-hidden">
-						<Nav class="full-width content-grid" />
-						<div class="content-grid h-full overflow-hidden">{props.children}</div>
-					</div>
-					<AutoImportModals />
-					<Clipboard />
-				</AppProvider>
-			</ColorModeProvider>
-		</>
+		<ColorModeProvider storageManager={storageManager}>
+			<AppProvider path={path()}>
+				<Title>JustKanban</Title>
+				<Toaster expand={true} closeButton />
+				<div class="flex h-full flex-col overflow-hidden">
+					<Nav class="full-width content-grid" />
+					<div class="content-grid h-full overflow-hidden">{props.children}</div>
+				</div>
+				<AutoImportModals />
+				<Clipboard />
+			</AppProvider>
+		</ColorModeProvider>
 	);
 };
 
