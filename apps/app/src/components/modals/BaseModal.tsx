@@ -17,16 +17,9 @@ type Props = {
 	children: (close: () => void) => JSXElement;
 	closeOnOutsideClick?: boolean;
 	onOpenChange?: (value: boolean) => void;
-} & (
-	| {
-			trigger: JSXElement;
-	  }
-	| {
-			trigger?: JSXElement;
-			open: boolean;
-			setOpen: (open: boolean) => void;
-	  }
-);
+	open: boolean;
+	setOpen: (open: boolean) => void;
+};
 
 export function Modal(props: Props) {
 	const internalId = createUniqueId();
@@ -46,57 +39,47 @@ export function Modal(props: Props) {
 
 	const [el, setEl] = createSignal<HTMLDialogElement>();
 
-	const trigger = children(() => props.trigger);
-
 	createEffect(() => {
 		const { open } = mergedProps;
 		untrack(() => {
 			mergedProps.onOpenChange(open);
 			if (open) {
-				el()?.showPopover();
+				el()?.showModal();
 			} else {
-				el()?.hidePopover();
+				el()?.close();
 			}
 		});
 	});
 
 	return (
-		<>
-			<Show when={trigger()}>
-				<button popovertarget={mergedProps.id} class="contents">
-					{trigger()}
-				</button>
-			</Show>
-			<Portal>
-				<dialog
-					id={mergedProps.id}
-					ref={setEl}
-					popover
-					onToggle={(event) => {
-						mergedProps.setOpen(event.newState === 'open');
+		<Portal>
+			<dialog
+				id={mergedProps.id}
+				ref={setEl}
+				onClose={() => {
+					mergedProps.setOpen(false);
+				}}
+				class="m-0 h-full w-full max-w-full bg-transparent"
+			>
+				<div
+					class="grid h-full w-full items-end sm:place-content-center"
+					onClick={(event) => {
+						if (mergedProps.closeOnOutsideClick && event.target === event.currentTarget) {
+							mergedProps.setOpen(false);
+						}
 					}}
-					class="h-full w-full bg-transparent"
 				>
-					<div
-						class="grid h-full w-full items-end sm:place-content-center"
-						onClick={(event) => {
-							if (mergedProps.closeOnOutsideClick && event.target === event.currentTarget) {
-								mergedProps.setOpen(false);
-							}
-						}}
-					>
-						<Card class="w-full rounded-none border-0 border-t sm:min-w-96 sm:rounded-sm sm:border">
-							<CardHeader>
-								<CardTitle>{props.title}</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div>{props.children(() => mergedProps.setOpen(false))}</div>
-							</CardContent>
-						</Card>
-					</div>
-				</dialog>
-			</Portal>
-		</>
+					<Card class="w-full rounded-none border-0 border-t sm:min-w-96 sm:rounded-sm sm:border">
+						<CardHeader>
+							<CardTitle>{props.title}</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<div>{props.children(() => mergedProps.setOpen(false))}</div>
+						</CardContent>
+					</Card>
+				</div>
+			</dialog>
+		</Portal>
 	);
 }
 
