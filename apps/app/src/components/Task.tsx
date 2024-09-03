@@ -38,7 +38,7 @@ export const Task: Component<{
 				<span
 					class={cn(
 						'i-heroicons:arrow-path-rounded-square animate-spin',
-						props.task.userId === 'pending' ? 'inline-block' : 'hidden'
+						props.task.userId === 'pending' ? 'inline-block' : '!hidden'
 					)}
 				/>
 				<span>{props.task.title}</span>

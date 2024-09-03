@@ -97,7 +97,7 @@ export const Board: Component<{
 						<span
 							class={cn(
 								'i-heroicons:arrow-path-rounded-square animate-spin',
-								props.board.userId === 'pending' ? 'inline-block' : 'hidden'
+								props.board.userId === 'pending' ? 'inline-block' : '!hidden'
 							)}
 						/>
 						<span>{props.board.title}</span>
