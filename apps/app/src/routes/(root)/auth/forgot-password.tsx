@@ -32,8 +32,8 @@ const sendResetPasswordEmail = async (email: string) => {
 		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
 		to: [user.email],
 		subject: 'Reset Password',
-		text: `Goto this link to resset your password for rkanban: ${new URL(event.request.url).origin}/auth/reset-password?token=${token}
-If you did not request a password resset, you can safely ignore this email.`,
+		text: `Goto this link to reset your password for rkanban: ${new URL(event.request.url).origin}/auth/reset-password?token=${token}
+If you did not request a password reset, you can safely ignore this email.`,
 		tags: [
 			{
 				name: 'category',
