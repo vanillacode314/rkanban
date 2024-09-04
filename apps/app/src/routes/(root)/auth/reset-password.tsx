@@ -1,11 +1,8 @@
 import { A, action, redirect, useNavigate, useSearchParams, useSubmission } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
-import jwt from 'jsonwebtoken';
 import { Show, createEffect, createSignal, untrack } from 'solid-js';
-import { getRequestEvent } from 'solid-js/web';
 import { toast } from 'solid-sonner';
-import { setCookie } from 'vinxi/http';
 import { Button } from '~/components/ui/button';
 import {
 	Card,
@@ -18,14 +15,12 @@ import {
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
 import { db } from '~/db';
-import { forgotPasswordTokens, refreshTokens, users } from '~/db/schema';
+import { forgotPasswordTokens, users } from '~/db/schema';
 
 import { createStore } from 'solid-js/store';
 import { z } from 'zod';
 import ValidationErrors from '~/components/form/ValidationErrors';
-import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
-import env from '~/utils/env/server';
 
 const resetPasswordSchema = z
 	.object({
@@ -48,7 +43,7 @@ const resetPassword = action(async (formData: FormData) => {
 			}
 		);
 	}
-	const { token, email, password, confirmPassword } = result.data;
+	const { token, email, password } = result.data;
 
 	const [$token] = await db
 		.select()
@@ -68,36 +63,7 @@ const resetPassword = action(async (formData: FormData) => {
 		await tx.delete(forgotPasswordTokens).where(eq(forgotPasswordTokens.userId, user.id));
 	});
 
-	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
-		expiresIn: ACCESS_TOKEN_EXPIRES_IN
-	});
-
-	const refreshToken = jwt.sign({}, env.AUTH_SECRET, {
-		expiresIn: REFRESH_TOKEN_EXPIRES_IN_SECONDS
-	});
-
-	await db.insert(refreshTokens).values({
-		userId: user.id,
-		token: refreshToken,
-		expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN_SECONDS * 1000)
-	});
-
-	const event = getRequestEvent()!;
-	setCookie(event.nativeEvent, 'accessToken', accessToken, {
-		httpOnly: true,
-		secure: true,
-		path: '/',
-		sameSite: 'lax',
-		maxAge: 2 ** 31
-	});
-	setCookie(event.nativeEvent, 'refreshToken', refreshToken, {
-		httpOnly: true,
-		secure: true,
-		path: '/',
-		sameSite: 'lax',
-		maxAge: 2 ** 31
-	});
-	return redirect('/');
+	return redirect('/auth/signin');
 }, 'signin');
 
 export default function ResetPasswordPage() {
