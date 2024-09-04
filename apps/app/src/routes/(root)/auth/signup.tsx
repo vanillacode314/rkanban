@@ -119,7 +119,7 @@ If you did not sign up, please ignore this email.`,
 			}
 		]
 	});
-	return redirect('/');
+	return redirect('/settings');
 }, 'signup');
 
 export default function SignUpPage() {
