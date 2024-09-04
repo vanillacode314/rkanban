@@ -17,7 +17,7 @@ import { getUser } from '~/utils/auth.server';
 import { idb } from '~/utils/idb';
 
 const RootLayout = (props: { children: JSXElement }) => {
-	const user = createAsync(() => getUser());
+	const user = createAsync(() => getUser(null));
 	createEffect(() => {
 		const $user = user();
 		if (!$user) return;
