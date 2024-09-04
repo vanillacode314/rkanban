@@ -1,4 +1,4 @@
-import { RouteDefinition, action, createAsync, redirect, useAction } from '@solidjs/router';
+import { A, RouteDefinition, action, createAsync, redirect, useAction } from '@solidjs/router';
 import { eq, sql } from 'drizzle-orm';
 import { Show } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -78,7 +78,10 @@ export default function SettingsPage() {
 		<Show when={user()}>
 			<div class="flex flex-col items-start gap-4 py-4">
 				<header class="flex w-full flex-col gap-1 border-b pb-4">
-					<h3 class="text-2xl font-bold">Settings</h3>
+					<div class="flex items-center gap-4">
+						<A class="i-heroicons:arrow-left text-xl" href="/"></A>
+						<h3 class="text-2xl font-bold">Settings</h3>
+					</div>
 					<p class="text-muted-foreground">Manage your settings</p>
 				</header>
 				<div class="flex gap-4">
