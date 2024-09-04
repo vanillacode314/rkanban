@@ -196,7 +196,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:folder text-lg" />
-									<span class="flex items-center gap-2">
+									<span class="flex items-center gap-2 overflow-hidden">
 										<span
 											class={cn(
 												'i-heroicons:arrow-path-rounded-square animate-spin',
@@ -218,7 +218,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 									href={path.join(appContext.path, node().name)}
 								>
 									<span class="i-heroicons:document text-lg" />
-									<span class="flex items-center gap-2">
+									<span class="flex items-center gap-2 overflow-hidden">
 										<span
 											class={cn(
 												'i-heroicons:arrow-path-rounded-square animate-spin',
