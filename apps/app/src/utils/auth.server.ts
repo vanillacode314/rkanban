@@ -110,8 +110,7 @@ async function verifyPassword(password: string): Promise<boolean | Error> {
 		.where(eq(users.id, user.id));
 	return await bcrypt.compare(password, $user.passwordHash);
 }
-
-const signOut = action(async () => {
+const $signOut = async () => {
 	'use server';
 
 	deleteCookie('accessToken');
@@ -119,7 +118,8 @@ const signOut = action(async () => {
 	deleteCookie('refreshToken');
 	if (refreshToken) await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken));
 	return redirect('/auth/signin');
-}, 'sign-out');
+};
+const signOut = action($signOut, 'sign-out');
 
 async function resendVerificationEmail() {
 	'use server';
@@ -162,9 +162,10 @@ async function getUserEncryptionKeys(): Promise<{
 	if (isServer) return null;
 	const [$publicKey, $privateKey, salt] = await idb.getMany(['publicKey', 'privateKey', 'salt']);
 	if (!$publicKey || !$privateKey || !salt) {
-		const user = (await getUser())!;
+		const user = await getUser();
+		if (!user) return null;
 		if (user.salt === null) return null;
-		useAction(signOut)();
+		$signOut();
 		return null;
 	}
 	const [publicKey, privateKey] = await Promise.all([
