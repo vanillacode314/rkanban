@@ -1,4 +1,4 @@
-import { Navigate, createAsync, useNavigate, useSearchParams } from '@solidjs/router';
+import { Navigate, createAsync, useSearchParams } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
@@ -44,7 +44,6 @@ If you did not request a password reset, you can safely ignore this email.`,
 };
 
 export default function ForgotPasswordPage() {
-	const navigate = useNavigate();
 	const [searchParams, _setSearchParams] = useSearchParams();
 	const email = () => searchParams.email;
 	if (!(email() && z.string().email().safeParse(email()).success)) {
@@ -53,5 +52,9 @@ export default function ForgotPasswordPage() {
 
 	const result = createAsync(() => sendResetPasswordEmail(email()!));
 	result();
-	return <p class="grid place-content-center text-xl">Check your email to reset your password</p>;
+	return (
+		<p class="grid place-content-center text-xl">
+			If your email is registered with us, you should have received an email now.
+		</p>
+	);
 }

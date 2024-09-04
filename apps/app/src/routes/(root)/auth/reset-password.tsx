@@ -1,8 +1,20 @@
-import { A, action, redirect, useNavigate, useSearchParams, useSubmission } from '@solidjs/router';
+import {
+	A,
+	action,
+	redirect,
+	useAction,
+	useNavigate,
+	useSearchParams,
+	useSubmission
+} from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { Show, createEffect, createSignal, untrack } from 'solid-js';
+import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
+import { z } from 'zod';
+import ValidationErrors from '~/components/form/ValidationErrors';
+import { useSeedPhraseVerifyModal } from '~/components/modals/auto-import/SeedPhraseVerifyModal';
 import { Button } from '~/components/ui/button';
 import {
 	Card,
@@ -14,20 +26,24 @@ import {
 } from '~/components/ui/card';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
+import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
 import { forgotPasswordTokens, users } from '~/db/schema';
-
-import { createStore } from 'solid-js/store';
-import { z } from 'zod';
-import ValidationErrors from '~/components/form/ValidationErrors';
-import { passwordSchema } from '~/consts/zod';
+import {
+	deriveKey,
+	encryptDataWithKey,
+	encryptKey,
+	getPasswordKey,
+	importKey
+} from '~/utils/crypto';
 
 const resetPasswordSchema = z
 	.object({
 		email: z.string({ required_error: 'Email is required' }).email(),
 		password: passwordSchema,
 		confirmPassword: z.string(),
-		token: z.string({ required_error: 'Token is required' })
+		token: z.string({ required_error: 'Token is required' }),
+		encryptedPrivateKey: z.string().optional()
 	})
 	.refine((data) => data.password === data.confirmPassword, 'Passwords do not match');
 const resetPassword = action(async (formData: FormData) => {
@@ -43,7 +59,7 @@ const resetPassword = action(async (formData: FormData) => {
 			}
 		);
 	}
-	const { token, email, password } = result.data;
+	const { token, email, password, encryptedPrivateKey } = result.data;
 
 	const [$token] = await db
 		.select()
@@ -56,15 +72,56 @@ const resetPassword = action(async (formData: FormData) => {
 
 	if (user.email !== email) return new Error('Invalid email', { cause: 'INVALID_EMAIL' });
 
+	console.log(formData);
+	if (user.salt !== null) {
+		if (!encryptedPrivateKey)
+			return new Error('Please enter your seed phrase to reset your password.', {
+				cause: 'ENCRYPTION_ENABLED'
+			});
+	}
+
 	const passwordHash = await bcrypt.hash(password, 10);
 
 	await db.transaction(async (tx) => {
-		await tx.update(users).set({ passwordHash }).where(eq(users.email, email)).returning();
+		await tx
+			.update(users)
+			.set({ passwordHash, encryptedPrivateKey })
+			.where(eq(users.email, email))
+			.returning();
 		await tx.delete(forgotPasswordTokens).where(eq(forgotPasswordTokens.userId, user.id));
 	});
 
 	return redirect('/auth/signin');
-}, 'signin');
+}, 'reset-password');
+
+const getEncryptionChallenge = async (token: string, email: string) => {
+	'use server';
+
+	const [$token] = await db
+		.select()
+		.from(forgotPasswordTokens)
+		.where(eq(forgotPasswordTokens.token, token));
+
+	if (!$token) return new Error('Invalid token', { cause: 'INVALID_TOKEN' });
+
+	const [user] = await db.select().from(users).where(eq(users.id, $token.userId)).limit(1);
+
+	if (user.email !== email) return new Error('Invalid email', { cause: 'INVALID_EMAIL' });
+
+	if (user.publicKey !== null && user.salt !== null) {
+		const decryptedString = 'super-duper-secret';
+		const $publicKey = await importKey(atob(user.publicKey), ['encrypt']);
+		const encryptedString = await encryptDataWithKey(decryptedString, $publicKey);
+		const $salt = new Uint8Array(atob(user.salt).split(',').map(Number));
+		return {
+			decryptedString,
+			encryptedString,
+			salt: $salt
+		};
+	}
+
+	return null;
+};
 
 export default function ResetPasswordPage() {
 	const navigate = useNavigate();
@@ -76,6 +133,9 @@ export default function ResetPasswordPage() {
 	const [emailErrors, setEmailErrors] = createStore<string[]>([]);
 	const [passwordErrors, setPasswordErrors] = createStore<string[]>([]);
 	const [formErrors, setFormErrors] = createStore<string[]>([]);
+	const seedPhraseVerifyModal = useSeedPhraseVerifyModal();
+	const [encryptedPrivateKey, setEncryptedPrivateKey] = createSignal<string>('');
+	const $resetPassword = useAction(resetPassword);
 
 	let toastId: string | number | undefined;
 	createEffect(() => {
@@ -84,7 +144,7 @@ export default function ResetPasswordPage() {
 		untrack(() => {
 			if (pending) {
 				if (toastId) toast.dismiss(toastId);
-				toastId = toast.loading('Logging in...', { duration: Number.POSITIVE_INFINITY });
+				toastId = toast.loading('Reseting Password...', { duration: Number.POSITIVE_INFINITY });
 				return;
 			}
 			if (!result) return;
@@ -136,7 +196,49 @@ export default function ResetPasswordPage() {
 				</div>
 			}
 		>
-			<form class="grid h-full place-content-center" action={resetPassword} method="post">
+			<form
+				class="grid h-full place-content-center"
+				onSubmit={async (event) => {
+					event.preventDefault();
+					const form = event.target as HTMLFormElement;
+					const formData = new FormData(form);
+					const email = String(formData.get('email'));
+					const token = String(formData.get('token'));
+					const password = String(formData.get('password'));
+					const challenge = await getEncryptionChallenge(token, email);
+					if (challenge instanceof Error) {
+						setFormErrors([challenge.message]);
+						return;
+					}
+					if (challenge !== null) {
+						const { encryptedString, salt, decryptedString } = challenge;
+						await new Promise<void>((resolve) => {
+							seedPhraseVerifyModal.open({
+								encryptedString,
+								decryptedString,
+								salt,
+								onDismiss() {
+									setEncryptedPrivateKey('');
+									resolve();
+								},
+								async onVerified(seedPhrase) {
+									const derivationKey = await getPasswordKey(seedPhrase);
+									const privateKey = await deriveKey(derivationKey, salt, ['decrypt']);
+									const derivationKey2 = await getPasswordKey(password);
+									const publicKey2 = await deriveKey(derivationKey2, salt, ['encrypt']);
+									const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
+									setEncryptedPrivateKey(encryptedPrivateKey);
+									resolve();
+								}
+							});
+						});
+					}
+					{
+						const formData = new FormData(form);
+						await $resetPassword(formData);
+					}
+				}}
+			>
 				<Card class="w-full max-w-sm">
 					<CardHeader>
 						<CardTitle class="text-2xl">Reset Password</CardTitle>
@@ -144,6 +246,7 @@ export default function ResetPasswordPage() {
 					</CardHeader>
 					<CardContent class="grid gap-4">
 						<input type="hidden" name="token" value={token()} />
+						<input type="hidden" name="encryptedPrivateKey" value={encryptedPrivateKey()} />
 						<ValidationErrors errors={formErrors} />
 						<TextField>
 							<TextFieldLabel for="email">Email</TextFieldLabel>

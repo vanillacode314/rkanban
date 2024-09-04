@@ -1,7 +1,23 @@
+import { action, useAction } from '@solidjs/router';
+import { eq, sql } from 'drizzle-orm';
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import BaseModal from '~/components/modals/BaseModal';
+import { toast } from 'solid-sonner';
+import { deleteCookie } from 'vinxi/http';
+import { default as BaseModal } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
+import { db } from '~/db';
+import { boards, tasks, users } from '~/db/schema';
+import { getUser, verifyPassword } from '~/utils/auth.server';
+import {
+	deriveKey,
+	encryptDataWithKey,
+	encryptKey,
+	exportKey,
+	getPasswordKey,
+	importKey
+} from '~/utils/crypto';
+import { idb } from '~/utils/idb';
 import { useSeedPhraseVerifyModal } from './SeedPhraseVerifyModal';
 
 type TSeedPhraseState = {
@@ -28,6 +44,7 @@ export function SeedPhrase() {
 	const seedPhraseModal = useSeedPhraseModal();
 	const seedPhraseVerifyModal = useSeedPhraseVerifyModal();
 	const phrases = () => seedPhraseModalState.seedPhrase.split(' ');
+	const $enableEncryption = useAction(enableEncryption);
 
 	return (
 		<>
@@ -42,9 +59,53 @@ export function SeedPhrase() {
 				{() => (
 					<form
 						class="mx-auto flex max-w-sm flex-col gap-4"
-						onSubmit={(e) => {
+						onSubmit={async (e) => {
 							e.preventDefault();
-							seedPhraseVerifyModal.open({ seedPhrase: seedPhraseModalState.seedPhrase });
+							const testString = 'super-duper-secret';
+							const salt = window.crypto.getRandomValues(new Uint8Array(16));
+							const derivationKey = await getPasswordKey(seedPhraseModalState.seedPhrase);
+							const privateKey = await deriveKey(derivationKey, salt, ['decrypt']);
+							const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
+							const encryptedString = await encryptDataWithKey(testString, publicKey);
+							seedPhraseVerifyModal.open({
+								salt,
+								encryptedString,
+								decryptedString: testString,
+								onDismiss: () => seedPhraseModal.close(),
+								onVerified: async () => {
+									seedPhraseModal.close();
+									toast.promise(
+										async () => {
+											let password = prompt('Enter your password');
+											if (!password) {
+												alert('You need to enter your password to enable encryption');
+												throw new Error('No password');
+											}
+											const isPasswordCorrect = await verifyPassword(password);
+											if (!isPasswordCorrect) {
+												alert('Incorrect password');
+												throw new Error('Incorrect password');
+											}
+											const derivationKey2 = await getPasswordKey(password);
+											const publicKey2 = await deriveKey(derivationKey2, salt, ['encrypt']);
+											const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
+											const saltString = btoa(salt.toString());
+											const publicKeyString = btoa(await exportKey(publicKey));
+											await $enableEncryption(encryptedPrivateKey, saltString, publicKeyString);
+											await idb.setMany([
+												['privateKey', await exportKey(privateKey)],
+												['salt', salt],
+												['publicKey', await exportKey(publicKey)]
+											]);
+										},
+										{
+											loading: 'Enabling Encryption...',
+											success: 'Encryption Enabled',
+											error: null
+										}
+									);
+								}
+							});
 						}}
 					>
 						<p>
@@ -114,5 +175,65 @@ export function SeedPhrase() {
 		</>
 	);
 }
+
+const enableEncryption = action(
+	async (encryptedPrivateKey: string, salt: string, publicKey: string) => {
+		'use server';
+
+		let user = await getUser();
+		if (!user) return new Error('Unauthorized');
+
+		await db.transaction(async (tx) => {
+			await tx
+				.update(users)
+				.set({ encryptedPrivateKey, publicKey, salt })
+				.where(eq(users.id, user.id))
+				.returning();
+
+			const $publicKey = await importKey(atob(publicKey), ['encrypt']);
+			const [$boards, $tasks] = await Promise.all([
+				tx.select().from(boards).where(eq(boards.userId, user.id)),
+				tx.select().from(tasks).where(eq(tasks.userId, user.id))
+			]);
+			const encryptedBoards = await Promise.all(
+				$boards.map(async (board) => {
+					board.title = await encryptDataWithKey(board.title, $publicKey);
+					return board;
+				})
+			);
+
+			const encryptedTasks = await Promise.all(
+				$tasks.map(async (task) => {
+					task.title = await encryptDataWithKey(task.title, $publicKey);
+					return task;
+				})
+			);
+			await Promise.all([
+				$tasks.length > 0 ?
+					tx
+						.insert(tasks)
+						.values(encryptedTasks)
+						.onConflictDoUpdate({
+							set: { title: sql`excluded.title` },
+							target: tasks.id
+						})
+				:	Promise.resolve(),
+
+				$boards.length > 0 ?
+					tx
+						.insert(boards)
+						.values(encryptedBoards)
+						.onConflictDoUpdate({
+							set: { title: sql`excluded.title` },
+							target: boards.id
+						})
+				:	Promise.resolve()
+			]);
+		});
+
+		deleteCookie('accessToken');
+	},
+	'enable-encryption'
+);
 
 export default SeedPhrase;
