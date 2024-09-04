@@ -45,7 +45,7 @@ export const headerData = {
     //   href: getPermalink('/pricing'),
     // },
   ],
-  actions: [{ text: 'Sign Up', href: 'https://kanban.raqueeb.com/app', target: '_blank' }],
+  actions: [{ text: 'Sign Up', href: 'https://kanban.raqueeb.com', target: '_blank' }],
 };
 
 export const footerData = {
