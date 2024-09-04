@@ -131,7 +131,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 						<span>Create Project</span>
 					</Button>
 					<Button class="flex items-center gap-2" onClick={() => setCreateFolderModalOpen(true)}>
-						<span class="i-heroicons:plus text-lg"></span>
+						<span class="i-heroicons:folder-plus text-lg"></span>
 						<span>Create Folder</span>
 					</Button>
 				</Show>
@@ -169,7 +169,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 								class="flex items-center gap-2"
 								onClick={() => setCreateFolderModalOpen(true)}
 							>
-								<span class="i-heroicons:plus text-lg"></span>
+								<span class="i-heroicons:folder-plus text-lg"></span>
 								<span>Create Folder</span>
 							</Button>
 						</div>
