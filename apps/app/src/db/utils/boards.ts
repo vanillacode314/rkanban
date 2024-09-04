@@ -7,12 +7,13 @@ import { type TBoard, type TTask, boards, tasks, TNode } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 import { getNodes } from './nodes';
 
-async function _getBoards(path: null): Promise<TBoard[]>;
-async function _getBoards(path: string): Promise<Array<TBoard & { tasks: TTask[] }>>;
-async function _getBoards(path: string | null) {
+async function $getBoards(path: null): Promise<TBoard[]>;
+async function $getBoards(path: string): Promise<Array<TBoard & { tasks: TTask[] }>>;
+async function $getBoards(path: string | null) {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await getUser();
+	if (!user) throw redirect('/auth/signin');
 
 	if (path === null) {
 		const $boards = await db.select().from(boards).where(eq(boards.userId, user.id));
@@ -43,7 +44,7 @@ async function _getBoards(path: string | null) {
 
 	return $boards;
 }
-const getBoards = cache(_getBoards, 'get-boards');
+const getBoards = cache($getBoards, 'get-boards');
 
 const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
 	'use server';
