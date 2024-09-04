@@ -109,7 +109,7 @@ const signUp = action(async (formData: FormData) => {
 	await resend.emails.send({
 		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
 		to: [user.email],
-		subject: 'Confirm your email',
+		subject: 'RKanban - Confirm your email',
 		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/v1/public/confirm-email?token=${verificationToken}
 If you did not sign up, please ignore this email.`,
 		tags: [
