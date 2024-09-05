@@ -52,13 +52,13 @@ const messageSchema = z.discriminatedUnion("type", [
         type: z.literal("create"),
         table: z.string(),
         id: z.string(),
-        data: z.string(),
+        data: z.record(z.string(), z.unknown()),
       }),
       z.object({
         type: z.literal("update"),
         table: z.string(),
         id: z.string(),
-        data: z.string(),
+        data: z.record(z.string(), z.unknown()),
       }),
       z.object({
         type: z.literal("delete"),
