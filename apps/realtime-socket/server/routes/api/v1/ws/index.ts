@@ -15,6 +15,7 @@ export default defineWebSocketHandler({
     const { type } = result.data;
     switch (type) {
       case "publish":
+        console.log("GOT PUBLISH", result.data.item);
         peer.publish(dbUpdatesChannel, result.data.item);
         peer.send({
           success: true,
@@ -22,6 +23,7 @@ export default defineWebSocketHandler({
         });
         break;
       case "subscribe":
+        console.log("GOT SUBSCRIBE");
         peer.subscribe(dbUpdatesChannel);
         peer.send({
           success: true,
