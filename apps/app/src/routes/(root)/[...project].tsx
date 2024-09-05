@@ -1,5 +1,9 @@
+import { trackDeep } from '@solid-primitives/deep';
 import { Key } from '@solid-primitives/keyed';
+import { createWritableMemo } from '@solid-primitives/memo';
+import { createWS } from '@solid-primitives/websocket';
 import { A, RouteDefinition, createAsync, useSubmissions } from '@solidjs/router';
+import { messageSchema } from 'schema';
 import { Show, createComputed, untrack } from 'solid-js';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
@@ -10,6 +14,7 @@ import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
 import { decryptObjectKeys } from '~/utils/auth.server';
+import env from '~/utils/env/client';
 
 export const route: RouteDefinition = {
 	preload: ({ location }) => {
@@ -23,7 +28,96 @@ export const route: RouteDefinition = {
 
 export default function Home() {
 	const [appContext, _setAppContext] = useApp();
-	const serverBoards = createAsync(() => getBoards(appContext.path));
+	const $serverBoards = createAsync(() => getBoards(appContext.path));
+	const [serverBoards, overrideServerBoards] = createWritableMemo(() => $serverBoards());
+	const ws = createWS(env.PUBLIC_SOCKET_ADDRESS);
+	ws.send(JSON.stringify({ type: 'subscribe' }));
+	ws.addEventListener('message', (event) => {
+		const result = messageSchema.options[0].shape.item.safeParse(JSON.parse(event.data));
+		if (!result.success) return;
+		const { table } = result.data;
+
+		switch (table) {
+			case 'tasks': {
+				switch (result.data.type) {
+					case 'create':
+						{
+							const task = result.data.data! as TTask;
+							overrideServerBoards((boards) => {
+								if (!boards) return boards;
+								const board = boards.find((board) => board.id === task.boardId);
+								if (!board) return boards;
+								board.tasks.push(task);
+								return [...boards];
+							});
+						}
+						break;
+					case 'update':
+						{
+							const task = result.data.data! as TTask;
+							overrideServerBoards((boards) => {
+								if (!boards) return boards;
+								const board = boards.find((board) => board.id === task.boardId);
+								if (!board) return boards;
+								const taskIndex = board.tasks.findIndex((t) => t.id === task.id);
+								if (taskIndex === -1) return boards;
+								board.tasks[taskIndex] = task;
+								return [...boards];
+							});
+						}
+						break;
+					case 'delete': {
+						overrideServerBoards((boards) => {
+							if (!boards) return boards;
+							const board = boards.find((board) =>
+								board.tasks.some((t) => t.id === result.data.id)
+							);
+							if (!board) return boards;
+							board.tasks = board.tasks.filter((t) => t.id !== result.data.id);
+							return [...boards];
+						});
+						break;
+					}
+				}
+				break;
+			}
+			case 'boards': {
+				switch (result.data.type) {
+					case 'create':
+						{
+							const board = { ...result.data.data!, tasks: [] as TTask[] } as TBoard & {
+								tasks: TTask[];
+							};
+							overrideServerBoards((boards) => {
+								if (!boards) return boards;
+								return [...boards, board];
+							});
+						}
+						break;
+					case 'update':
+						{
+							const board = result.data.data! as TBoard;
+							overrideServerBoards((boards) => {
+								if (!boards) return boards;
+								const boardIndex = boards.findIndex(({ id }) => id === board.id);
+								if (boardIndex === -1) return boards;
+								boards[boardIndex] = { ...boards[boardIndex], ...board };
+								return [...boards];
+							});
+						}
+						break;
+					case 'delete': {
+						overrideServerBoards((boards) => {
+							if (!boards) return boards;
+							return boards.filter((board) => board.id !== result.data.id);
+						});
+						break;
+					}
+				}
+				break;
+			}
+		}
+	});
 
 	return (
 		<Show
@@ -59,8 +153,9 @@ function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
 
 	const boards = createAsync(
 		async () => {
+			trackDeep(() => props.serverBoards);
 			const boards: Array<TBoard & { tasks: TTask[] }> =
-				props.serverBoards ? [...props.serverBoards!, ...pendingBoards()] : [];
+				props.serverBoards ? [...props.serverBoards, ...pendingBoards()] : [];
 			return await decryptObjectKeys(structuredClone(boards), ['title']);
 		},
 		{ initialValue: [] }

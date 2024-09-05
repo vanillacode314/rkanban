@@ -3,25 +3,12 @@ import { z } from 'zod';
 const messageSchema = z.discriminatedUnion('type', [
 	z.object({
 		type: z.literal('publish'),
-		item: z.discriminatedUnion('type', [
-			z.object({
-				type: z.literal('create'),
-				table: z.string(),
-				id: z.string(),
-				data: z.record(z.string(), z.unknown())
-			}),
-			z.object({
-				type: z.literal('update'),
-				table: z.string(),
-				id: z.string(),
-				data: z.record(z.string(), z.unknown())
-			}),
-			z.object({
-				type: z.literal('delete'),
-				table: z.string(),
-				id: z.string()
-			})
-		])
+		item: z.object({
+			type: z.enum(['create', 'update', 'delete']),
+			table: z.string(),
+			id: z.string(),
+			data: z.record(z.string(), z.unknown()).optional()
+		})
 	}),
 	z.object({ type: z.literal('subscribe') })
 ]);

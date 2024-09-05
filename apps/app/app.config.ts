@@ -14,6 +14,7 @@ export default defineConfig({
 		}
 	},
 	vite: {
+		envPrefix: 'PUBLIC_',
 		plugins: [
 			Unocss({
 				presets: [

@@ -1,10 +1,10 @@
 import { action, cache, redirect } from '@solidjs/router';
 import { and, eq, gt, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
 import { type TBoard, type TTask, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
+import { createNotifier } from '~/utils/websocket';
 
 const getTasks = cache(async function () {
 	'use server';
@@ -18,7 +18,6 @@ const getTasks = cache(async function () {
 
 const moveTask = async (taskId: TTask['id'], toBoardId: TBoard['id'], toIndex?: TTask['index']) => {
 	'use server';
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) throw new Error('Unauthorized');
 
@@ -34,7 +33,6 @@ const moveTask = async (taskId: TTask['id'], toBoardId: TBoard['id'], toIndex?: 
 		if (toIndex === undefined) throw new Error('Need index to move inside same task');
 		await db.transaction(async (tx) => {
 			let ids: string[] = [];
-			let z;
 			if (fromIndex > toIndex!) {
 				ids = await tx
 					.update(tasks)
@@ -89,10 +87,12 @@ const moveTask = async (taskId: TTask['id'], toBoardId: TBoard['id'], toIndex?: 
 		else toIndex = task.maxIndex + 1;
 	}
 
-	await db
+	const [$task] = await db
 		.update(tasks)
 		.set({ boardId: toBoardId, index: toIndex })
-		.where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)));
+		.where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
+		.returning();
+	notify({ type: 'update', id: $task.id, data: $task });
 	return task;
 };
 
@@ -130,12 +130,12 @@ const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
 			.set({ index: task.index + direction })
 			.where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
 	]);
+	notify({ type: 'update', id: $task.id, data: $task });
 };
 
 const createTask = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
@@ -152,35 +152,36 @@ const createTask = action(async (formData: FormData) => {
 		if (null === task.maxIndex) index = 0;
 		else index = task.maxIndex + 1;
 	}
-	const task = await db
+	const [task] = await db
 		.insert(tasks)
 		.values({ id, index, title, boardId, userId: user.id })
 		.returning();
+
+	notify({ type: 'create', id: task.id, data: task });
 	return task;
 }, 'create-task');
 
 const updateTask = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
 
-	const $task = await db
+	const [$task] = await db
 		.update(tasks)
 		.set({ title })
 		.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
 		.returning();
+	notify({ type: 'update', id: $task.id, data: $task });
 	return $task;
 }, 'update-task');
 
 const deleteTask = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
@@ -198,6 +199,10 @@ const deleteTask = action(async (formData: FormData) => {
 				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
 			);
 	});
+	notify({ type: 'delete', id: taskId });
+	return;
 }, 'delete-task');
+
+const notify = createNotifier('tasks');
 
 export { createTask, deleteTask, getTasks, moveTask, shiftTask, updateTask };

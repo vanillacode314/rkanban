@@ -15,6 +15,7 @@
 		"pre-push": "npm run format"
 	},
 	"dependencies": {
+		"schema": "workspace:*",
 		"@kobalte/core": "^0.13.6",
 		"@libsql/client": "^0.10.0",
 		"@solid-primitives/connectivity": "^0.3.20",
@@ -26,6 +27,7 @@
 		"@solid-primitives/refs": "^1.0.8",
 		"@solid-primitives/storage": "^4.2.0",
 		"@solid-primitives/transition-group": "^1.0.5",
+		"@solid-primitives/websocket": "^1.2.2",
 		"@solidjs/meta": "^0.29.4",
 		"@solidjs/router": "^0.14.3",
 		"@solidjs/start": "^1.0.6",

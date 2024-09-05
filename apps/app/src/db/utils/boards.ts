@@ -5,6 +5,7 @@ import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
 import { type TBoard, type TTask, boards, tasks, TNode } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
+import { createNotifier } from '~/utils/websocket';
 import { getNodes } from './nodes';
 
 async function $getBoards(path: null): Promise<TBoard[]>;
@@ -142,29 +143,30 @@ const createBoard = action(async (formData: FormData) => {
 		if (board.maxIndex === null) index = 0;
 		else index = board.maxIndex + 1;
 	}
-	const $board = await db
+	const [$board] = await db
 		.insert(boards)
 		.values({ id, index, title: title, userId: user.id, nodeId: node.id })
 		.returning();
 
+	notify({ type: 'create', id: $board.id, data: $board });
 	return $board;
 }, 'create-board');
 
 const updateBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
-	const $board = await db
+	const [$board] = await db
 		.update(boards)
 		.set({ title: title })
 		.where(and(eq(boards.id, id), eq(boards.userId, user.id)))
 		.returning();
 
+	notify({ type: 'update', id: $board.id, data: $board });
 	return $board;
 }, 'update-board');
 
@@ -194,6 +196,10 @@ const deleteBoard = action(async (formData: FormData) => {
 				)
 			);
 	});
+
+	notify({ type: 'delete', id: boardId });
 }, 'delete-board');
+
+const notify = createNotifier('boards');
 
 export { createBoard, deleteBoard, getBoards, moveBoard, shiftBoard, updateBoard };
