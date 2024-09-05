@@ -30,7 +30,7 @@ export default function Home() {
 	const [appContext, _setAppContext] = useApp();
 	const $serverBoards = createAsync(() => getBoards(appContext.path));
 	const [serverBoards, overrideServerBoards] = createWritableMemo(() => $serverBoards());
-	const ws = createWS(env.PUBLIC_SOCKET_ADDRESS);
+	const ws = createWS(env.PUBLIC_SOCKET_URL);
 	ws.send(JSON.stringify({ type: 'subscribe' }));
 	ws.addEventListener('message', (event) => {
 		const result = messageSchema.options[0].shape.item.safeParse(JSON.parse(event.data));
