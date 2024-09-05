@@ -1,8 +1,8 @@
 import { messageSchema } from 'schema';
 
-import { z } from 'zod';
+const subscribers = new Map<string, (event: MessageEvent) => void>();
+const dbUpdatesChannel = new BroadcastChannel('db-updates');
 
-const dbUpdatesChannel = 'db-updates';
 export default defineWebSocketHandler({
 	open(peer) {
 		console.log('[ws] open', peer);
@@ -18,7 +18,7 @@ export default defineWebSocketHandler({
 		switch (type) {
 			case 'publish':
 				console.log('GOT PUBLISH', result.data.item);
-				peer.publish(dbUpdatesChannel, result.data.item);
+				dbUpdatesChannel.postMessage(result.data.item);
 				peer.send({
 					success: true,
 					message: 'Successfully published'
@@ -26,7 +26,9 @@ export default defineWebSocketHandler({
 				break;
 			case 'subscribe':
 				console.log('GOT SUBSCRIBE');
-				peer.subscribe(dbUpdatesChannel);
+				const callback = (event: MessageEvent) => peer.send(event.data);
+				subscribers.set(peer.id, callback);
+				dbUpdatesChannel.addEventListener('message', callback);
 				peer.send({
 					success: true,
 					message: 'Successfully subscribed'
@@ -36,12 +38,16 @@ export default defineWebSocketHandler({
 	},
 
 	close(peer, event) {
-		peer.unsubscribe('db-updates');
+		const callback = subscribers.get(peer.id);
+		dbUpdatesChannel.removeEventListener('message', callback);
+		subscribers.delete(peer.id);
 		console.log('[ws] close', peer, event);
 	},
 
 	error(peer, error) {
-		// peer.unsubscribe("db-updates");
+		const callback = subscribers.get(peer.id);
+		dbUpdatesChannel.removeEventListener('message', callback);
+		subscribers.delete(peer.id);
 		console.log('[ws] error', peer, error);
 	}
 });
