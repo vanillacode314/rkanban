@@ -28,7 +28,8 @@
         "TURSO_CONNECTION_URL",
         "RESEND_API_KEY",
         "NOTIFICATIONS_EMAIL_ADDRESS",
-        "SERVER_PRESET"
+        "SERVER_PRESET",
+        "PUBLIC_SOCKET_ADDRESS"
       ]
     },
     "format": {}

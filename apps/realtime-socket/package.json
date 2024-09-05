@@ -11,6 +11,7 @@
     "nitropack": "latest"
   },
   "dependencies": {
+    "schema": "workspace:*",
     "zod": "^3.23.8"
   }
 }
