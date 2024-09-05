@@ -15,7 +15,8 @@
         "RESEND_API_KEY",
         "NOTIFICATIONS_EMAIL_ADDRESS",
         "SERVER_PRESET",
-        "PUBLIC_SOCKET_ADDRESS"
+        "PUBLIC_SOCKET_URL",
+        "PUBLIC_PUBLISH_URL"
       ]
     },
     "type-check": {},
@@ -30,7 +31,8 @@
         "RESEND_API_KEY",
         "NOTIFICATIONS_EMAIL_ADDRESS",
         "SERVER_PRESET",
-        "PUBLIC_SOCKET_ADDRESS"
+        "PUBLIC_SOCKET_URL",
+        "PUBLIC_PUBLISH_URL"
       ]
     },
     "format": {}

@@ -4,7 +4,8 @@ import { z } from 'zod';
 const env = createEnv({
 	clientPrefix: 'PUBLIC_',
 	client: {
-		PUBLIC_SOCKET_ADDRESS: z.string().url()
+		PUBLIC_SOCKET_URL: z.string().url(),
+		PUBLIC_PUBLISH_URL: z.string().url()
 	},
 	runtimeEnv: import.meta.env
 });

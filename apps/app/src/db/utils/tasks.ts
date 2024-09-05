@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid';
 import { db } from '~/db';
 import { type TBoard, type TTask, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
-import { createNotifier } from '~/utils/websocket';
+import { createNotifier } from '~/utils/publish';
 
 const getTasks = cache(async function () {
 	'use server';

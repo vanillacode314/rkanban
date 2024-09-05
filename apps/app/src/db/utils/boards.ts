@@ -5,7 +5,7 @@ import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
 import { type TBoard, type TTask, boards, tasks, TNode } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
-import { createNotifier } from '~/utils/websocket';
+import { createNotifier } from '~/utils/publish';
 import { getNodes } from './nodes';
 
 async function $getBoards(path: null): Promise<TBoard[]>;
