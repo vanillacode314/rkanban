@@ -45,14 +45,7 @@ export default function CreateBoardModal() {
 							required
 						/>
 					</TextField>
-					<Button
-						type="submit"
-						class="self-end"
-						onClick={() => {
-							close();
-							toast.loading('Creating Board');
-						}}
-					>
+					<Button type="submit" class="self-end" onClick={close}>
 						Submit
 					</Button>
 				</form>

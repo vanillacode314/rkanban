@@ -8,4 +8,8 @@ declare module '@solidjs/start/server' {
 	}
 }
 
+declare global {
+	type MaybePromise<T> = T | Promise<T>;
+}
+
 export {};

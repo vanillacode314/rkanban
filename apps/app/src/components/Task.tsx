@@ -43,7 +43,7 @@ export const Task: Component<{
 					)}
 				/>
 				<Decrypt value={props.task.title} fallback>
-					{(title) => <span>{title}</span>}
+					{(title) => <span>{title()}</span>}
 				</Decrypt>
 			</span>
 			<span class="grow" />

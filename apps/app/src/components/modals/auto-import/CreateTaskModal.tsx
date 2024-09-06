@@ -45,14 +45,7 @@ export default function CreateTaskModal() {
 							required
 						/>
 					</TextField>
-					<Button
-						type="submit"
-						class="self-end"
-						onClick={() => {
-							close();
-							toast.loading('Creating Task');
-						}}
-					>
+					<Button type="submit" class="self-end" onClick={close}>
 						Submit
 					</Button>
 				</form>

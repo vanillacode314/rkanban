@@ -42,6 +42,7 @@
 		"drizzle-orm": "^0.33.0",
 		"effect": "^3.7.1",
 		"idb-keyval": "^6.2.1",
+		"immer": "^10.1.1",
 		"jsonwebtoken": "^9.0.2",
 		"motion": "^10.18.0",
 		"nanoid": "^5.0.7",

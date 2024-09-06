@@ -187,8 +187,8 @@ async function encryptWithUserKeys(data: string) {
 }
 
 async function decryptWithUserKeys(data: string | undefined) {
+	if (data === undefined) return null;
 	if (isServer) return data;
-	if (data === undefined) return data;
 	const keys = await getUserEncryptionKeys();
 	if (keys === null) return data;
 

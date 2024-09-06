@@ -1,6 +1,7 @@
 import { useAction, useSubmission } from '@solidjs/router';
 import { createEffect, createSignal, untrack } from 'solid-js';
 import { toast } from 'solid-sonner';
+import Decrypt from '~/components/Decrypt';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
@@ -60,15 +61,19 @@ export default function UpdateTaskModal() {
 					<input type="hidden" name="id" value={task()?.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
-						<TextFieldInput
-							autofocus
-							type="text"
-							id="title"
-							name="title"
-							placeholder="Title"
-							value={task()?.title}
-							required
-						/>
+						<Decrypt value={task()?.title}>
+							{(title) => (
+								<TextFieldInput
+									autofocus
+									type="text"
+									id="title"
+									name="title"
+									placeholder="Title"
+									value={title()}
+									required
+								/>
+							)}
+						</Decrypt>
 					</TextField>
 					<Button type="submit" class="self-end" onClick={close}>
 						Submit

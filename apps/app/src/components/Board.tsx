@@ -1,9 +1,11 @@
+import { trackDeep } from '@solid-primitives/deep';
 import { Key } from '@solid-primitives/keyed';
+import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { createAsync, revalidate, useAction, useSubmissions } from '@solidjs/router';
+import { createAsync, revalidate, useAction } from '@solidjs/router';
 import { animate, spring } from 'motion';
-import { Component, createEffect, Show, Suspense } from 'solid-js';
+import { Component, createEffect, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -17,7 +19,8 @@ import { TBoard, TTask } from '~/db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask, moveTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { decryptObjectKeys, decryptWithUserKeys } from '~/utils/auth.server';
+import { onSubmission } from '~/utils/action';
+import { decryptWithUserKeys } from '~/utils/auth.server';
 import Decrypt from './Decrypt';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setCreateTaskModalOpen } from './modals/auto-import/CreateTaskModal';
@@ -26,41 +29,38 @@ import Task from './Task';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
-function uniqBy<T>(arr: T[], key: (item: T) => string | number) {
-	const seen = new Set();
-	return arr.filter((item) => {
-		const k = key(item);
-		if (seen.has(k)) return false;
-		seen.add(k);
-		return true;
-	});
-}
-
 export const Board: Component<{
 	class?: string;
 	board: TBoard & { tasks: TTask[] };
 	index: number;
 }> = (props) => {
-	const submission = useSubmissions(createTask);
-	const pendingTasks = () =>
-		[...submission.values()]
-			.filter(
-				(submission) =>
-					submission.pending && String(submission.input[0].get('boardId')) === props.board.id
-			)
-			.map((submission) => ({
-				title: String(submission.input[0].get('title')),
-				id: String(submission.input[0].get('id')),
-				userId: 'pending',
-				index: props.board.tasks.length + 1,
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				boardId: props.board.id
-			}));
-
 	const [_appContext, setAppContext] = useApp();
 
-	const tasks = () => uniqBy([...props.board.tasks, ...pendingTasks()], (task) => task.id);
+	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
+
+	onSubmission(createTask, {
+		onPending(input) {
+			setTasks((tasks) => [
+				...tasks,
+				{
+					title: String(input[0].get('title')),
+					id: String(input[0].get('id')),
+					userId: 'pending',
+					index: props.board.tasks.length + 1,
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					boardId: props.board.id
+				}
+			]);
+			return toast.loading('Creating Task');
+		},
+		onSuccess(_, toastId) {
+			toast.success('Created Task', { id: toastId });
+		},
+		onError(toastId) {
+			toast.error('Error', { id: toastId });
+		}
+	});
 
 	const title = createAsync(() => decryptWithUserKeys(props.board.title));
 
@@ -96,7 +96,7 @@ export const Board: Component<{
 							)}
 						/>
 						<Decrypt value={props.board.title} fallback>
-							{(title) => <span>{title}</span>}
+							{(title) => <span>{title()}</span>}
 						</Decrypt>
 					</CardTitle>
 					<div class="flex items-center justify-end gap-2">

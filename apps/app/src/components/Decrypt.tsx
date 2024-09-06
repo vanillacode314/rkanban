@@ -46,7 +46,7 @@ export const ClientOnly = (props: ClientOnlyProps): JSXElement => {
 };
 
 export function BaseDecrypt(props: {
-	children: (decryptedValue: string) => JSXElement;
+	children: (decryptedValue: () => string) => JSXElement;
 	value?: string;
 	fallback?: JSXElement | true;
 }) {
@@ -57,13 +57,13 @@ export function BaseDecrypt(props: {
 
 	return (
 		<Suspense fallback={props.fallback}>
-			<Show when={decryptedValue.data !== undefined}>{props.children(decryptedValue.data!)}</Show>
+			<Show when={decryptedValue.data !== null}>{props.children(() => decryptedValue.data!)}</Show>
 		</Suspense>
 	);
 }
 
 export function Decrypt(props: {
-	children: (decryptedValue: string) => JSXElement;
+	children: (decryptedValue: () => string) => JSXElement;
 	value?: string;
 	fallback?: JSXElement | true;
 }) {

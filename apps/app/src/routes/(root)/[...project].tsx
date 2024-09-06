@@ -1,7 +1,9 @@
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { A, RouteDefinition, createAsync } from '@solidjs/router';
-import { Show, createComputed, createMemo, untrack } from 'solid-js';
+import { produce } from 'immer';
+import { Show, createComputed, createEffect, createMemo, untrack } from 'solid-js';
+import { toast } from 'solid-sonner';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
@@ -43,6 +45,13 @@ export default function ProjectPage() {
 					nodeId: 'pending'
 				}
 			]);
+			return toast.loading('Creating Board');
+		},
+		onError(toastId) {
+			toast.error('Error', { id: toastId });
+		},
+		onSuccess(_, toastId) {
+			toast.success('Success', { id: toastId });
 		}
 	});
 
@@ -57,77 +66,89 @@ export default function ProjectPage() {
 		tasks: {
 			create: ({ data }) => {
 				const task = data as TTask;
-				overrideBoards((boards) => {
-					if (!boards) return boards;
-					const board = boards.find((board) => board.id === task.boardId);
-					if (!board) return boards;
-					board.tasks.push(task);
-					return [...boards];
-				});
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const board = boards.find((board) => board.id === task.boardId);
+						if (!board) return boards;
+						board.tasks.push(task);
+						return boards;
+					})
+				);
 				// toast.info(`Another client create task: ${task.title}`);
 			},
 			update: ({ data }) => {
 				const task = data as TTask;
-				overrideBoards((boards) => {
-					if (!boards) return boards;
-					const board = boards.find((board) => board.id === task.boardId);
-					if (!board) return boards;
-					const index = board.tasks.findIndex((t) => t.id === task.id);
-					if (-1 === index) return boards;
-					board.tasks[index] = task;
-					return [...boards];
-				});
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const board = boards.find((board) => board.id === task.boardId);
+						if (!board) return boards;
+						const index = board.tasks.findIndex((t) => t.id === task.id);
+						if (-1 === index) return boards;
+						board.tasks[index] = task;
+						return [...boards];
+					})
+				);
 				// toast.info(`Another client update task: ${task.title}`);
 			},
 			delete: ({ id }) => {
-				overrideBoards((boards) => {
-					if (!boards) return boards;
-					const board = boards.find((board) => board.tasks.some((task) => task.id === id));
-					if (!board) return boards;
-					const taskIndex = board.tasks.findIndex((task) => task.id === id);
-					if (-1 === taskIndex) return boards;
-					board.tasks.splice(taskIndex, 1);
-					return [...boards];
-				});
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const board = boards.find((board) => board.tasks.some((task) => task.id === id));
+						if (!board) return boards;
+						const taskIndex = board.tasks.findIndex((task) => task.id === id);
+						if (-1 === taskIndex) return boards;
+						board.tasks.splice(taskIndex, 1);
+						return [...boards];
+					})
+				);
 				// toast.info('Another client deleted task');
 			}
 		},
 		boards: {
 			create: ({ data }) => {
 				const board = { ...(data as TBoard), tasks: [] };
-				overrideBoards((boards) => {
-					if (!boards) return boards;
-					boards.push(board);
-					return [...boards];
-				});
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						boards.push(board);
+						return [...boards];
+					})
+				);
 				// toast.info(`Another client created board: ${board.title}`);
 			},
 			update: ({ data }) => {
 				const board = data as TBoard;
-				overrideBoards((boards) => {
-					if (!boards) return boards;
-					const index = boards.findIndex((b) => b.id === board.id);
-					if (-1 === index) return boards;
-					boards[index] = { ...boards[index], ...board };
-					return [...boards];
-				});
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const index = boards.findIndex((b) => b.id === board.id);
+						if (-1 === index) return boards;
+						boards[index] = { ...boards[index], ...board };
+						return [...boards];
+					})
+				);
 				// toast.info(`Another client updated board: ${board.title}`);
 			},
 			delete: ({ id }) => {
-				overrideBoards((boards) => {
-					if (!boards) return boards;
-					const index = boards.findIndex((board) => board.id === id);
-					if (-1 === index) return boards;
-					boards.splice(index, 1);
-					return [...boards];
-				});
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const index = boards.findIndex((board) => board.id === id);
+						if (-1 === index) return boards;
+						boards.splice(index, 1);
+						return [...boards];
+					})
+				);
 				// toast.info('Another client deleted board');
 			}
 		}
 	});
 
 	return (
-		<Show when={$boards.latest instanceof Error} fallback={<Project boards={$boards.latest} />}>
+		<Show when={boards() instanceof Error} fallback={<Project boards={boards()} />}>
 			<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
 				<div>Project Not Found</div>
 				<Button as={A} href="/">
