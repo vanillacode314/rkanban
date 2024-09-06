@@ -148,7 +148,7 @@ const createBoard = action(async (formData: FormData) => {
 		.values({ id, index, title: title, userId: user.id, nodeId: node.id })
 		.returning();
 
-	notify({ type: 'create', id: $board.id, data: $board });
+	void notify({ type: 'create', id: $board.id, data: $board });
 	return $board;
 }, 'create-board');
 
@@ -166,7 +166,7 @@ const updateBoard = action(async (formData: FormData) => {
 		.where(and(eq(boards.id, id), eq(boards.userId, user.id)))
 		.returning();
 
-	notify({ type: 'update', id: $board.id, data: $board });
+	void notify({ type: 'update', id: $board.id, data: $board });
 	return $board;
 }, 'update-board');
 
@@ -197,7 +197,7 @@ const deleteBoard = action(async (formData: FormData) => {
 			);
 	});
 
-	notify({ type: 'delete', id: boardId });
+	void notify({ type: 'delete', id: boardId });
 }, 'delete-board');
 
 const notify = createNotifier('boards');

@@ -5,6 +5,7 @@ import { db } from '~/db';
 import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
 import { uniqBy } from '~/utils/array';
 import { getUser } from '~/utils/auth.server';
+import { createNotifier } from '~/utils/publish';
 
 const getNodes = cache(
 	async (path: string, { includeChildren = false }: Partial<{ includeChildren: boolean }> = {}) => {
@@ -38,7 +39,7 @@ const createNode = action(async (formData: FormData) => {
 	const [parentNode] = (await db.all(
 		sql.raw(GET_NODES_BY_PATH_QUERY(parentPath, user.id))
 	)) as TNode[];
-	const $node = await db
+	const [$node] = await db
 		.insert(nodes)
 		.values({
 			id,
@@ -47,6 +48,8 @@ const createNode = action(async (formData: FormData) => {
 			userId: user.id
 		})
 		.returning();
+
+	void notify({ type: 'create', id: $node.id, data: $node });
 
 	return $node;
 }, 'create-node');
@@ -61,7 +64,7 @@ const updateNode = action(async (formData: FormData) => {
 	const name = String(formData.get('name')).trim();
 	const parentId = String(formData.get('parentId')).trim();
 
-	const $node = await db
+	const [$node] = await db
 		.update(nodes)
 		.set({
 			name,
@@ -69,6 +72,8 @@ const updateNode = action(async (formData: FormData) => {
 		})
 		.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 		.returning();
+
+	void notify({ type: 'update', id: $node.id, data: $node });
 
 	return $node;
 }, 'update-node');
@@ -85,9 +90,14 @@ const deleteNode = action(async (formData: FormData) => {
 		.delete(nodes)
 		.where(and(eq(nodes.id, nodeId), eq(nodes.userId, user.id)))
 		.returning();
+
+	void notify({ type: 'delete', id: nodeId });
 }, 'delete-node');
 
-async function $copyNode(formData: FormData) {
+async function $copyNode(
+	formData: FormData,
+	{ shouldNotify = true }: { shouldNotify?: boolean } = {}
+) {
 	'use server';
 
 	const user = await getUser();
@@ -136,17 +146,20 @@ async function $copyNode(formData: FormData) {
 		);
 	const duplicateCount = $nodes.length;
 	const newNodeId = nanoid();
-	await db.transaction(async (tx) => {
-		await tx.insert(nodes).values({
-			name:
-				duplicateCount > 0 ?
-					extension ? `${name} (copy ${duplicateCount}).${extension}`
-					:	`${name} (copy ${duplicateCount})`
-				:	$node.name,
-			id: newNodeId,
-			parentId,
-			userId: user.id
-		});
+	const $newNode = await db.transaction(async (tx) => {
+		const [$newNode] = await tx
+			.insert(nodes)
+			.values({
+				name:
+					duplicateCount > 0 ?
+						extension ? `${name} (copy ${duplicateCount}).${extension}`
+						:	`${name} (copy ${duplicateCount})`
+					:	$node.name,
+				id: newNodeId,
+				parentId,
+				userId: user.id
+			})
+			.returning();
 		if ($node.name.endsWith('.project')) {
 			await Promise.all(
 				$boards.map(async (board) => {
@@ -174,14 +187,17 @@ async function $copyNode(formData: FormData) {
 				})
 			);
 		}
+		return $newNode;
 	});
+
+	void notify({ type: 'create', id: $newNode.id, data: $newNode });
 
 	await Promise.all(
 		children.map((node) => {
 			const formData = new FormData();
 			formData.set('id', node.id);
 			formData.set('parentId', newNodeId);
-			return $copyNode(formData);
+			return $copyNode(formData, { shouldNotify: false });
 		})
 	);
 }
@@ -256,5 +272,7 @@ const GET_NODES_BY_PATH_QUERY = (
 			:	''
 		);
 };
+
+const notify = createNotifier('nodes');
 
 export { copyNode, createNode, deleteNode, getNodes, isFolder, updateNode };

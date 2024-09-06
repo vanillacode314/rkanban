@@ -92,7 +92,7 @@ const moveTask = async (taskId: TTask['id'], toBoardId: TBoard['id'], toIndex?: 
 		.set({ boardId: toBoardId, index: toIndex })
 		.where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
 		.returning();
-	notify({ type: 'update', id: $task.id, data: $task });
+
 	return task;
 };
 
@@ -130,7 +130,6 @@ const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
 			.set({ index: task.index + direction })
 			.where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
 	]);
-	notify({ type: 'update', id: $task.id, data: $task });
 };
 
 const createTask = action(async (formData: FormData) => {
@@ -157,7 +156,7 @@ const createTask = action(async (formData: FormData) => {
 		.values({ id, index, title, boardId, userId: user.id })
 		.returning();
 
-	notify({ type: 'create', id: task.id, data: task });
+	void notify({ type: 'create', id: task.id, data: task });
 	return task;
 }, 'create-task');
 
@@ -175,7 +174,7 @@ const updateTask = action(async (formData: FormData) => {
 		.set({ title })
 		.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
 		.returning();
-	notify({ type: 'update', id: $task.id, data: $task });
+	void notify({ type: 'update', id: $task.id, data: $task });
 	return $task;
 }, 'update-task');
 
@@ -199,7 +198,7 @@ const deleteTask = action(async (formData: FormData) => {
 				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
 			);
 	});
-	notify({ type: 'delete', id: taskId });
+	void notify({ type: 'delete', id: taskId });
 	return;
 }, 'delete-task');
 
