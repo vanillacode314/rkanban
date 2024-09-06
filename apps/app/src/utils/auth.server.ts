@@ -160,6 +160,8 @@ async function getUserEncryptionKeys(): Promise<{
 	salt: Uint8Array;
 } | null> {
 	if (isServer) return null;
+	// NOTE: not sure why but this fixes compat with ssr
+	await Promise.resolve();
 	const [$publicKey, $privateKey, salt] = await idb.getMany(['publicKey', 'privateKey', 'salt']);
 	if (!$publicKey || !$privateKey || !salt) {
 		const user = await getUser();
@@ -176,6 +178,7 @@ async function getUserEncryptionKeys(): Promise<{
 }
 
 async function encryptWithUserKeys(data: string) {
+	if (isServer) return data;
 	const keys = await getUserEncryptionKeys();
 	if (keys === null) return data;
 
@@ -183,7 +186,9 @@ async function encryptWithUserKeys(data: string) {
 	return encryptedData;
 }
 
-async function decryptWithUserKeys(data: string) {
+async function decryptWithUserKeys(data: string | undefined) {
+	if (isServer) return data;
+	if (data === undefined) return data;
 	const keys = await getUserEncryptionKeys();
 	if (keys === null) return data;
 

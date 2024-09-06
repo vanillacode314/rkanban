@@ -1,11 +1,12 @@
-import { revalidate, useAction } from '@solidjs/router';
-import { Component, Show } from 'solid-js';
+import { createAsync, revalidate, useAction } from '@solidjs/router';
+import { Component, Show, Suspense } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
 import { deleteTask, shiftTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
+import Decrypt from './Decrypt';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setUpdateTaskModalOpen } from './modals/auto-import/UpdateTaskModal';
 import { Button } from './ui/button';
@@ -41,7 +42,9 @@ export const Task: Component<{
 						props.task.userId === 'pending' ? 'inline-block' : '!hidden'
 					)}
 				/>
-				<span>{props.task.title}</span>
+				<Decrypt value={props.task.title} fallback>
+					{(title) => <span>{title}</span>}
+				</Decrypt>
 			</span>
 			<span class="grow" />
 			<TaskContextMenu task={props.task} index={props.index} />

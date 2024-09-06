@@ -3,7 +3,7 @@ import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction, useSubmissions } from '@solidjs/router';
 import { animate, spring } from 'motion';
-import { Component, Show } from 'solid-js';
+import { Component, createEffect, Show, Suspense } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -17,7 +17,8 @@ import { TBoard, TTask } from '~/db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask, moveTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { decryptObjectKeys } from '~/utils/auth.server';
+import { decryptObjectKeys, decryptWithUserKeys } from '~/utils/auth.server';
+import Decrypt from './Decrypt';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setCreateTaskModalOpen } from './modals/auto-import/CreateTaskModal';
 import { setUpdateBoardModalOpen } from './modals/auto-import/UpdateBoardModal';
@@ -58,16 +59,10 @@ export const Board: Component<{
 			}));
 
 	const [_appContext, setAppContext] = useApp();
-	const tasks = createAsync(
-		async () => {
-			const tasks = uniqBy(
-				props.board.tasks ? [...props.board.tasks, ...pendingTasks()] : [],
-				(task) => task.id
-			);
-			return await decryptObjectKeys(structuredClone(tasks), ['title']);
-		},
-		{ initialValue: [] }
-	);
+
+	const tasks = () => uniqBy([...props.board.tasks, ...pendingTasks()], (task) => task.id);
+
+	const title = createAsync(() => decryptWithUserKeys(props.board.title));
 
 	return (
 		<Card
@@ -85,7 +80,7 @@ export const Board: Component<{
 					},
 					{
 						loading: 'Moving',
-						success: `Moved task to board: ${props.board.title}`,
+						success: `Moved task to board: ${title()}`,
 						error: 'Error'
 					}
 				);
@@ -100,7 +95,9 @@ export const Board: Component<{
 								props.board.userId === 'pending' ? 'inline-block' : '!hidden'
 							)}
 						/>
-						<span>{props.board.title}</span>
+						<Decrypt value={props.board.title} fallback>
+							{(title) => <span>{title}</span>}
+						</Decrypt>
 					</CardTitle>
 					<div class="flex items-center justify-end gap-2">
 						<Button
@@ -119,7 +116,7 @@ export const Board: Component<{
 				</div>
 			</CardHeader>
 			<CardContent class="overflow-hidden">
-				<AnimatedTaskList boardId={props.board.id} tasks={tasks.latest} />
+				<AnimatedTaskList boardId={props.board.id} tasks={tasks()} />
 			</CardContent>
 		</Card>
 	);

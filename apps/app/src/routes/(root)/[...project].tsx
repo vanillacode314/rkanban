@@ -1,8 +1,7 @@
-import { trackDeep } from '@solid-primitives/deep';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
-import { A, RouteDefinition, createAsync, useSubmissions } from '@solidjs/router';
-import { Show, createComputed, untrack } from 'solid-js';
+import { A, RouteDefinition, createAsync } from '@solidjs/router';
+import { Show, createComputed, createMemo, untrack } from 'solid-js';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
@@ -11,7 +10,7 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
-import { decryptObjectKeys } from '~/utils/auth.server';
+import { onSubmission } from '~/utils/action';
 import { createSubscription } from '~/utils/subscribe';
 
 export const route: RouteDefinition = {
@@ -25,26 +24,51 @@ export const route: RouteDefinition = {
 };
 
 export default function ProjectPage() {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, setAppContext] = useApp();
+	const $boards = createAsync(() => getBoards(appContext.path));
+	const [boards, overrideBoards] = createWritableMemo(() => $boards.latest);
 
-	const $serverBoards = createAsync(() => getBoards(appContext.path));
-	const [serverBoards, overrideServerBoards] = createWritableMemo(() => $serverBoards.latest);
+	onSubmission(createBoard, {
+		onPending(input) {
+			overrideBoards((boards) => [
+				...boards!,
+				{
+					id: String(input[0].get('id')),
+					title: String(input[0].get('title')),
+					tasks: [],
+					createdAt: new Date(),
+					updatedAt: new Date(),
+					userId: 'pending',
+					index: boards!.length,
+					nodeId: 'pending'
+				}
+			]);
+		}
+	});
+
+	createComputed(() => {
+		const $boards = boards();
+		untrack(() => {
+			setAppContext('boards', $boards ?? []);
+		});
+	});
 
 	createSubscription({
 		tasks: {
 			create: ({ data }) => {
 				const task = data as TTask;
-				overrideServerBoards((boards) => {
+				overrideBoards((boards) => {
 					if (!boards) return boards;
 					const board = boards.find((board) => board.id === task.boardId);
 					if (!board) return boards;
 					board.tasks.push(task);
 					return [...boards];
 				});
+				// toast.info(`Another client create task: ${task.title}`);
 			},
 			update: ({ data }) => {
 				const task = data as TTask;
-				overrideServerBoards((boards) => {
+				overrideBoards((boards) => {
 					if (!boards) return boards;
 					const board = boards.find((board) => board.id === task.boardId);
 					if (!board) return boards;
@@ -53,9 +77,10 @@ export default function ProjectPage() {
 					board.tasks[index] = task;
 					return [...boards];
 				});
+				// toast.info(`Another client update task: ${task.title}`);
 			},
 			delete: ({ id }) => {
-				overrideServerBoards((boards) => {
+				overrideBoards((boards) => {
 					if (!boards) return boards;
 					const board = boards.find((board) => board.tasks.some((task) => task.id === id));
 					if (!board) return boards;
@@ -64,44 +89,45 @@ export default function ProjectPage() {
 					board.tasks.splice(taskIndex, 1);
 					return [...boards];
 				});
+				// toast.info('Another client deleted task');
 			}
 		},
 		boards: {
 			create: ({ data }) => {
 				const board = { ...(data as TBoard), tasks: [] };
-				overrideServerBoards((boards) => {
+				overrideBoards((boards) => {
 					if (!boards) return boards;
 					boards.push(board);
 					return [...boards];
 				});
+				// toast.info(`Another client created board: ${board.title}`);
 			},
 			update: ({ data }) => {
 				const board = data as TBoard;
-				overrideServerBoards((boards) => {
+				overrideBoards((boards) => {
 					if (!boards) return boards;
 					const index = boards.findIndex((b) => b.id === board.id);
 					if (-1 === index) return boards;
 					boards[index] = { ...boards[index], ...board };
 					return [...boards];
 				});
+				// toast.info(`Another client updated board: ${board.title}`);
 			},
 			delete: ({ id }) => {
-				overrideServerBoards((boards) => {
+				overrideBoards((boards) => {
 					if (!boards) return boards;
 					const index = boards.findIndex((board) => board.id === id);
 					if (-1 === index) return boards;
 					boards.splice(index, 1);
 					return [...boards];
 				});
+				// toast.info('Another client deleted board');
 			}
 		}
 	});
 
 	return (
-		<Show
-			when={serverBoards() instanceof Error}
-			fallback={<Project serverBoards={serverBoards()} />}
-		>
+		<Show when={$boards.latest instanceof Error} fallback={<Project boards={$boards.latest} />}>
 			<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
 				<div>Project Not Found</div>
 				<Button as={A} href="/">
@@ -112,45 +138,12 @@ export default function ProjectPage() {
 	);
 }
 
-function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
-	// debugOwnerSignals();
-	const [_appContext, setAppContext] = useApp();
-	const submissions = useSubmissions(createBoard);
-
-	const pendingBoards = () =>
-		[...submissions.values()]
-			.filter((submission) => submission.pending)
-			.map((submission) => ({
-				id: String(submission.input[0].get('id')),
-				title: String(submission.input[0].get('title')),
-				tasks: [] as TTask[],
-				createdAt: new Date(),
-				updatedAt: new Date(),
-				userId: 'pending',
-				index: props.serverBoards!.length,
-				nodeId: 'pending'
-			}));
-
-	const boards = createAsync(
-		async () => {
-			trackDeep(() => props.serverBoards);
-			const boards: Array<TBoard & { tasks: TTask[] }> =
-				props.serverBoards ? [...props.serverBoards, ...pendingBoards()] : [];
-			return await decryptObjectKeys(structuredClone(boards), ['title']);
-		},
-		{ initialValue: [], name: 'boards' }
-	);
-
-	createComputed(() => {
-		const $boards = boards.latest;
-		untrack(() => {
-			setAppContext('boards', $boards);
-		});
-	});
+function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
+	const hasBoards = createMemo(() => props.boards && props.boards.length > 0);
 
 	return (
 		<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-			<Show when={boards.latest.length > 0}>
+			<Show when={hasBoards()}>
 				<div class="flex justify-end gap-4">
 					<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
 						<span class="i-heroicons:plus text-lg"></span>
@@ -160,7 +153,7 @@ function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
 			</Show>
 			<PathCrumbs />
 			<Show
-				when={boards.latest.length > 0}
+				when={hasBoards()}
 				fallback={
 					<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
 						<img
@@ -178,7 +171,7 @@ function Project(props: { serverBoards?: Array<TBoard & { tasks: TTask[] }> }) {
 				}
 			>
 				<div class="flex h-full snap-x snap-mandatory gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] md:[--cols:3]">
-					<Key each={boards.latest} by="id">
+					<Key each={props.boards} by="id">
 						{(board, index) => (
 							<Board
 								class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"

@@ -68,6 +68,9 @@ importers:
       '@t3-oss/env-core':
         specifier: ^0.11.1
         version: 0.11.1(typescript@5.5.4)(zod@3.23.8)
+      '@tanstack/solid-query':
+        specifier: ^5.54.2
+        version: 5.54.2(solid-js@1.8.22)
       '@thisbeyond/solid-dnd':
         specifier: ^0.7.5
         version: 0.7.5(solid-js@1.8.22)
@@ -2774,6 +2777,14 @@ packages:
     resolution: {integrity: sha512-AqhlCXl+8grUz8uqExv5OTtgpjuVIwFTSXTrh8y9/pw6q2ek7fJ+Y8ZEVw7EB2DCcuCOtEjf9w3+J3rzts01uA==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders || >=4.0.0-alpha.20'
+
+  '@tanstack/query-core@5.54.1':
+    resolution: {integrity: sha512-hKS+WRpT5zBFip21pB6Jx1C0hranWQrbv5EJ7qPoiV5MYI3C8rTCqWC9DdBseiPT1JgQWh8Y55YthuYZNiw3Xw==}
+
+  '@tanstack/solid-query@5.54.2':
+    resolution: {integrity: sha512-69z83kCrVu5EsTG4xCOQz+FQvLjrN5KFJgsC/4Adho2UAJ9vXNKLBT3QmgAEzXgwYMose62SWVyVsu8lz+mGOg==}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   '@thisbeyond/solid-dnd@0.7.5':
     resolution: {integrity: sha512-DfI5ff+yYGpK9M21LhYwIPlbP2msKxN2ARwuu6GF8tT1GgNVDTI8VCQvH4TJFoVApP9d44izmAcTh/iTCH2UUw==}
@@ -10025,6 +10036,13 @@ snapshots:
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
       tailwindcss: 3.4.10
+
+  '@tanstack/query-core@5.54.1': {}
+
+  '@tanstack/solid-query@5.54.2(solid-js@1.8.22)':
+    dependencies:
+      '@tanstack/query-core': 5.54.1
+      solid-js: 1.8.22
 
   '@thisbeyond/solid-dnd@0.7.5(solid-js@1.8.22)':
     dependencies:
