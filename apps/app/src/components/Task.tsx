@@ -1,5 +1,5 @@
-import { createAsync, revalidate, useAction } from '@solidjs/router';
-import { Component, Show, Suspense } from 'solid-js';
+import { revalidate, useAction } from '@solidjs/router';
+import { Component, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';

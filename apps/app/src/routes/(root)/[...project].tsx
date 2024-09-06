@@ -2,7 +2,7 @@ import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { A, RouteDefinition, createAsync } from '@solidjs/router';
 import { produce } from 'immer';
-import { Show, createComputed, createEffect, createMemo, untrack } from 'solid-js';
+import { Show, createComputed, createMemo, untrack } from 'solid-js';
 import { toast } from 'solid-sonner';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';

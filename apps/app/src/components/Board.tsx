@@ -1,11 +1,10 @@
-import { trackDeep } from '@solid-primitives/deep';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction } from '@solidjs/router';
 import { animate, spring } from 'motion';
-import { Component, createEffect, Show } from 'solid-js';
+import { Component, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
