@@ -1,6 +1,6 @@
 import { useAction } from '@solidjs/router';
 import { nanoid } from 'nanoid';
-import { Show, createSignal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';

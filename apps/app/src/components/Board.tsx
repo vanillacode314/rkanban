@@ -119,7 +119,7 @@ export const Board: Component<{
 				</div>
 			</CardHeader>
 			<CardContent class="overflow-hidden">
-				<AnimatedTaskList boardId={props.board.id} tasks={tasks()} />
+				<AnimatedTaskList boardId={props.board.id} tasks={tasks.latest} />
 			</CardContent>
 		</Card>
 	);

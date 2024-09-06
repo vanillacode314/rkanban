@@ -1,7 +1,5 @@
 import {
 	JSXElement,
-	Show,
-	children,
 	createEffect,
 	createSignal,
 	createUniqueId,

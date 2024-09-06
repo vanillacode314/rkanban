@@ -1,5 +1,5 @@
 // @refresh reload
-import { ColorModeScript, cookieStorageManagerSSR } from '@kobalte/core';
+import { ColorModeScript } from '@kobalte/core';
 import { createHandler, StartServer } from '@solidjs/start/server';
 
 export default createHandler(() => (

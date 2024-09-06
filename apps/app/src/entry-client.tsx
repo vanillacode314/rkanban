@@ -1,5 +1,6 @@
 // @refresh reload
 import { mount, StartClient } from '@solidjs/start/client';
+import 'solid-devtools';
 import { toast } from 'solid-sonner';
 
 function listenForWaitingServiceWorker(registration: ServiceWorkerRegistration): Promise<void> {

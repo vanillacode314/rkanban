@@ -1,11 +1,9 @@
-import { useAction } from '@solidjs/router';
-import { Show, createSignal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateNode } from '~/db/utils/nodes';
-import { encryptWithUserKeys } from '~/utils/auth.server';
 import BaseModal from '../BaseModal';
 
 export const [renameFolderModalOpen, setRenameFolderModalOpen] = createSignal<boolean>(false);

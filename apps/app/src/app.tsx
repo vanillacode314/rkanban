@@ -10,7 +10,7 @@ export default function App() {
 		<Router
 			singleFlight={false}
 			root={(props) => (
-				<Suspense>
+				<Suspense fallback={<div class="bg-red-900">loading...</div>}>
 					<MetaProvider>{props.children}</MetaProvider>
 				</Suspense>
 			)}

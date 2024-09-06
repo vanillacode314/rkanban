@@ -3,7 +3,7 @@ import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
-import { type TBoard, type TTask, boards, tasks, TNode } from '~/db/schema';
+import { type TBoard, type TTask, boards, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
 import { getNodes } from './nodes';

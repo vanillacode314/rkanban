@@ -33,7 +33,7 @@ export const route: RouteDefinition = {
 	}
 };
 
-export default function Home() {
+export default function FolderPage() {
 	const [appContext, _setAppContext] = useApp();
 	const serverNodes = createAsync(() => getNodes(appContext.path, { includeChildren: true }));
 

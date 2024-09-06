@@ -5,7 +5,6 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { createNode } from '~/db/utils/nodes';
-import { encryptWithUserKeys } from '~/utils/auth.server';
 import BaseModal from '../BaseModal';
 
 export const [createFolderModalOpen, setCreateFolderModalOpen] = createSignal<boolean>(false);

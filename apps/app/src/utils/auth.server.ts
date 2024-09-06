@@ -1,4 +1,4 @@
-import { action, cache, redirect, reload, useAction } from '@solidjs/router';
+import { action, cache, redirect, reload } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
