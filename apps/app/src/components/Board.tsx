@@ -3,6 +3,7 @@ import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction } from '@solidjs/router';
+import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import { Component, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -39,18 +40,19 @@ export const Board: Component<{
 
 	onSubmission(createTask, {
 		onPending(input) {
-			setTasks((tasks) => [
-				...tasks,
-				{
-					title: String(input[0].get('title')),
-					id: String(input[0].get('id')),
-					userId: 'pending',
-					index: props.board.tasks.length + 1,
-					createdAt: new Date(),
-					updatedAt: new Date(),
-					boardId: props.board.id
-				}
-			]);
+			setTasks((tasks) =>
+				produce(tasks, (tasks) => {
+					tasks.push({
+						title: String(input[0].get('title')),
+						id: String(input[0].get('id')),
+						userId: 'pending',
+						index: props.board.tasks.length + 1,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						boardId: props.board.id
+					});
+				})
+			);
 			return toast.loading('Creating Task');
 		},
 		onSuccess(_, toastId) {

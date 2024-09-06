@@ -32,19 +32,20 @@ export default function ProjectPage() {
 
 	onSubmission(createBoard, {
 		onPending(input) {
-			overrideBoards((boards) => [
-				...boards!,
-				{
-					id: String(input[0].get('id')),
-					title: String(input[0].get('title')),
-					tasks: [],
-					createdAt: new Date(),
-					updatedAt: new Date(),
-					userId: 'pending',
-					index: boards!.length,
-					nodeId: 'pending'
-				}
-			]);
+			overrideBoards((boards) =>
+				produce(boards, (boards) => {
+					boards?.push({
+						id: String(input[0].get('id')),
+						title: String(input[0].get('title')),
+						tasks: [],
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						userId: 'pending',
+						index: boards!.length,
+						nodeId: 'pending'
+					});
+				})
+			);
 			return toast.loading('Creating Board');
 		},
 		onError(toastId) {
@@ -72,7 +73,6 @@ export default function ProjectPage() {
 						const board = boards.find((board) => board.id === task.boardId);
 						if (!board) return boards;
 						board.tasks.push(task);
-						return boards;
 					})
 				);
 				// toast.info(`Another client create task: ${task.title}`);
@@ -87,7 +87,6 @@ export default function ProjectPage() {
 						const index = board.tasks.findIndex((t) => t.id === task.id);
 						if (-1 === index) return boards;
 						board.tasks[index] = task;
-						return [...boards];
 					})
 				);
 				// toast.info(`Another client update task: ${task.title}`);
@@ -101,7 +100,6 @@ export default function ProjectPage() {
 						const taskIndex = board.tasks.findIndex((task) => task.id === id);
 						if (-1 === taskIndex) return boards;
 						board.tasks.splice(taskIndex, 1);
-						return [...boards];
 					})
 				);
 				// toast.info('Another client deleted task');
@@ -114,7 +112,6 @@ export default function ProjectPage() {
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						boards.push(board);
-						return [...boards];
 					})
 				);
 				// toast.info(`Another client created board: ${board.title}`);
@@ -127,7 +124,6 @@ export default function ProjectPage() {
 						const index = boards.findIndex((b) => b.id === board.id);
 						if (-1 === index) return boards;
 						boards[index] = { ...boards[index], ...board };
-						return [...boards];
 					})
 				);
 				// toast.info(`Another client updated board: ${board.title}`);
@@ -139,7 +135,6 @@ export default function ProjectPage() {
 						const index = boards.findIndex((board) => board.id === id);
 						if (-1 === index) return boards;
 						boards.splice(index, 1);
-						return [...boards];
 					})
 				);
 				// toast.info('Another client deleted board');
