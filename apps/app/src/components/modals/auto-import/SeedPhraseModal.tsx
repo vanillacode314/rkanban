@@ -180,7 +180,7 @@ const enableEncryption = action(
 	async (encryptedPrivateKey: string, salt: string, publicKey: string) => {
 		'use server';
 
-		let user = await getUser();
+		const user = await getUser();
 		if (!user) return new Error('Unauthorized');
 
 		await db.transaction(async (tx) => {
