@@ -5,7 +5,7 @@ import { decryptWithUserKeys } from '~/utils/auth.server';
 
 const DefaultFallback = () => (
 	<span class="flex items-center gap-2">
-		<span class="i-heroicons:arrow-path-rounded-square animate-spin"></span>
+		<span class="i-heroicons:arrow-path-rounded-square shrink-0 animate-spin"></span>
 		<span>Decrypting&hellip;</span>
 	</span>
 );

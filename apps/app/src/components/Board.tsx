@@ -98,7 +98,7 @@ export const Board: Component<{
 					<CardTitle class="flex items-center gap-2">
 						<span
 							class={cn(
-								'i-heroicons:arrow-path-rounded-square animate-spin',
+								'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
 								props.board.userId === 'pending' ? 'inline-block' : '!hidden'
 							)}
 						/>
