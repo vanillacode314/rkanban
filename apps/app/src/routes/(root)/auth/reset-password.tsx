@@ -67,6 +67,8 @@ const resetPassword = action(async (formData: FormData) => {
 		.where(eq(forgotPasswordTokens.token, token));
 
 	if (!$token) return new Error('Invalid token', { cause: 'INVALID_TOKEN' });
+	if ($token.expiresAt.getTime() < Date.now())
+		return new Error('Token expired', { cause: 'EXPIRED_TOKEN' });
 
 	const [user] = await db.select().from(users).where(eq(users.id, $token.userId)).limit(1);
 

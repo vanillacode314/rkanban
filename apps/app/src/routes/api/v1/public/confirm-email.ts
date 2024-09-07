@@ -11,22 +11,24 @@ export const GET = async (event: APIEvent) => {
 	const token = new URL(event.request.url).searchParams.get('token');
 	if (!token) return redirect('/');
 	const [verificationToken] = await db
-		.select({ userId: verificationTokens.userId })
+		.select({ userId: verificationTokens.userId, expiresAt: verificationTokens.expiresAt })
 		.from(verificationTokens)
 		.where(eq(verificationTokens.token, token));
 
 	if (!verificationToken) return redirect('/');
 
-	await db.transaction(async (tx) => {
-		const user = await tx
+	if (verificationToken.expiresAt.getTime() < Date.now()) {
+		return redirect('/');
+	}
+
+	await db.batch([
+		db
 			.update(users)
 			.set({ emailVerified: true })
 			.where(eq(users.id, verificationToken.userId))
-			.returning();
-		await tx
-			.delete(verificationTokens)
-			.where(eq(verificationTokens.userId, verificationToken.userId));
-	});
+			.returning(),
+		db.delete(verificationTokens).where(eq(verificationTokens.userId, verificationToken.userId))
+	]);
 
 	deleteCookie('accessToken');
 	return redirect('/', { revalidate: getUser.key });
