@@ -29,6 +29,7 @@ export default function CreateFileModal() {
 				>
 					<input type="hidden" name="parentPath" value={appContext.path} />
 					<input type="hidden" name="id" value={nanoid()} />
+					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>
 						<TextFieldInput

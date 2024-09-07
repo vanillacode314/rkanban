@@ -13,6 +13,7 @@ import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
 import { onSubmission } from '~/utils/action';
+import { decryptWithUserKeys } from '~/utils/auth.server';
 import { createSubscription } from '~/utils/subscribe';
 
 export const route: RouteDefinition = {
@@ -51,8 +52,10 @@ export default function ProjectPage() {
 		onError(toastId) {
 			toast.error('Error', { id: toastId });
 		},
-		onSuccess(_, toastId) {
-			toast.success('Success', { id: toastId });
+		onSuccess(board, toastId) {
+			decryptWithUserKeys(board.title).then((title) => {
+				toast.success(`Created Board: ${title}`, { id: toastId });
+			});
 		}
 	});
 
@@ -75,7 +78,9 @@ export default function ProjectPage() {
 						board.tasks.push(task);
 					})
 				);
-				// toast.info(`Another client create task: ${task.title}`);
+				decryptWithUserKeys(task.title).then((title) =>
+					toast.info(`Another client created task: ${title}`)
+				);
 			},
 			update: ({ data }) => {
 				const task = data as TTask;
@@ -89,7 +94,7 @@ export default function ProjectPage() {
 						board.tasks[index] = task;
 					})
 				);
-				// toast.info(`Another client update task: ${task.title}`);
+				toast.info(`Another client update task: ${task.title}`);
 			},
 			delete: ({ id }) => {
 				overrideBoards((boards) =>
@@ -102,7 +107,7 @@ export default function ProjectPage() {
 						board.tasks.splice(taskIndex, 1);
 					})
 				);
-				// toast.info('Another client deleted task');
+				toast.info('Another client deleted a task');
 			}
 		},
 		boards: {
@@ -114,7 +119,7 @@ export default function ProjectPage() {
 						boards.push(board);
 					})
 				);
-				// toast.info(`Another client created board: ${board.title}`);
+				toast.info(`Another client created board: ${board.title}`);
 			},
 			update: ({ data }) => {
 				const board = data as TBoard;
@@ -126,7 +131,7 @@ export default function ProjectPage() {
 						boards[index] = { ...boards[index], ...board };
 					})
 				);
-				// toast.info(`Another client updated board: ${board.title}`);
+				toast.info(`Another client updated board: ${board.title}`);
 			},
 			delete: ({ id }) => {
 				overrideBoards((boards) =>
@@ -137,7 +142,7 @@ export default function ProjectPage() {
 						boards.splice(index, 1);
 					})
 				);
-				// toast.info('Another client deleted board');
+				toast.info('Another client deleted board');
 			}
 		}
 	});

@@ -28,6 +28,7 @@ export default function RenameFileModal() {
 				>
 					<input type="hidden" name="parentId" value={appContext.currentNode?.parentId!} />
 					<input type="hidden" name="id" value={appContext.currentNode?.id} />
+					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>
 						<TextFieldInput

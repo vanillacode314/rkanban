@@ -1,6 +1,7 @@
 import { createWS } from '@solid-primitives/websocket';
 import { messageSchema, type TMessage } from 'schema';
 import { isServer } from 'solid-js/web';
+import { useApp } from '~/context/app';
 import env from './env/client';
 
 function createSubscription(
@@ -14,7 +15,8 @@ function createSubscription(
 ) {
 	if (isServer) return;
 	const ws = createWS(env.PUBLIC_SOCKET_URL);
-	ws.send(JSON.stringify({ type: 'subscribe' }));
+	const [appContext, _setAppContext] = useApp();
+	ws.send(JSON.stringify({ type: 'subscribe', id: appContext.id }));
 
 	ws.addEventListener('message', (event) => {
 		const result = messageSchema.options[0].shape.item.safeParse(JSON.parse(event.data));

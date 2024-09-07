@@ -1,7 +1,6 @@
 import { action, cache, redirect } from '@solidjs/router';
 import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { getRequestEvent } from 'solid-js/web';
 import { db } from '~/db';
 import { type TBoard, type TTask, boards, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
@@ -50,7 +49,6 @@ const getBoards = cache($getBoards, 'get-boards');
 const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) throw new Error('Unauthorized');
 
@@ -87,7 +85,6 @@ const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
 const shiftBoard = async (boardId: TBoard['id'], direction: 1 | -1) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) throw new Error('Unauthorized');
 
@@ -124,13 +121,14 @@ const shiftBoard = async (boardId: TBoard['id'], direction: 1 | -1) => {
 const createBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
 	const title = String(formData.get('title')).trim();
 	const id = String(formData.get('id') ?? nanoid()).trim();
 	const path = String(formData.get('path')).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
 
 	const { node } = await getNodes(path);
 
@@ -148,7 +146,7 @@ const createBoard = action(async (formData: FormData) => {
 		.values({ id, index, title: title, userId: user.id, nodeId: node.id })
 		.returning();
 
-	void notify({ type: 'create', id: $board.id, data: $board });
+	void notify({ type: 'create', id: $board.id, data: $board }, publisherId);
 	return $board;
 }, 'create-board');
 
@@ -160,24 +158,28 @@ const updateBoard = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+
 	const [$board] = await db
 		.update(boards)
 		.set({ title: title })
 		.where(and(eq(boards.id, id), eq(boards.userId, user.id)))
 		.returning();
 
-	void notify({ type: 'update', id: $board.id, data: $board });
+	void notify({ type: 'update', id: $board.id, data: $board }, publisherId);
 	return $board;
 }, 'update-board');
 
 const deleteBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const event = getRequestEvent()!;
 	const user = await getUser();
 	if (!user) return new Error('Unauthorized');
 
 	const boardId = String(formData.get('id')).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
 
 	await db.transaction(async (tx) => {
 		const [board] = await tx
@@ -197,7 +199,7 @@ const deleteBoard = action(async (formData: FormData) => {
 			);
 	});
 
-	void notify({ type: 'delete', id: boardId });
+	void notify({ type: 'delete', id: boardId }, publisherId);
 }, 'delete-board');
 
 const notify = createNotifier('boards');

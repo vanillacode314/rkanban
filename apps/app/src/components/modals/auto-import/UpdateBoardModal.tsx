@@ -60,6 +60,7 @@ export default function UpdateBoardModal() {
 					}}
 				>
 					<input type="hidden" name="id" value={board()?.id} />
+					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<Decrypt value={board()?.title}>

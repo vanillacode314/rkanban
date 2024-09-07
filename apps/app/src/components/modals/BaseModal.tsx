@@ -1,5 +1,6 @@
 import {
 	JSXElement,
+	children,
 	createEffect,
 	createSignal,
 	createUniqueId,
@@ -8,6 +9,7 @@ import {
 } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import Untrack from '../Untrack';
 
 type Props = {
 	id?: string;
@@ -74,7 +76,9 @@ export function Modal(props: Props) {
 							<CardTitle>{props.title}</CardTitle>
 						</CardHeader>
 						<CardContent>
-							<div>{props.children(() => mergedProps.setOpen(false))}</div>
+							<div>
+								<Untrack>{props.children(() => mergedProps.setOpen(false))}</Untrack>
+							</div>
 						</CardContent>
 					</Card>
 				</div>

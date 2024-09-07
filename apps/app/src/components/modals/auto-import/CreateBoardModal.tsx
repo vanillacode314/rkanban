@@ -1,4 +1,4 @@
-import { useAction, useSubmissions } from '@solidjs/router';
+import { useAction } from '@solidjs/router';
 import { nanoid } from 'nanoid';
 import { createSignal } from 'solid-js';
 import { Button } from '~/components/ui/button';
@@ -11,8 +11,7 @@ import BaseModal from '../BaseModal';
 export const [createBoardModalOpen, setCreateBoardModalOpen] = createSignal<boolean>(false);
 
 export default function CreateBoardModal() {
-	const [appContext, setAppContext] = useApp();
-	const submissions = useSubmissions(createBoard);
+	const [appContext, _setAppContext] = useApp();
 	const $createBoard = useAction(createBoard);
 
 	return (
@@ -32,6 +31,7 @@ export default function CreateBoardModal() {
 				>
 					<input type="hidden" name="id" value={nanoid()} />
 					<input type="hidden" name="path" value={appContext.path} />
+					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<TextFieldInput

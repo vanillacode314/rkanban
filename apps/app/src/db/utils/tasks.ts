@@ -141,6 +141,8 @@ const createTask = action(async (formData: FormData) => {
 	const title = String(formData.get('title')).trim();
 	const boardId = String(formData.get('boardId')).trim();
 	const id = String(formData.get('id') ?? nanoid()).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
 
 	let index;
 	{
@@ -156,7 +158,7 @@ const createTask = action(async (formData: FormData) => {
 		.values({ id, index, title, boardId, userId: user.id })
 		.returning();
 
-	void notify({ type: 'create', id: task.id, data: task });
+	void notify({ type: 'create', id: task.id, data: task }, publisherId);
 	return task;
 }, 'create-task');
 
@@ -168,13 +170,15 @@ const updateTask = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
 
 	const [$task] = await db
 		.update(tasks)
 		.set({ title })
 		.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
 		.returning();
-	void notify({ type: 'update', id: $task.id, data: $task });
+	void notify({ type: 'update', id: $task.id, data: $task }, publisherId);
 	return $task;
 }, 'update-task');
 
@@ -185,6 +189,9 @@ const deleteTask = action(async (formData: FormData) => {
 	if (!user) return new Error('Unauthorized');
 
 	const taskId = String(formData.get('id')).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+
 	await db.transaction(async (tx) => {
 		const [task] = await tx
 			.delete(tasks)
@@ -198,7 +205,7 @@ const deleteTask = action(async (formData: FormData) => {
 				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
 			);
 	});
-	void notify({ type: 'delete', id: taskId });
+	void notify({ type: 'delete', id: taskId }, publisherId);
 	return;
 }, 'delete-task');
 

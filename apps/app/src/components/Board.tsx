@@ -38,30 +38,36 @@ export const Board: Component<{
 
 	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
 
-	onSubmission(createTask, {
-		onPending(input) {
-			setTasks((tasks) =>
-				produce(tasks, (tasks) => {
-					tasks.push({
-						title: String(input[0].get('title')),
-						id: String(input[0].get('id')),
-						userId: 'pending',
-						index: props.board.tasks.length + 1,
-						createdAt: new Date(),
-						updatedAt: new Date(),
-						boardId: props.board.id
-					});
-				})
-			);
-			return toast.loading('Creating Task');
+	onSubmission(
+		createTask,
+		{
+			onPending(input) {
+				setTasks((tasks) =>
+					produce(tasks, (tasks) => {
+						tasks.push({
+							title: String(input[0].get('title')),
+							id: String(input[0].get('id')),
+							userId: 'pending',
+							index: props.board.tasks.length + 1,
+							createdAt: new Date(),
+							updatedAt: new Date(),
+							boardId: props.board.id
+						});
+					})
+				);
+				return toast.loading('Creating Task');
+			},
+			onSuccess(task, toastId) {
+				decryptWithUserKeys(task.title).then((title) => {
+					toast.success(`Created Task: ${title}`, { id: toastId });
+				});
+			},
+			onError(toastId) {
+				toast.error('Error', { id: toastId });
+			}
 		},
-		onSuccess(_, toastId) {
-			toast.success('Created Task', { id: toastId });
-		},
-		onError(toastId) {
-			toast.error('Error', { id: toastId });
-		}
-	});
+		(input) => input[0].get('boardId') === props.board.id
+	);
 
 	const title = createAsync(() => decryptWithUserKeys(props.board.title));
 
@@ -210,6 +216,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 								onYes: async () => {
 									const formData = new FormData();
 									formData.set('id', props.board.id.toString());
+									formData.set('publisherId', appContext.id);
 									toast.promise(() => $deleteBoard(formData), {
 										loading: 'Deleting Board',
 										success: 'Deleted Board',

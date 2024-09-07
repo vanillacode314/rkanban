@@ -11,7 +11,7 @@ import BaseModal from '../BaseModal';
 export const [createTaskModalOpen, setCreateTaskModalOpen] = createSignal<boolean>(false);
 
 export default function CreateTaskModal() {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, _setAppContext] = useApp();
 	const board = () => appContext.currentBoard;
 	const $createTask = useAction(createTask);
 
@@ -25,13 +25,14 @@ export default function CreateTaskModal() {
 						const form = event.target as HTMLFormElement;
 						const formData = new FormData(form);
 						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
-						formData.set('title', await encryptWithUserKeys(formData.get('title') as string));
+						formData.set('title', await encryptWithUserKeys(String(formData.get('title'))));
 						await $createTask(formData);
 						idInput.value = nanoid();
 					}}
 				>
 					<input type="hidden" name="boardId" value={board()?.id} />
 					<input type="hidden" name="id" value={nanoid()} />
+					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<TextFieldInput

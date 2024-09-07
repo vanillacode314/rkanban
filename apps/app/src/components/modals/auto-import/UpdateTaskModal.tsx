@@ -59,6 +59,7 @@ export default function UpdateTaskModal() {
 					}}
 				>
 					<input type="hidden" name="id" value={task()?.id} />
+					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<Decrypt value={task()?.title}>
