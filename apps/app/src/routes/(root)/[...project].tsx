@@ -94,7 +94,9 @@ export default function ProjectPage() {
 						board.tasks[index] = task;
 					})
 				);
-				toast.info(`Another client update task: ${task.title}`);
+				decryptWithUserKeys(task.title).then((title) =>
+					toast.info(`Another client update task: ${task.title}`)
+				);
 			},
 			delete: ({ id }) => {
 				overrideBoards((boards) =>
@@ -119,7 +121,9 @@ export default function ProjectPage() {
 						boards.push(board);
 					})
 				);
-				toast.info(`Another client created board: ${board.title}`);
+				decryptWithUserKeys(board.title).then((title) =>
+					toast.info(`Another client created board: ${title}`)
+				);
 			},
 			update: ({ data }) => {
 				const board = data as TBoard;
@@ -131,7 +135,9 @@ export default function ProjectPage() {
 						boards[index] = { ...boards[index], ...board };
 					})
 				);
-				toast.info(`Another client updated board: ${board.title}`);
+				decryptWithUserKeys(board.title).then((title) =>
+					toast.info(`Another client updated board: ${title}`)
+				);
 			},
 			delete: ({ id }) => {
 				overrideBoards((boards) =>
