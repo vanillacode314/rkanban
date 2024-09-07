@@ -87,7 +87,8 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 								message: 'Are you sure you want to delete this task?',
 								onYes: async () => {
 									const formData = new FormData();
-									formData.set('id', props.task.id.toString());
+									formData.set('id', props.task.id);
+									formData.set('publisherId', appContext.id);
 									toast.promise(() => $deleteTask(formData), {
 										loading: 'Deleting Task',
 										success: 'Deleted Task',
