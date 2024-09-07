@@ -99,6 +99,15 @@ async function refreshAccessToken() {
 	return reload({ revalidate: getUser.key });
 }
 
+async function isEncryptionEnabled() {
+	'use server';
+
+	const user = await getUser();
+	if (user === null) throw redirect('/auth/signin');
+
+	return user.salt !== null;
+}
+
 async function verifyPassword(password: string): Promise<boolean | Error> {
 	'use server';
 
@@ -233,6 +242,7 @@ export {
 	encryptWithUserKeys,
 	getUser,
 	getUserEncryptionKeys,
+	isEncryptionEnabled,
 	refreshAccessToken,
 	resendVerificationEmail,
 	signOut,
