@@ -1,17 +1,18 @@
 {
-  "name": "realtime-socket",
-  "private": true,
-  "scripts": {
-    "build": "nitro build",
-    "dev": "nitro dev",
-    "prepare": "nitro prepare",
-    "start": "node .output/server/index.mjs"
-  },
-  "devDependencies": {
-    "nitropack": "latest"
-  },
-  "dependencies": {
-    "schema": "workspace:*",
-    "zod": "^3.23.8"
-  }
+	"name": "realtime-socket",
+	"private": true,
+	"scripts": {
+		"build": "nitro build",
+		"dev": "nitro dev",
+		"prepare": "nitro prepare",
+		"start": "node .output/server/index.mjs",
+		"format": "prettier --write ."
+	},
+	"devDependencies": {
+		"nitropack": "latest"
+	},
+	"dependencies": {
+		"schema": "workspace:*",
+		"zod": "^3.23.8"
+	}
 }
