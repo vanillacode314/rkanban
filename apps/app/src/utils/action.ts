@@ -2,6 +2,7 @@ import { useSubmissions, type Action } from '@solidjs/router';
 import { createEffect, untrack } from 'solid-js';
 
 const memoMap = new Map<unknown, Map<unknown, unknown>>();
+const resolved = new Set<unknown>();
 function onSubmission<TInput extends any[], TOutput, TMemo>(
 	action: Action<TInput, TOutput>,
 	handlers: {
@@ -11,11 +12,15 @@ function onSubmission<TInput extends any[], TOutput, TMemo>(
 			result: Exclude<TOutput, Error>,
 			memo: TMemo | undefined
 		) => MaybePromise<TMemo | void>;
-	} = {}
+	} = {},
+	predicate: (input: TInput) => boolean = () => true
 ) {
 	const submissions = useSubmissions(action);
+
 	createEffect(async () => {
 		for (const submission of submissions) {
+			if (resolved.has(submission)) continue;
+			if (!predicate(submission.input!)) return;
 			if (!memoMap.has(submission)) {
 				memoMap.set(submission, new Map());
 			}
@@ -30,6 +35,7 @@ function onSubmission<TInput extends any[], TOutput, TMemo>(
 					memoMap.get(submission)!.set(handlers, memo);
 				});
 			} else if (submission.error || submission.result instanceof Error) {
+				resolved.add(submission);
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
 					const result = await handlers.onError?.(memo);
@@ -37,6 +43,7 @@ function onSubmission<TInput extends any[], TOutput, TMemo>(
 					memoMap.get(submission)!.set(handlers, memo);
 				});
 			} else if (submission.result) {
+				resolved.add(submission);
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
 					const result = await handlers.onSuccess?.(
