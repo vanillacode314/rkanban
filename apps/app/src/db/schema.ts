@@ -1,6 +1,7 @@
 import { InferSelectModel, sql } from 'drizzle-orm';
 import { AnySQLiteColumn, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 import { nanoid } from 'nanoid';
+import { ms } from '~/utils/ms';
 
 const refreshTokens = sqliteTable('refreshTokens', {
 	id: text('id')
@@ -23,7 +24,7 @@ const verificationTokens = sqliteTable('verificationTokens', {
 	token: text('token').notNull(),
 	expiresAt: integer('expiresAt', { mode: 'timestamp' })
 		.notNull()
-		.$defaultFn(() => new Date(Date.now() + 600000))
+		.$defaultFn(() => new Date(Date.now() + ms('10 min')))
 });
 
 const forgotPasswordTokens = sqliteTable('forgotPasswordTokens', {
@@ -36,7 +37,7 @@ const forgotPasswordTokens = sqliteTable('forgotPasswordTokens', {
 	token: text('token').notNull(),
 	expiresAt: integer('expiresAt', { mode: 'timestamp' })
 		.notNull()
-		.$defaultFn(() => new Date(Date.now() + 600000))
+		.$defaultFn(() => new Date(Date.now() + ms('10 min')))
 });
 
 const users = sqliteTable('users', {
