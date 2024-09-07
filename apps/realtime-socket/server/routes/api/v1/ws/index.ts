@@ -14,19 +14,23 @@ export default defineWebSocketHandler({
 			peer.send({ success: false, error: result.error.errors });
 			return;
 		}
-		const { type } = result.data;
+		const { id, type } = result.data;
 		switch (type) {
 			case 'publish':
-				console.log('GOT PUBLISH', result.data.item);
-				dbUpdatesChannel.postMessage(result.data.item);
+				console.log('GOT PUBLISH', result.data.id);
+				dbUpdatesChannel.postMessage(result.data);
 				peer.send({
 					success: true,
 					message: 'Successfully published'
 				});
 				break;
 			case 'subscribe':
-				console.log('GOT SUBSCRIBE');
-				const callback = (event: MessageEvent) => peer.send(event.data);
+				console.log('GOT SUBSCRIBE', result.data.id);
+				const callback = (event: MessageEvent) => {
+					if (event.data.id === undefined || event.data.id !== id) {
+						peer.send(event.data.item);
+					}
+				};
 				subscribers.set(peer.id, callback);
 				dbUpdatesChannel.addEventListener('message', callback);
 				peer.send({

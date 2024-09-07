@@ -8,6 +8,6 @@ export default defineEventHandler(async (event) => {
 		return { success: false, error: result.error.errors };
 	}
 
-	dbUpdatesChannel.postMessage(result.data.item);
+	dbUpdatesChannel.postMessage(result.data);
 	return { success: true, message: 'Successfully published' };
 });
