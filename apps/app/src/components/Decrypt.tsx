@@ -71,11 +71,11 @@ export function Decrypt(props: {
 }) {
 	const fallback = () => (props.fallback === true ? <DefaultFallback /> : props.fallback);
 	const onServerAndEncryptionDisabled = createAsync(async () => {
+		if (!isServer) return undefined;
 		const encryptionEnabled = await isEncryptionEnabled();
-		if (isServer && !encryptionEnabled) {
+		if (!encryptionEnabled) {
 			return true;
 		}
-		return undefined;
 	});
 
 	return (
