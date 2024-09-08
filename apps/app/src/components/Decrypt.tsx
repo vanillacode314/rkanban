@@ -2,7 +2,12 @@ import { createAsync } from '@solidjs/router';
 import { createQuery } from '@tanstack/solid-query';
 import { createSignal, JSXElement, onMount, Show, Suspense } from 'solid-js';
 import { isServer } from 'solid-js/web';
-import { decryptWithUserKeys, isEncryptionEnabled } from '~/utils/auth.server';
+import {
+	decryptWithUserKeys,
+	getUserEncryptionKeys,
+	isEncryptionEnabled
+} from '~/utils/auth.server';
+import { idb } from '~/utils/idb';
 
 const DefaultFallback = () => (
 	<span class="flex items-center gap-2">
@@ -27,7 +32,6 @@ export const createClientSignal =
 export interface ClientOnlyProps {
 	fallback?: JSXElement;
 	children?: JSXElement;
-	override?: boolean;
 }
 
 export const ClientOnly = (props: ClientOnlyProps): JSXElement => {
@@ -36,7 +40,7 @@ export const ClientOnly = (props: ClientOnlyProps): JSXElement => {
 	return Show({
 		keyed: false,
 		get when() {
-			return props.override !== undefined ? props.override : isClient();
+			return isClient();
 		},
 		get fallback() {
 			return props.fallback;
@@ -69,20 +73,16 @@ export function Decrypt(props: {
 	value?: string;
 	fallback?: JSXElement | true;
 }) {
+	const encryptionEnabled = createAsync(isEncryptionEnabled);
 	const fallback = () => (props.fallback === true ? <DefaultFallback /> : props.fallback);
-	const onServerAndEncryptionDisabled = createAsync(async () => {
-		if (!isServer) return undefined;
-		const encryptionEnabled = await isEncryptionEnabled();
-		if (!encryptionEnabled) {
-			return true;
-		}
-	});
 
 	return (
 		<Suspense>
-			<ClientOnly fallback={fallback()} override={onServerAndEncryptionDisabled()}>
-				<BaseDecrypt {...props} fallback={fallback()} />
-			</ClientOnly>
+			<Show fallback={<>{props.children(() => props.value!)}</>} when={encryptionEnabled()}>
+				<ClientOnly fallback={fallback()}>
+					<BaseDecrypt {...props} fallback={fallback()} />
+				</ClientOnly>
+			</Show>
 		</Suspense>
 	);
 }

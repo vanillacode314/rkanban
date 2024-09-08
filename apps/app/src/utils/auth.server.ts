@@ -100,6 +100,11 @@ async function refreshAccessToken() {
 }
 
 async function isEncryptionEnabled() {
+	if (isServer) return await isEncryptionEnabledServer();
+	return (await idb.get('salt')) !== undefined;
+}
+
+async function isEncryptionEnabledServer() {
 	'use server';
 
 	const user = await getUser();
