@@ -101,7 +101,7 @@ async function refreshAccessToken() {
 
 async function isEncryptionEnabled() {
 	if (isServer) return await isEncryptionEnabledServer();
-	return (await localforage.getItem('salt')) !== undefined;
+	return (await localforage.getItem('salt')) !== null;
 }
 
 async function isEncryptionEnabledServer() {
