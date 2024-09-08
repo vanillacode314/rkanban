@@ -13,7 +13,7 @@ import { getTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { decryptObjectKeys, getUser, verifyPassword } from '~/utils/auth.server';
 import { generateSeedPhrase } from '~/utils/crypto';
-import { idb } from '~/utils/idb';
+import { localforage } from '~/utils/localforage';
 
 const deleteUser = action(async () => {
 	'use server';
@@ -107,7 +107,7 @@ export default function SettingsPage() {
 												throw new Error('Incorrect password');
 											}
 											await $deleteUser();
-											await idb.delMany(['privateKey', 'publicKey', 'salt']);
+											await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 										},
 										{
 											loading: 'Deleting User',
@@ -148,7 +148,7 @@ export default function SettingsPage() {
 													decryptObjectKeys($tasks, ['title'])
 												]);
 												await $disableEncryption(decryptedBoards, decryptedTasks);
-												await idb.delMany(['privateKey', 'publicKey', 'salt']);
+												await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 											},
 											{
 												loading: 'Disabling Encryption',

@@ -14,7 +14,7 @@ import { AppProvider, useApp } from '~/context/app';
 import { TNode } from '~/db/schema';
 import { cn } from '~/lib/utils';
 import { getUser } from '~/utils/auth.server';
-import { idb } from '~/utils/idb';
+import { localforage } from '~/utils/localforage';
 
 const RootLayout = (props: { children: JSXElement }) => {
 	const user = createAsync(() => getUser(null));
@@ -23,7 +23,7 @@ const RootLayout = (props: { children: JSXElement }) => {
 		if (!$user) return;
 		untrack(() => {
 			if ($user.encryptedPrivateKey === null) {
-				void idb.delMany(['privateKey', 'publicKey', 'salt']);
+				void localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 			}
 		});
 	});

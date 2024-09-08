@@ -2,12 +2,7 @@ import { createAsync } from '@solidjs/router';
 import { createQuery } from '@tanstack/solid-query';
 import { createSignal, JSXElement, onMount, Show, Suspense } from 'solid-js';
 import { isServer } from 'solid-js/web';
-import {
-	decryptWithUserKeys,
-	getUserEncryptionKeys,
-	isEncryptionEnabled
-} from '~/utils/auth.server';
-import { idb } from '~/utils/idb';
+import { decryptWithUserKeys, isEncryptionEnabled } from '~/utils/auth.server';
 
 const DefaultFallback = () => (
 	<span class="flex items-center gap-2">
@@ -37,18 +32,11 @@ export interface ClientOnlyProps {
 export const ClientOnly = (props: ClientOnlyProps): JSXElement => {
 	const isClient = createClientSignal();
 
-	return Show({
-		keyed: false,
-		get when() {
-			return isClient();
-		},
-		get fallback() {
-			return props.fallback;
-		},
-		get children() {
-			return props.children;
-		}
-	});
+	return (
+		<Show keyed={false} when={isClient()} fallback={props.fallback}>
+			{props.children}
+		</Show>
+	);
 };
 
 export function BaseDecrypt(props: {
@@ -73,7 +61,7 @@ export function Decrypt(props: {
 	value?: string;
 	fallback?: JSXElement | true;
 }) {
-	const encryptionEnabled = createAsync(isEncryptionEnabled);
+	const encryptionEnabled = createAsync(isEncryptionEnabled, { deferStream: true });
 	const fallback = () => (props.fallback === true ? <DefaultFallback /> : props.fallback);
 
 	return (

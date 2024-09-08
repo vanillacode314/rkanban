@@ -10,7 +10,7 @@ import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
 import { ACCESS_TOKEN_EXPIRES_IN } from '../consts';
 import { decryptDataWithKey, encryptDataWithKey, importKey } from './crypto';
 import env from './env/server';
-import { idb } from './idb';
+import { localforage } from './localforage';
 import { resend } from './resend.server';
 
 const getUser = cache(async (shouldBeAuthenticated: boolean | null = true) => {
@@ -101,7 +101,7 @@ async function refreshAccessToken() {
 
 async function isEncryptionEnabled() {
 	if (isServer) return await isEncryptionEnabledServer();
-	return (await idb.get('salt')) !== undefined;
+	return (await localforage.getItem('salt')) !== undefined;
 }
 
 async function isEncryptionEnabledServer() {
@@ -174,9 +174,12 @@ async function getUserEncryptionKeys(): Promise<{
 	salt: Uint8Array;
 } | null> {
 	if (isServer) return null;
-	// NOTE: not sure why but this fixes compat with ssr
-	await Promise.resolve();
-	const [$publicKey, $privateKey, salt] = await idb.getMany(['publicKey', 'privateKey', 'salt']);
+	// TODO: resolve any
+	const [$publicKey, $privateKey, salt] = await localforage.getMany<any>([
+		'publicKey',
+		'privateKey',
+		'salt'
+	]);
 	if (!$publicKey || !$privateKey || !salt) {
 		const user = await getUser();
 		if (!user) return null;

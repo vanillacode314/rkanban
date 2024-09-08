@@ -17,7 +17,7 @@ import {
 	getPasswordKey,
 	importKey
 } from '~/utils/crypto';
-import { idb } from '~/utils/idb';
+import { localforage } from '~/utils/localforage';
 import { useSeedPhraseVerifyModal } from './SeedPhraseVerifyModal';
 
 type TSeedPhraseState = {
@@ -92,11 +92,11 @@ export function SeedPhrase() {
 											const saltString = btoa(salt.toString());
 											const publicKeyString = btoa(await exportKey(publicKey));
 											await $enableEncryption(encryptedPrivateKey, saltString, publicKeyString);
-											await idb.setMany([
-												['privateKey', await exportKey(privateKey)],
-												['salt', salt],
-												['publicKey', await exportKey(publicKey)]
-											]);
+											await localforage.setMany({
+												privateKey: await exportKey(privateKey),
+												salt: salt,
+												publicKey: await exportKey(publicKey)
+											});
 										},
 										{
 											loading: 'Enabling Encryption...',

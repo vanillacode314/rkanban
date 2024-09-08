@@ -24,7 +24,7 @@ import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
 import env from '~/utils/env/server';
-import { idb } from '~/utils/idb';
+import { localforage } from '~/utils/localforage';
 
 const signInSchema = z.object({
 	email: z.string().email(),
@@ -141,11 +141,11 @@ export default function SignInPage() {
 				const derivationKey = await getPasswordKey(formData.get('password') as string);
 				const privateKey = await deriveKey(derivationKey, parsedSalt, ['decrypt']);
 				const decryptedPrivateKey = await decryptDataWithKey(encryptedPrivateKey, privateKey);
-				await idb.setMany([
-					['privateKey', decryptedPrivateKey],
-					['salt', parsedSalt],
-					['publicKey', atob(publicKey)]
-				]);
+				await localforage.setMany({
+					privateKey: decryptedPrivateKey,
+					salt: parsedSalt,
+					publicKey: atob(publicKey)
+				});
 			}}
 		>
 			<Card class="w-full max-w-sm">

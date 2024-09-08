@@ -5,7 +5,7 @@ import { Show, Suspense, createResource, createSignal } from 'solid-js';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { cn } from '~/lib/utils';
 import { getUser, refreshAccessToken, resendVerificationEmail, signOut } from '~/utils/auth.server';
-import { idb } from '~/utils/idb';
+import { localforage } from '~/utils/localforage';
 import { Button } from './ui/button';
 
 export default function Nav(props: { class?: string }) {
@@ -31,7 +31,7 @@ export default function Nav(props: { class?: string }) {
 							onClick={async (event) => {
 								event.preventDefault();
 								await $signOut();
-								await idb.delMany(['privateKey', 'publicKey', 'salt']);
+								await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 							}}
 						>
 							<Button type="submit" class="flex items-center gap-2" variant="outline">
