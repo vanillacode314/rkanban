@@ -19,7 +19,7 @@ import {
 } from '~/components/ui/card';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
-import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts/index';
+import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts/index';
 import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
@@ -53,7 +53,7 @@ const signIn = action(async (formData: FormData) => {
 		return new Error('form;;Email or password incorrect', { cause: 'VALIDATION_ERROR' });
 
 	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
-		expiresIn: ACCESS_TOKEN_EXPIRES_IN
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS
 	});
 
 	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {

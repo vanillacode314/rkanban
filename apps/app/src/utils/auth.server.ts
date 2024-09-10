@@ -7,7 +7,7 @@ import { getRequestEvent, isServer } from 'solid-js/web';
 import { deleteCookie, getCookie, getRequestURL, setCookie } from 'vinxi/http';
 import { db } from '~/db';
 import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
-import { ACCESS_TOKEN_EXPIRES_IN } from '../consts';
+import { ACCESS_TOKEN_EXPIRES_IN_SECONDS } from '../consts';
 import { decryptDataWithKey, encryptDataWithKey, importKey } from './crypto';
 import env from './env/server';
 import { localforage } from './localforage';
@@ -81,7 +81,7 @@ async function parseRefreshAccessToken() {
 		return null;
 	}
 	const accessToken = jwt.sign({ ...$user, passwordHash: undefined }, env.AUTH_SECRET, {
-		expiresIn: ACCESS_TOKEN_EXPIRES_IN
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS
 	});
 	setCookie('accessToken', accessToken, {
 		httpOnly: true,

@@ -21,7 +21,7 @@ import {
 } from '~/components/ui/card';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { Toggle } from '~/components/ui/toggle';
-import { ACCESS_TOKEN_EXPIRES_IN, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
+import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
 import { nodes, refreshTokens, users, verificationTokens } from '~/db/schema';
@@ -77,7 +77,7 @@ const signUp = action(async (formData: FormData) => {
 	if (!user) return new Error('Database Error', { cause: 'INTERNAL_SERVER_ERROR' });
 
 	const accessToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
-		expiresIn: ACCESS_TOKEN_EXPIRES_IN
+		expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS
 	});
 
 	const refreshToken = jwt.sign({ ...user, passwordHash: undefined }, env.AUTH_SECRET, {
