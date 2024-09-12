@@ -9,6 +9,7 @@ export default defineWebSocketHandler({
 	},
 
 	message(peer, message) {
+		return;
 		const result = messageSchema.safeParse(safeParseJson(message.text()));
 		if (!result.success) {
 			peer.send({ success: false, error: result.error.errors });
