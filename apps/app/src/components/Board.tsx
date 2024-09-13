@@ -132,22 +132,21 @@ export const Board: Component<{
 const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 	const resolved = resolveElements(
 		() => (
-			<div class="flex h-full flex-col gap-2 overflow-auto">
-				<Key each={props.tasks} by="id" fallback={<p>No tasks in this board</p>}>
-					{(task, index) => (
-						<Task task={task()} boardId={props.boardId} class="origin-top" index={index()} />
-					)}
-				</Key>
-			</div>
+			<Key each={props.tasks} by="id" fallback={<p>No tasks in this board</p>}>
+				{(task, index) => (
+					<Task task={task()} boardId={props.boardId} class="origin-top" index={index()} />
+				)}
+			</Key>
 		),
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
 	const transition = createListTransition(resolved.toArray, {
 		onChange({ list: _list, added, removed, unchanged, finishRemoved }) {
+			console.log({ added, removed, unchanged });
 			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
-					animate(el, { opacity: [0, 1], scaleY: [0, 1] }, { easing: spring() });
+					animate(el, { opacity: [0, 1], x: ['-100%', 0] }, { easing: spring() });
 				});
 			}
 			for (const el of removed) {
@@ -158,7 +157,7 @@ const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 					el.style.top = `${top}px`;
 					el.style.width = `${width}px`;
 					el.style.height = `${height}px`;
-					animate(el, { opacity: [1, 0], scaleY: [1, 0] }, { easing: spring() }).finished.then(
+					animate(el, { opacity: [1, 0], x: [0, '-100%'] }, { easing: spring() }).finished.then(
 						() => {
 							removedCount -= 1;
 							if (removedCount === 0) {
@@ -168,6 +167,7 @@ const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 					);
 				});
 			}
+			if (added.length === 0 && removed.length === 0) return;
 			for (const el of unchanged) {
 				const { left: left1, top: top1 } = el.getBoundingClientRect();
 				if (!el.isConnected) return;
@@ -178,7 +178,7 @@ const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 			}
 		}
 	});
-	return <>{transition()}</>;
+	return <div class="flex h-full flex-col gap-2 overflow-auto">{transition()}</div>;
 };
 
 function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: number }) {
