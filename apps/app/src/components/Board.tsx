@@ -132,7 +132,7 @@ export const Board: Component<{
 const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 	const resolved = resolveElements(
 		() => (
-			<Key each={props.tasks} by="id" fallback={<p>No tasks in this board</p>}>
+			<Key each={props.tasks} by="id">
 				{(task, index) => (
 					<Task task={task()} boardId={props.boardId} class="origin-top" index={index()} />
 				)}
@@ -178,7 +178,11 @@ const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 			}
 		}
 	});
-	return <div class="flex h-full flex-col gap-2 overflow-auto">{transition()}</div>;
+	return (
+		<Show when={props.tasks.length > 0} fallback={<p>No tasks in this board</p>}>
+			<div class="flex h-full flex-col gap-2 overflow-y-auto overflow-x-hidden">{transition()}</div>
+		</Show>
+	);
 };
 
 function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: number }) {
