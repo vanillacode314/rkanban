@@ -3,6 +3,7 @@ import { A, createAsync, RouteDefinition, useAction, useSubmissions } from '@sol
 import { For, Show } from 'solid-js';
 import { produce, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
+import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFileModal';
 import { setCreateFolderModalOpen } from '~/components/modals/auto-import/CreateFolderModal';
 import { setRenameFileModalOpen } from '~/components/modals/auto-import/RenameFileModal';
@@ -241,6 +242,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 function FolderDropdownMenu(props: { node: TNode }) {
 	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
+	const confirmModal = useConfirmModal();
 
 	return (
 		<DropdownMenu>
@@ -319,12 +321,18 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => {
-						const formData = new FormData();
-						formData.set('id', props.node.id);
-						toast.promise(() => $deleteNode(formData), {
-							loading: 'Deleting Folder',
-							success: 'Deleted Folder',
-							error: 'Error'
+						confirmModal.open({
+							title: 'Delete Folder',
+							message: `Are you sure you want to delete ${props.node.name}?`,
+							onYes() {
+								const formData = new FormData();
+								formData.set('id', props.node.id);
+								toast.promise(() => $deleteNode(formData), {
+									loading: 'Deleting Folder',
+									success: 'Deleted Folder',
+									error: 'Error'
+								});
+							}
 						});
 					}}
 				>
@@ -341,6 +349,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 function FileDropdownMenu(props: { node: TNode }) {
 	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
+	const confirmModal = useConfirmModal();
 
 	return (
 		<DropdownMenu>
@@ -407,12 +416,18 @@ function FileDropdownMenu(props: { node: TNode }) {
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => {
-						const formData = new FormData();
-						formData.set('id', props.node.id);
-						toast.promise(() => $deleteNode(formData), {
-							loading: 'Deleting File',
-							success: 'Deleted File',
-							error: 'Error'
+						confirmModal.open({
+							title: 'Delete File',
+							message: `Are you sure you want to delete ${props.node.name}?`,
+							onYes: () => {
+								const formData = new FormData();
+								formData.set('id', props.node.id);
+								toast.promise(() => $deleteNode(formData), {
+									loading: 'Deleting File',
+									success: 'Deleted File',
+									error: 'Error'
+								});
+							}
 						});
 					}}
 				>
