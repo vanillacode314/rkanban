@@ -27,7 +27,7 @@ export const Task: Component<{
 	return (
 		<div
 			class={cn(
-				'group/task relative flex items-center gap-2 rounded-none border-b-0 border-l-4 border-r-0 border-t-0 p-4 py-1 pr-0 transition-colors hover:border-l-blue-400',
+				'group/task relative flex cursor-move items-center gap-2 rounded-none border-b-0 border-l-4 border-r-0 border-t-0 p-4 py-1 pr-0 transition-colors hover:border-l-blue-400',
 				props.class
 			)}
 			draggable="true"
