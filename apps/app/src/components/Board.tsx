@@ -78,6 +78,7 @@ export const Board: Component<{
 			onDrop={async (event) => {
 				if (!event.dataTransfer) throw new Error('No data transfer');
 				const taskIdToMove = String(event.dataTransfer.getData('text/plain'));
+				if (props.board.tasks.some((task) => task.id === taskIdToMove)) return;
 
 				toast.promise(
 					async () => {
