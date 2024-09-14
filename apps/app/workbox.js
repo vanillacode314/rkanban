@@ -1,10 +1,11 @@
 import { generateSW } from 'workbox-build';
 
+const BASE = process.env.NETLIFY ? 'dist' : '.output/public';
 generateSW({
 	globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
 	// additionalManifestEntries: ['manifest.webmanifest'],
-	swDest: 'dist/sw.js',
-	globDirectory: 'dist',
+	swDest: BASE + '/sw.js',
+	globDirectory: BASE,
 	globIgnores: ['_server/**'],
 	sourcemap: false,
 	inlineWorkboxRuntime: true,
