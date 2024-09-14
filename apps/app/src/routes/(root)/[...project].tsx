@@ -12,6 +12,7 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
+import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import { decryptWithUserKeys } from '~/utils/auth.server';
 import { createSubscription } from '~/utils/subscribe';
@@ -165,6 +166,19 @@ export default function ProjectPage() {
 	);
 }
 
+function SkeletonBoard(props: { class?: string; index: number }) {
+	return (
+		<Button
+			variant="ghost"
+			class={cn('flex h-full w-full items-center gap-2', props.class)}
+			onClick={() => setCreateBoardModalOpen(true)}
+		>
+			<span class="i-heroicons:plus text-lg"></span>
+			<span>Create Board</span>
+		</Button>
+	);
+}
+
 function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
 	const hasBoards = createMemo(() => props.boards && props.boards.length > 0);
 
@@ -207,6 +221,10 @@ function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
 							/>
 						)}
 					</Key>
+					<SkeletonBoard
+						index={props.boards?.length ?? 0}
+						class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
+					/>
 				</div>
 			</Show>
 		</div>
