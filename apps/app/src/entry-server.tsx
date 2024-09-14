@@ -1,6 +1,8 @@
 // @refresh reload
 import { ColorModeScript } from '@kobalte/core';
 import { createHandler, StartServer } from '@solidjs/start/server';
+import { DEV } from 'solid-js';
+import { isServer } from 'solid-js/web';
 
 export default createHandler(() => (
 	<StartServer
@@ -20,6 +22,13 @@ export default createHandler(() => (
 						<link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
 						<meta name="theme-color" content="#000000" />
 						{assets}
+						{!DEV && !isServer && (
+							<script
+								defer
+								data-domain="kanban.raqueeb.com"
+								src="https://plausible.raqueeb.com/js/script.js"
+							></script>
+						)}
 					</head>
 					<body>
 						<ColorModeScript storageType="cookie" />
