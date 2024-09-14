@@ -96,7 +96,7 @@ export default function ProjectPage() {
 					})
 				);
 				decryptWithUserKeys(task.title).then((title) =>
-					toast.info(`Another client update task: ${task.title}`)
+					toast.info(`Another client update task: ${title}`)
 				);
 			},
 			delete: ({ id }) => {
