@@ -32,33 +32,37 @@ export default function ProjectPage() {
 	const $boards = createAsync(() => getBoards(appContext.path));
 	const [boards, overrideBoards] = createWritableMemo(() => $boards.latest);
 
-	onSubmission(createBoard, {
-		onPending(input) {
-			overrideBoards((boards) =>
-				produce(boards, (boards) => {
-					boards?.push({
-						id: String(input[0].get('id')),
-						title: String(input[0].get('title')),
-						tasks: [],
-						createdAt: new Date(),
-						updatedAt: new Date(),
-						userId: 'pending',
-						index: boards!.length,
-						nodeId: 'pending'
-					});
-				})
-			);
-			return toast.loading('Creating Board');
+	onSubmission(
+		createBoard,
+		{
+			onPending(input) {
+				overrideBoards((boards) =>
+					produce(boards, (boards) => {
+						boards?.push({
+							id: String(input[0].get('id')),
+							title: String(input[0].get('title')),
+							tasks: [],
+							createdAt: new Date(),
+							updatedAt: new Date(),
+							userId: 'pending',
+							index: boards!.length,
+							nodeId: 'pending'
+						});
+					})
+				);
+				return toast.loading('Creating Board');
+			},
+			onError(toastId) {
+				toast.error('Error', { id: toastId });
+			},
+			onSuccess(board, toastId) {
+				decryptWithUserKeys(board.title).then((title) => {
+					toast.success(`Created Board: ${title}`, { id: toastId });
+				});
+			}
 		},
-		onError(toastId) {
-			toast.error('Error', { id: toastId });
-		},
-		onSuccess(board, toastId) {
-			decryptWithUserKeys(board.title).then((title) => {
-				toast.success(`Created Board: ${title}`, { id: toastId });
-			});
-		}
-	});
+		{ always: true }
+	);
 
 	createComputed(() => {
 		const $boards = boards();

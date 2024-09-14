@@ -7,18 +7,26 @@ function onSubmission<TInput extends any[], TOutput, TMemo>(
 	action: Action<TInput, TOutput>,
 	handlers: {
 		onPending?: (input: TInput, memo: TMemo | undefined) => MaybePromise<TMemo | void>;
-		onError?: (memo: TMemo | undefined) => MaybePromise<TMemo | void>;
+		onError?: (memo: TMemo | undefined, error: unknown) => MaybePromise<TMemo | void>;
 		onSuccess?: (
 			result: Exclude<TOutput, Error>,
 			memo: TMemo | undefined
 		) => MaybePromise<TMemo | void>;
 	} = {},
-	predicate: (input: TInput) => boolean = () => true
+	{
+		predicate = () => true,
+		always = false
+	}: {
+		predicate?: (input: TInput) => boolean;
+		always?: boolean;
+	} = {}
 ) {
 	const submissions = useSubmissions(action);
+	let dispatched = false;
 
 	createEffect(async () => {
 		for (const submission of submissions) {
+			if (!dispatched && !always) return;
 			if (resolved.has(submission)) continue;
 			if (!predicate(submission.input!)) return;
 			if (!memoMap.has(submission)) {
@@ -35,14 +43,16 @@ function onSubmission<TInput extends any[], TOutput, TMemo>(
 					memoMap.get(submission)!.set(handlers, memo);
 				});
 			} else if (submission.error || submission.result instanceof Error) {
+				dispatched = false;
 				resolved.add(submission);
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
-					const result = await handlers.onError?.(memo);
+					const result = await handlers.onError?.(memo, submission.error || submission.result);
 					if (result !== undefined) memo = result;
 					memoMap.get(submission)!.set(handlers, memo);
 				});
 			} else if (submission.result) {
+				dispatched = false;
 				resolved.add(submission);
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
@@ -56,6 +66,10 @@ function onSubmission<TInput extends any[], TOutput, TMemo>(
 			}
 		}
 	});
+
+	return () => {
+		dispatched = true;
+	};
 }
 
 export { onSubmission };

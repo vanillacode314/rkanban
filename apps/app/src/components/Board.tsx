@@ -66,7 +66,10 @@ export const Board: Component<{
 				toast.error('Error', { id: toastId });
 			}
 		},
-		(input) => input[0].get('boardId') === props.board.id
+		{
+			predicate: (input) => input[0].get('boardId') === props.board.id,
+			always: true
+		}
 	);
 
 	const title = createAsync(() => decryptWithUserKeys(props.board.title));
