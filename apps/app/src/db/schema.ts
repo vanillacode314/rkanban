@@ -52,6 +52,7 @@ const users = sqliteTable('users', {
 	salt: text('salt'),
 	createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
 	updatedAt: integer('updatedAt', { mode: 'timestamp' })
+		.notNull()
 		.default(sql`(unixepoch('now'))`)
 		.$onUpdateFn(() => new Date())
 });
@@ -66,6 +67,7 @@ const boards = sqliteTable(
 		index: integer('index').notNull(),
 		createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
 		updatedAt: integer('updatedAt', { mode: 'timestamp' })
+			.notNull()
 			.default(sql`(unixepoch('now'))`)
 			.$onUpdateFn(() => new Date()),
 		userId: text('userId')
@@ -92,6 +94,7 @@ const tasks = sqliteTable(
 		index: integer('index').notNull(),
 		createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
 		updatedAt: integer('updatedAt', { mode: 'timestamp' })
+			.notNull()
 			.default(sql`(unixepoch('now'))`)
 			.$onUpdateFn(() => new Date()),
 		boardId: text('boardId')
