@@ -200,7 +200,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 									<span class="flex items-center gap-2 overflow-hidden">
 										<span
 											class={cn(
-												'i-heroicons:arrow-path-rounded-square animate-spin',
+												'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
 												node().userId === 'pending' ? 'inline-block' : '!hidden'
 											)}
 										/>
@@ -222,7 +222,7 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 									<span class="flex items-center gap-2 overflow-hidden">
 										<span
 											class={cn(
-												'i-heroicons:arrow-path-rounded-square animate-spin',
+												'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
 												node().userId === 'pending' ? 'inline-block' : '!hidden'
 											)}
 										/>
