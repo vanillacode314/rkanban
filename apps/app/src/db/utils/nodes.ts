@@ -1,6 +1,7 @@
 import { action, cache, redirect } from '@solidjs/router';
-import { and, eq, like, or, sql } from 'drizzle-orm';
+import { and, eq, isNull, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { RESERVED_PATHS } from '~/consts';
 import { db } from '~/db';
 import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
 import { uniqBy } from '~/utils/array';
@@ -36,6 +37,9 @@ const createNode = action(async (formData: FormData) => {
 	if (!parentPath.startsWith('/')) throw new Error('parentPath must start with /');
 	const id = String(formData.get('id') ?? nanoid()).trim();
 
+	if (parentPath === '/' && RESERVED_PATHS.includes(parentPath + name)) {
+		throw new Error(`custom:/${name} is reserved`);
+	}
 	const [parentNode] = (await db.all(
 		sql.raw(GET_NODES_BY_PATH_QUERY(parentPath, user.id))
 	)) as TNode[];
@@ -62,7 +66,25 @@ const updateNode = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
+	if (name.endsWith('.project')) {
+		throw new Error(`custom:Cannot rename folder to ${name} ending in .project`);
+	}
 	const parentId = String(formData.get('parentId')).trim();
+
+	const [[rootNode], [currentNode]] = await Promise.all([
+		db
+			.select({ id: nodes.id })
+			.from(nodes)
+			.where(and(isNull(nodes.parentId), eq(nodes.userId, user.id))),
+		db
+			.select({ parentId: nodes.parentId })
+			.from(nodes)
+			.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
+	]);
+
+	if (currentNode.parentId === rootNode.id && RESERVED_PATHS.includes(`/${name}`)) {
+		throw new Error(`custom:/${name} is reserved`);
+	}
 
 	const [$node] = await db
 		.update(nodes)
@@ -204,7 +226,7 @@ async function $copyNode(
 const copyNode = action($copyNode, 'copy-node');
 
 function isFolder(node: TNode): boolean {
-	return !node.name.includes('.');
+	return !node.name.endsWith('.project');
 }
 
 const GET_NODES_BY_PATH_QUERY = (
