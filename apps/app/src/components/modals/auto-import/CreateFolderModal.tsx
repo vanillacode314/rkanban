@@ -5,12 +5,28 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { createNode } from '~/db/utils/nodes';
+import { onSubmission } from '~/utils/action';
 import BaseModal from '../BaseModal';
 
 export const [createFolderModalOpen, setCreateFolderModalOpen] = createSignal<boolean>(false);
 
 export default function CreateFolderModal() {
 	const [appContext, setAppContext] = useApp();
+
+	const didDispatch = onSubmission(createNode, {
+		async onPending(input) {
+			const name = String(input[0].get('name'));
+			return toast.loading(`Creating Folder: ${name}`);
+		},
+		async onSuccess(data, toastId) {
+			toast.success(`Created Folder: ${data.name}`, { id: toastId });
+		},
+		async onError(toastId, error) {
+			if (error instanceof Error && error.message.startsWith('custom:'))
+				toast.error(`${error.message.slice(7)}`, { id: toastId });
+			else toast.error('Failed to create folder', { id: toastId });
+		}
+	});
 
 	return (
 		<BaseModal
@@ -27,6 +43,7 @@ export default function CreateFolderModal() {
 						const form = event.target as HTMLFormElement;
 						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
 						idInput.value = nanoid();
+						didDispatch();
 					}}
 				>
 					<input type="hidden" name="parentPath" value={appContext.path} />
@@ -49,7 +66,6 @@ export default function CreateFolderModal() {
 						class="self-end"
 						onClick={() => {
 							close();
-							toast.loading('Creating Folder');
 						}}
 					>
 						Submit

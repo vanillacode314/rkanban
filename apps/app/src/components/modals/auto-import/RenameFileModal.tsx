@@ -5,24 +5,51 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateNode } from '~/db/utils/nodes';
+import { onSubmission } from '~/utils/action';
 import BaseModal from '../BaseModal';
 
 export const [renameFileModalOpen, setRenameFileModalOpen] = createSignal<boolean>(false);
 
 export default function RenameFileModal() {
+	let el!: HTMLFormElement;
 	const [appContext, setAppContext] = useApp();
 	const $updateNode = useAction(updateNode);
 
+	const didDispatch = onSubmission(updateNode, {
+		async onPending(input) {
+			const name = String(input[0].get('name'));
+			return toast.loading(`Renaming File: ${name}`);
+		},
+		async onSuccess(data, toastId) {
+			toast.dismiss(toastId);
+		},
+		async onError(toastId, error) {
+			if (error instanceof Error && error.message.startsWith('custom:'))
+				toast.error(`${error.message.slice(7)}`, { id: toastId });
+			else toast.error('Failed to rename file', { id: toastId });
+		}
+	});
+
 	return (
-		<BaseModal title="Rename File" open={renameFileModalOpen()} setOpen={setRenameFileModalOpen}>
+		<BaseModal
+			title="Rename File"
+			open={renameFileModalOpen()}
+			setOpen={setRenameFileModalOpen}
+			onOpenChange={(isOpen) =>
+				isOpen && (el.querySelector('input[name="name"]') as HTMLInputElement).select()
+			}
+		>
 			{(close) => (
 				<form
+					ref={el}
 					class="flex flex-col gap-4"
 					onSubmit={async (event) => {
 						event.preventDefault();
 						const form = event.target as HTMLFormElement;
 						const formData = new FormData(form);
-						formData.set('name', String(formData.get('name')) + '.project');
+						const name = String(formData.get('name'));
+						if (!name.endsWith('.project')) formData.set('name', name + '.project');
+						didDispatch();
 						await $updateNode(formData);
 					}}
 				>
@@ -42,14 +69,7 @@ export default function RenameFileModal() {
 							required
 						/>
 					</TextField>
-					<Button
-						type="submit"
-						class="self-end"
-						onClick={() => {
-							close();
-							toast.loading('Renaming File');
-						}}
-					>
+					<Button type="submit" class="self-end" onClick={close}>
 						Submit
 					</Button>
 				</form>
