@@ -119,8 +119,8 @@
 @layer utilities {
 	.content-grid {
 		--padding-inline: 1rem;
-		--content-max-width: 1200px;
-		--breakout-max-width: 1440px;
+		--content-max-width: 1440px;
+		--breakout-max-width: 1920px;
 
 		--breakout-size: calc((var(--breakout-max-width) - var(--content-max-width)) / 2);
 

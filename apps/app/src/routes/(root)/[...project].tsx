@@ -197,7 +197,7 @@ function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
 					</div>
 				}
 			>
-				<div class="flex h-full snap-x snap-mandatory gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] md:[--cols:3]">
+				<div class="flex h-full snap-x snap-mandatory gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] md:[--cols:3] lg:[--cols:4]">
 					<Key each={props.boards} by="id">
 						{(board, index) => (
 							<Board
