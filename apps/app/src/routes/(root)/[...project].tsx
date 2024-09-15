@@ -1,8 +1,11 @@
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
+import { resolveElements } from '@solid-primitives/refs';
+import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition, createAsync } from '@solidjs/router';
 import { produce } from 'immer';
-import { Show, createComputed, createMemo, untrack } from 'solid-js';
+import { animate, spring } from 'motion';
+import { ParentComponent, Show, createComputed, createMemo, untrack } from 'solid-js';
 import { toast } from 'solid-sonner';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
@@ -183,6 +186,56 @@ function SkeletonBoard(props: { class?: string; index: number }) {
 	);
 }
 
+const AnimatedBoardsList: ParentComponent = (props) => {
+	const resolved = resolveElements(
+		() => props.children,
+		(el): el is HTMLElement => el instanceof HTMLElement
+	);
+	const transition = createListTransition(resolved.toArray, {
+		onChange({ list: _list, added, removed, unchanged, finishRemoved }) {
+			console.log({ added, removed, unchanged });
+			let removedCount = removed.length;
+			for (const el of added) {
+				queueMicrotask(() => {
+					animate(el, { opacity: [0, 1], width: [0, 'auto'] }, { easing: spring() });
+				});
+			}
+			for (const el of removed) {
+				const { left, top, width, height } = el.getBoundingClientRect();
+				queueMicrotask(() => {
+					el.style.position = 'absolute';
+					el.style.left = `${left}px`;
+					el.style.top = `${top}px`;
+					el.style.width = `${width}px`;
+					el.style.height = `${height}px`;
+					animate(el, { opacity: [1, 0], width: ['auto', 0] }, { easing: spring() }).finished.then(
+						() => {
+							removedCount -= 1;
+							if (removedCount === 0) {
+								finishRemoved(removed);
+							}
+						}
+					);
+				});
+			}
+			if (added.length === 0 && removed.length === 0) return;
+			for (const el of unchanged) {
+				const { left: left1, top: top1 } = el.getBoundingClientRect();
+				if (!el.isConnected) return;
+				queueMicrotask(() => {
+					const { left: left2, top: top2 } = el.getBoundingClientRect();
+					animate(el, { x: [left1 - left2, 0], y: [top1 - top2, 0] }, { easing: spring() });
+				});
+			}
+		}
+	});
+	return (
+		<div class="flex h-full snap-x snap-mandatory gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] lg:[--cols:3] xl:[--cols:4]">
+			{transition()}
+		</div>
+	);
+};
+
 function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
 	const hasBoards = createMemo(() => props.boards && props.boards.length > 0);
 
@@ -215,7 +268,7 @@ function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
 					</div>
 				}
 			>
-				<div class="flex h-full snap-x snap-mandatory gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] lg:[--cols:3] xl:[--cols:4]">
+				<AnimatedBoardsList>
 					<Key each={props.boards} by="id">
 						{(board, index) => (
 							<Board
@@ -229,7 +282,7 @@ function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
 						index={props.boards?.length ?? 0}
 						class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
 					/>
-				</div>
+				</AnimatedBoardsList>
 			</Show>
 		</div>
 	);
