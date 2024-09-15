@@ -45,7 +45,13 @@ export const headerData = {
     //   href: getPermalink('/pricing'),
     // },
   ],
-  actions: [{ text: 'Try Now', href: 'https://kanban.raqueeb.com', target: '_blank' }],
+  actions: [
+    {
+      text: 'Try Now',
+      href: 'https://kanban.raqueeb.com?utm_source=nav&utm_medium=landing_page&utm_campaign=landing_page',
+      target: '_blank',
+    },
+  ],
 };
 
 export const footerData = {
