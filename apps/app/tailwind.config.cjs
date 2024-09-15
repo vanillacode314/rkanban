@@ -1,4 +1,5 @@
 /**@type {import("tailwindcss").Config} */
+const plugin = require('tailwindcss/plugin');
 module.exports = {
 	darkMode: ['class', '[data-kb-theme="dark"]'],
 	content: ['./src/**/*.{ts,tsx}'],
@@ -97,5 +98,11 @@ module.exports = {
 			}
 		}
 	},
-	plugins: [require('tailwindcss-animate')]
+	plugins: [
+		require('tailwindcss-animate'),
+		plugin(function ({ addVariant }) {
+			addVariant('hocus', ['&:hover', '&:focus']);
+			addVariant('group-hocus', ['.group:hover &', '.group:focus &']);
+		})
+	]
 };

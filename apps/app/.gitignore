@@ -30,8 +30,5 @@ Thumbs.db
 
 sqlite.db
 
-# Docker
-docker/database/
-
 # Misc
 app.config.timestamp*

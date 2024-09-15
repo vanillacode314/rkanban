@@ -1,7 +1,7 @@
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
-import env from './utils/env/server';
-import { ms } from './utils/ms';
+import env from '~/utils/env/server';
+import { ms } from '~/utils/ms';
 
 const IS_BUILDING = process.env.TURSO_BUILDING !== undefined;
 

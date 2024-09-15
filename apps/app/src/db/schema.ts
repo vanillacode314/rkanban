@@ -1,5 +1,6 @@
 import { InferSelectModel, sql } from 'drizzle-orm';
 import { AnySQLiteColumn, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { createSelectSchema } from 'drizzle-zod';
 import { nanoid } from 'nanoid';
 import { ms } from '~/utils/ms';
 
@@ -137,10 +138,25 @@ const nodes = sqliteTable(
 	})
 );
 
+const nodesSchema = createSelectSchema(nodes);
+const boardsSchema = createSelectSchema(boards);
+const tasksSchema = createSelectSchema(tasks);
+
 type TBoard = InferSelectModel<typeof boards>;
 type TTask = InferSelectModel<typeof tasks>;
 type TUser = InferSelectModel<typeof users>;
 type TNode = InferSelectModel<typeof nodes>;
 
-export { boards, forgotPasswordTokens, nodes, refreshTokens, tasks, users, verificationTokens };
+export {
+	boards,
+	boardsSchema,
+	forgotPasswordTokens,
+	nodes,
+	nodesSchema,
+	refreshTokens,
+	tasks,
+	tasksSchema,
+	users,
+	verificationTokens
+};
 export type { TBoard, TNode, TTask, TUser };

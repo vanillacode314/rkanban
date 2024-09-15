@@ -203,6 +203,8 @@ async function encryptWithUserKeys(data: string) {
 	return encryptedData;
 }
 
+async function decryptWithUserKeys(data: undefined): Promise<null>;
+async function decryptWithUserKeys(data: string): Promise<string>;
 async function decryptWithUserKeys(data: string | undefined) {
 	if (data === undefined) return null;
 	if (isServer) return data;
