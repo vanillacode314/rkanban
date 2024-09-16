@@ -39,7 +39,11 @@ if ('serviceWorker' in navigator) {
 			.register('/sw.js', { scope: '/' })
 			.then(async (registration) => {
 				console.log('SW registered: ', registration);
-				if (!registration.active) return;
+				if (!registration.active) {
+					await listenForWaitingServiceWorker(registration);
+					registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+					return;
+				}
 				await listenForWaitingServiceWorker(registration);
 				promptUserToRefresh(registration);
 			})
