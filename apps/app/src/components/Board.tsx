@@ -101,6 +101,7 @@ export const Board: Component<{
 					},
 					onDragLeave: () => setIsDraggedOver(false),
 					onDrop: ({ source }) => {
+						el.scrollIntoView({ behavior: 'smooth' });
 						setIsDraggedOver(false);
 
 						toast.promise(
