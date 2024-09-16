@@ -1,3 +1,5 @@
+import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
@@ -6,7 +8,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
-import { Component, createSignal, Show } from 'solid-js';
+import { Component, createSignal, onCleanup, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -84,7 +86,7 @@ export const Board: Component<{
 				props.class
 			)}
 			ref={(el) => {
-				dropTargetForElements({
+				const cleanup = dropTargetForElements({
 					element: el,
 					canDrop: ({ source }) => {
 						invariant(
@@ -115,6 +117,7 @@ export const Board: Component<{
 						);
 					}
 				});
+				onCleanup(cleanup);
 			}}
 		>
 			<CardHeader>

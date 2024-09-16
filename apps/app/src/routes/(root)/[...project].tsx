@@ -1,3 +1,6 @@
+import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
@@ -5,7 +8,16 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition, createAsync } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
-import { ParentComponent, Show, createComputed, createMemo, untrack } from 'solid-js';
+import {
+	ParentComponent,
+	Show,
+	createComputed,
+	createMemo,
+	createSignal,
+	onCleanup,
+	onMount,
+	untrack
+} from 'solid-js';
 import { toast } from 'solid-sonner';
 import Board from '~/components/Board';
 import PathCrumbs from '~/components/PathCrumbs';
@@ -228,8 +240,36 @@ const AnimatedBoardsList: ParentComponent = (props) => {
 			}
 		}
 	});
+
+	const [isBeingDragged, setIsBeingDragged] = createSignal<boolean>(false);
+
+	let el!: HTMLDivElement;
+	onMount(() => {
+		const cleanup = combine(
+			monitorForElements({
+				canMonitor: ({ source }) => source.data.taskId !== undefined,
+				onDragStart: () => {
+					setIsBeingDragged(true);
+				},
+				onDrop: (e) => {
+					setIsBeingDragged(false);
+				}
+			}),
+			autoScrollForElements({
+				canScroll: ({ source }) => source.data.taskId !== undefined,
+				element: el
+			})
+		);
+		onCleanup(cleanup);
+	});
 	return (
-		<div class="flex h-full snap-x snap-mandatory gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] lg:[--cols:3] xl:[--cols:4]">
+		<div
+			ref={el}
+			class={cn(
+				'flex h-full gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] lg:[--cols:3] xl:[--cols:4]',
+				isBeingDragged() ? '' : 'snap-x snap-mandatory'
+			)}
+		>
 			{transition()}
 		</div>
 	);
