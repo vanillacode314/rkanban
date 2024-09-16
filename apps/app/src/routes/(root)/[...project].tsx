@@ -193,7 +193,6 @@ const AnimatedBoardsList: ParentComponent = (props) => {
 	);
 	const transition = createListTransition(resolved.toArray, {
 		onChange({ list: _list, added, removed, unchanged, finishRemoved }) {
-			console.log({ added, removed, unchanged });
 			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
