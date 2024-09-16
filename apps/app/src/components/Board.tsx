@@ -1,3 +1,4 @@
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
@@ -5,7 +6,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
-import { Component, Show } from 'solid-js';
+import { Component, createSignal, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -21,6 +22,7 @@ import { createTask, moveTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import { decryptWithUserKeys } from '~/utils/auth.server';
+import invariant from '~/utils/tiny-invariant';
 import Decrypt from './Decrypt';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setCreateTaskModalOpen } from './modals/auto-import/CreateTaskModal';
@@ -35,8 +37,8 @@ export const Board: Component<{
 	index: number;
 }> = (props) => {
 	const [_appContext, setAppContext] = useApp();
-
 	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
+	const [isDraggedOver, setIsDraggedOver] = createSignal<boolean>(false);
 
 	onSubmission(
 		createTask,
@@ -76,25 +78,43 @@ export const Board: Component<{
 
 	return (
 		<Card
-			class={cn('group/board flex h-full flex-col overflow-hidden', props.class)}
-			onDragOver={(event) => event.preventDefault()}
-			onDrop={async (event) => {
-				if (!event.dataTransfer) throw new Error('No data transfer');
-				const taskIdToMove = String(event.dataTransfer.getData('text/plain'));
-				if (props.board.tasks.some((task) => task.id === taskIdToMove)) return;
-
-				toast.promise(
-					async () => {
-						const task = await moveTask(taskIdToMove, props.board.id);
-						await revalidate(getBoards.key);
-						return task;
+			class={cn(
+				'group/board flex h-full flex-col overflow-hidden transition-colors',
+				isDraggedOver() ? 'border-blue-300' : '',
+				props.class
+			)}
+			ref={(el) => {
+				dropTargetForElements({
+					element: el,
+					canDrop: ({ source }) => {
+						invariant(
+							source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
+						);
+						if (source.data.boardId === props.board.id) return false;
+						return true;
 					},
-					{
-						loading: 'Moving',
-						success: `Moved task to board: ${title()}`,
-						error: 'Error'
+					onDragEnter: ({ source }) => {
+						if (source.data.boardId === props.board.id) return;
+						setIsDraggedOver(true);
+					},
+					onDragLeave: () => setIsDraggedOver(false),
+					onDrop: ({ source }) => {
+						setIsDraggedOver(false);
+
+						toast.promise(
+							async () => {
+								const task = await moveTask(source.data.taskId as string, props.board.id);
+								await revalidate(getBoards.key);
+								return task;
+							},
+							{
+								loading: 'Moving',
+								success: `Moved task to board: ${title()}`,
+								error: 'Error'
+							}
+						);
 					}
-				);
+				});
 			}}
 		>
 			<CardHeader>

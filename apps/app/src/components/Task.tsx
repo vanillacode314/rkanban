@@ -1,5 +1,6 @@
+import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { revalidate, useAction } from '@solidjs/router';
-import { Component, Show } from 'solid-js';
+import { Component, createSignal, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card';
 import { useApp } from '~/context/app';
@@ -25,15 +26,22 @@ export const Task: Component<{
 	class?: string;
 	index: number;
 }> = (props) => {
+	const [dragging, setDragging] = createSignal<boolean>(false);
+
 	return (
 		<div
 			class={cn(
 				'flex cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
+				dragging() ? 'opacity-50' : 'opacity-100',
 				props.class
 			)}
-			draggable="true"
-			onDragStart={(event) => {
-				event.dataTransfer?.setData('text/plain', String(props.task.id));
+			ref={(el) => {
+				draggable({
+					element: el,
+					getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id }),
+					onDragStart: () => setDragging(true),
+					onDrop: () => setDragging(false)
+				});
 			}}
 		>
 			<span class="flex items-center gap-2 overflow-hidden">
