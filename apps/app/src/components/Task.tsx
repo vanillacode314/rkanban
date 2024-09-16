@@ -1,6 +1,7 @@
 import { revalidate, useAction } from '@solidjs/router';
 import { Component, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
@@ -27,7 +28,7 @@ export const Task: Component<{
 	return (
 		<div
 			class={cn(
-				'group/task relative flex cursor-move items-center gap-2 rounded-none border-b-0 border-l-4 border-r-0 border-t-0 p-4 py-1 pr-0 transition-colors hover:border-l-blue-400',
+				'flex cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
 				props.class
 			)}
 			draggable="true"
@@ -35,19 +36,28 @@ export const Task: Component<{
 				event.dataTransfer?.setData('text/plain', String(props.task.id));
 			}}
 		>
-			<span class="flex items-center gap-2">
+			<span class="flex items-center gap-2 overflow-hidden">
 				<span
 					class={cn(
 						'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
 						props.task.userId === 'pending' ? 'inline-block' : '!hidden'
 					)}
 				/>
-				<Decrypt value={props.task.title} fallback>
-					{(title) => <span>{title()}</span>}
-				</Decrypt>
+				<HoverCard>
+					<HoverCardTrigger>
+						<Decrypt value={props.task.title} fallback>
+							{(title) => <span class="truncate text-sm">{title()}</span>}
+						</Decrypt>
+					</HoverCardTrigger>
+					<HoverCardContent>
+						<Decrypt value={props.task.title} fallback>
+							{(title) => <span class="text-sm">{title()}</span>}
+						</Decrypt>
+					</HoverCardContent>
+				</HoverCard>
 			</span>
 			<span class="grow" />
-			<TaskContextMenu task={props.task} index={props.index} />
+			<TaskContextMenu task={props.task} index={props.index} class="shrink-0" />
 		</div>
 	);
 };
