@@ -52,9 +52,9 @@ export const Task: Component<{
 					)}
 				/>
 				<HoverCard>
-					<HoverCardTrigger>
+					<HoverCardTrigger class="truncate">
 						<Decrypt value={props.task.title} fallback>
-							{(title) => <span class="truncate text-sm">{title()}</span>}
+							{(title) => <span class="text-sm">{title()}</span>}
 						</Decrypt>
 					</HoverCardTrigger>
 					<HoverCardContent>
