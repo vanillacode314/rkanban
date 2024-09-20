@@ -1,6 +1,11 @@
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
+import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
-import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import {
+	dropTargetForElements,
+	monitorForElements
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
@@ -8,7 +13,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { createAsync, revalidate, useAction } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
-import { Component, createSignal, onCleanup, Show } from 'solid-js';
+import { Component, createSignal, onCleanup, ParentComponent, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import {
 	DropdownMenu,
@@ -86,38 +91,58 @@ export const Board: Component<{
 				props.class
 			)}
 			ref={(el) => {
-				const cleanup = dropTargetForElements({
-					element: el,
-					canDrop: ({ source }) => {
-						invariant(
-							source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
-						);
-						if (source.data.boardId === props.board.id) return false;
-						return true;
-					},
-					onDragEnter: ({ source }) => {
-						if (source.data.boardId === props.board.id) return;
-						setIsDraggedOver(true);
-					},
-					onDragLeave: () => setIsDraggedOver(false),
-					onDrop: ({ source }) => {
-						el.scrollIntoView({ behavior: 'smooth' });
-						setIsDraggedOver(false);
+				const cleanup = combine(
+					monitorForElements({
+						canMonitor({ source }) {
+							invariant(
+								source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
+							);
+							if (source.data.boardId !== props.board.id) return false;
+							return true;
+						},
+						onDrop({ source, location }) {
+							const destination = location.current.dropTargets[0];
+							if (!destination) return;
+							const closestEdgeOfTarget = extractClosestEdge(destination.data);
+							const destinationIndex = tasks().findIndex(
+								(task) => task.id === destination.data.taskId
+							);
+							const sourceIndex = tasks().findIndex((task) => task.id === source.data.taskId);
 
-						toast.promise(
-							async () => {
-								const task = await moveTask(source.data.taskId as string, props.board.id);
-								await revalidate(getBoards.key);
-								return task;
-							},
-							{
-								loading: 'Moving',
-								success: `Moved task to board: ${title()}`,
-								error: 'Error'
-							}
-						);
-					}
-				});
+							if (destinationIndex === -1 || sourceIndex === -1) return;
+
+							setTasks(
+								reorderWithEdge({
+									list: tasks(),
+									startIndex: sourceIndex,
+									indexOfTarget: destinationIndex,
+									closestEdgeOfTarget,
+									axis: 'vertical'
+								})
+							);
+						}
+					}),
+					dropTargetForElements({
+						element: el,
+						canDrop: ({ source }) => {
+							invariant(
+								source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
+							);
+							if (source.data.boardId === props.board.id) return false;
+							return true;
+						},
+						getData: () => ({ boardId: props.board.id }),
+						onDragEnter: ({ source }) => {
+							if (source.data.boardId === props.board.id) return;
+							setIsDraggedOver(true);
+						},
+						onDragLeave: () => setIsDraggedOver(false),
+						onDrop: () => {
+							el.scrollIntoView({ behavior: 'smooth' });
+							setIsDraggedOver(false);
+						}
+					})
+				);
 				onCleanup(cleanup);
 			}}
 		>
@@ -151,21 +176,25 @@ export const Board: Component<{
 				</div>
 			</CardHeader>
 			<CardContent class="overflow-hidden">
-				<AnimatedTaskList boardId={props.board.id} tasks={tasks()} />
+				<Show when={tasks().length > 0} fallback={<p>No tasks in this board</p>}>
+					<div class="flex h-full flex-col overflow-y-auto overflow-x-hidden">
+						<AnimatedTaskList>
+							<Key each={tasks()} by="id">
+								{(task, index) => (
+									<Task task={task()} boardId={props.board.id} class="origin-top" index={index()} />
+								)}
+							</Key>
+						</AnimatedTaskList>
+					</div>
+				</Show>
 			</CardContent>
 		</Card>
 	);
 };
 
-const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
+const AnimatedTaskList: ParentComponent = (props) => {
 	const resolved = resolveElements(
-		() => (
-			<Key each={props.tasks} by="id">
-				{(task, index) => (
-					<Task task={task()} boardId={props.boardId} class="origin-top" index={index()} />
-				)}
-			</Key>
-		),
+		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
 	const transition = createListTransition(resolved.toArray, {
@@ -205,11 +234,7 @@ const AnimatedTaskList = (props: { boardId: TBoard['id']; tasks: TTask[] }) => {
 			}
 		}
 	});
-	return (
-		<Show when={props.tasks.length > 0} fallback={<p>No tasks in this board</p>}>
-			<div class="flex h-full flex-col gap-2 overflow-y-auto overflow-x-hidden">{transition()}</div>
-		</Show>
-	);
+	return <>{transition()}</>;
 };
 
 function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: number }) {

@@ -1,17 +1,21 @@
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
+import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, RouteDefinition, createAsync } from '@solidjs/router';
+import { A, RouteDefinition, createAsync, revalidate } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import {
 	ParentComponent,
+	Setter,
 	Show,
 	createComputed,
+	createEffect,
 	createMemo,
 	createSignal,
 	onCleanup,
@@ -27,10 +31,12 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
+import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import { decryptWithUserKeys } from '~/utils/auth.server';
 import { createSubscription } from '~/utils/subscribe';
+import invariant from '~/utils/tiny-invariant';
 
 export const route: RouteDefinition = {
 	preload: ({ location }) => {
@@ -45,13 +51,21 @@ export const route: RouteDefinition = {
 export default function ProjectPage() {
 	const [appContext, setAppContext] = useApp();
 	const $boards = createAsync(() => getBoards(appContext.path));
-	const [boards, overrideBoards] = createWritableMemo(() => $boards.latest);
+	const [boards, setBoards] = createWritableMemo(() => $boards.latest);
+	const hasBoards = () => boards() && boards()!.length > 0;
+	const boardsDirty = createMemo(() => {
+		const $boards = boards();
+		if ($boards === undefined) return false;
+		return $boards.some((board) =>
+			board.tasks.some((task, index) => task.index !== index || task.boardId !== board.id)
+		);
+	});
 
 	onSubmission(
 		createBoard,
 		{
 			onPending(input) {
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						boards?.push({
 							id: String(input[0].get('id')),
@@ -90,7 +104,7 @@ export default function ProjectPage() {
 		tasks: {
 			create: ({ data }) => {
 				const task = data as TTask;
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						const board = boards.find((board) => board.id === task.boardId);
@@ -104,7 +118,7 @@ export default function ProjectPage() {
 			},
 			update: ({ data }) => {
 				const task = data as TTask;
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						const board = boards.find((board) => board.id === task.boardId);
@@ -119,7 +133,7 @@ export default function ProjectPage() {
 				);
 			},
 			delete: ({ id }) => {
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						const board = boards.find((board) => board.tasks.some((task) => task.id === id));
@@ -135,7 +149,7 @@ export default function ProjectPage() {
 		boards: {
 			create: ({ data }) => {
 				const board = { ...(data as TBoard), tasks: [] };
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						boards.push(board);
@@ -147,7 +161,7 @@ export default function ProjectPage() {
 			},
 			update: ({ data }) => {
 				const board = data as TBoard;
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						const index = boards.findIndex((b) => b.id === board.id);
@@ -160,7 +174,7 @@ export default function ProjectPage() {
 				);
 			},
 			delete: ({ id }) => {
-				overrideBoards((boards) =>
+				setBoards((boards) =>
 					produce(boards, (boards) => {
 						if (!boards) return boards;
 						const index = boards.findIndex((board) => board.id === id);
@@ -174,31 +188,110 @@ export default function ProjectPage() {
 	});
 
 	return (
-		<Show when={boards() instanceof Error} fallback={<Project boards={boards()} />}>
-			<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
-				<div>Project Not Found</div>
-				<Button as={A} href="/">
-					Go Home
-				</Button>
+		<Show
+			when={!(boards() instanceof Error)}
+			fallback={
+				<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
+					<div>Project Not Found</div>
+					<Button as={A} href="/">
+						Go Home
+					</Button>
+				</div>
+			}
+		>
+			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
+				<Show when={boardsDirty()}>
+					<div class="absolute left-1/2 top-4 flex -translate-x-1/2 place-content-center items-center justify-center gap-2 rounded-lg border border-border p-2">
+						<Button
+							class="flex items-center gap-2"
+							onClick={async () => {
+								toast.promise(
+									() =>
+										moveTasks(
+											boards()!.flatMap((board) => {
+												const data = [];
+												for (const [index, task] of board.tasks.entries()) {
+													if (index === task.index && task.boardId === board.id) continue;
+													data.push({ id: task.id, index, boardId: board.id });
+												}
+												return data;
+											})
+										).then(() => revalidate(getBoards.key)),
+									{
+										loading: 'Applying changes...',
+										success: 'Changes applied',
+										error: 'Failed to apply changes'
+									}
+								);
+							}}
+						>
+							<span class="i-heroicons:check-circle-solid shrink-0 text-xl"></span>
+							<span>Apply Changes</span>
+						</Button>
+						<Button
+							class="flex items-center gap-2"
+							variant="secondary"
+							onClick={() => {
+								setBoards(() => $boards.latest);
+							}}
+						>
+							<span class="i-heroicons:x-circle-solid shrink-0 text-xl"></span>
+							<span>Cancel</span>
+						</Button>
+					</div>
+				</Show>
+				<Show when={hasBoards()}>
+					<div class="flex justify-end gap-4">
+						<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
+							<span class="i-heroicons:plus text-lg"></span>
+							<span>Create Board</span>
+						</Button>
+					</div>
+				</Show>
+				<PathCrumbs />
+				<Show
+					when={hasBoards()}
+					fallback={
+						<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
+							<img
+								src="/empty.svg"
+								class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+							/>
+							<span>Empty Project</span>
+							<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
+								<Button
+									class="flex items-center gap-2"
+									onClick={() => setCreateBoardModalOpen(true)}
+								>
+									<span class="i-heroicons:plus text-lg"></span>
+									<span>Create Board</span>
+								</Button>
+							</div>
+						</div>
+					}
+				>
+					<AnimatedBoardsList setBoards={setBoards} boards={boards()!}>
+						<Key each={boards()} by="id">
+							{(board, index) => (
+								<Board
+									class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
+									board={board()}
+									index={index()}
+								/>
+							)}
+						</Key>
+						<SkeletonBoard class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start" />
+					</AnimatedBoardsList>
+				</Show>
 			</div>
 		</Show>
 	);
 }
 
-function SkeletonBoard(props: { class?: string; index: number }) {
-	return (
-		<Button
-			variant="ghost"
-			class={cn('flex h-full w-full items-center gap-2', props.class)}
-			onClick={() => setCreateBoardModalOpen(true)}
-		>
-			<span class="i-heroicons:plus text-lg"></span>
-			<span>Create Board</span>
-		</Button>
-	);
-}
-
-const AnimatedBoardsList: ParentComponent = (props) => {
+const AnimatedBoardsList: ParentComponent<{
+	boards: Array<TBoard & { tasks: TTask[] }>;
+	setBoards: Setter<Array<TBoard & { tasks: TTask[] }> | undefined>;
+}> = (props) => {
 	const resolved = resolveElements(
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
@@ -247,16 +340,63 @@ const AnimatedBoardsList: ParentComponent = (props) => {
 	onMount(() => {
 		const cleanup = combine(
 			monitorForElements({
-				canMonitor: ({ source }) => source.data.taskId !== undefined,
-				onDragStart: () => {
-					setIsBeingDragged(true);
+				canMonitor({ source }) {
+					return 'taskId' in source.data;
 				},
-				onDrop: (e) => {
+				onDragStart: () => setIsBeingDragged(true),
+				onDrop({ source, location }) {
 					setIsBeingDragged(false);
+					const destination = location.current.dropTargets[0];
+					if (!destination) return;
+					const closestEdgeOfTarget = extractClosestEdge(destination.data);
+
+					const destinationBoardIndex = props.boards.findIndex(
+						(b) => b.id === destination.data.boardId
+					);
+					const sourceBoardIndex = props.boards.findIndex((b) => b.id === source.data.boardId);
+					const destinationBoard = props.boards[destinationBoardIndex];
+					const sourceBoard = props.boards[sourceBoardIndex];
+					invariant(sourceBoard && destinationBoard);
+
+					const destinationIndex =
+						destination.data.taskId === undefined ?
+							destinationBoard.tasks.length
+						:	destinationBoard.tasks.findIndex((task) => task.id === destination.data.taskId);
+					const sourceIndex = sourceBoard.tasks.findIndex((task) => task.id === source.data.taskId);
+					invariant(destinationIndex !== -1 && sourceIndex !== -1);
+					console.log(sourceBoardIndex, destinationBoardIndex, sourceIndex, destinationIndex);
+
+					if (destinationBoard === sourceBoard) {
+						props.setBoards((boards) =>
+							produce(boards, (boards) => {
+								invariant(boards);
+								const board = boards[destinationBoardIndex];
+								board.tasks = reorderWithEdge({
+									list: board.tasks,
+									startIndex: sourceIndex,
+									indexOfTarget: destinationIndex,
+									closestEdgeOfTarget,
+									axis: 'vertical'
+								});
+							})
+						);
+					} else {
+						props.setBoards((boards) =>
+							produce(boards, (boards) => {
+								invariant(boards);
+								const destinationBoard = boards[destinationBoardIndex];
+								const sourceBoard = boards[sourceBoardIndex];
+								const tasks = sourceBoard.tasks.splice(sourceIndex, 1);
+								destinationBoard.tasks.splice(destinationIndex, 0, ...tasks);
+							})
+						);
+					}
 				}
 			}),
 			autoScrollForElements({
-				canScroll: ({ source }) => source.data.taskId !== undefined,
+				canScroll({ source }) {
+					return 'taskId' in source.data;
+				},
 				element: el
 			})
 		);
@@ -275,54 +415,15 @@ const AnimatedBoardsList: ParentComponent = (props) => {
 	);
 };
 
-function Project(props: { boards?: Array<TBoard & { tasks: TTask[] }> }) {
-	const hasBoards = createMemo(() => props.boards && props.boards.length > 0);
-
+function SkeletonBoard(props: { class?: string }) {
 	return (
-		<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-			<Show when={hasBoards()}>
-				<div class="flex justify-end gap-4">
-					<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
-						<span class="i-heroicons:plus text-lg"></span>
-						<span>Create Board</span>
-					</Button>
-				</div>
-			</Show>
-			<PathCrumbs />
-			<Show
-				when={hasBoards()}
-				fallback={
-					<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
-						<img
-							src="/empty.svg"
-							class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
-						/>
-						<span>Empty Project</span>
-						<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
-							<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
-								<span class="i-heroicons:plus text-lg"></span>
-								<span>Create Board</span>
-							</Button>
-						</div>
-					</div>
-				}
-			>
-				<AnimatedBoardsList>
-					<Key each={props.boards} by="id">
-						{(board, index) => (
-							<Board
-								class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
-								board={board()}
-								index={index()}
-							/>
-						)}
-					</Key>
-					<SkeletonBoard
-						index={props.boards?.length ?? 0}
-						class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
-					/>
-				</AnimatedBoardsList>
-			</Show>
-		</div>
+		<Button
+			variant="ghost"
+			class={cn('flex h-full w-full items-center gap-2', props.class)}
+			onClick={() => setCreateBoardModalOpen(true)}
+		>
+			<span class="i-heroicons:plus text-lg"></span>
+			<span>Create Board</span>
+		</Button>
 	);
 }

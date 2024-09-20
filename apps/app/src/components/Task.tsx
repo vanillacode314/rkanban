@@ -1,6 +1,15 @@
-import { draggable } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import {
+	attachClosestEdge,
+	extractClosestEdge
+} from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import {
+	draggable,
+	dropTargetForElements
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { revalidate, useAction } from '@solidjs/router';
-import { Component, createSignal, Show } from 'solid-js';
+import { animate, spring } from 'motion';
+import { Component, createEffect, createSignal, onCleanup, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card';
 import { useApp } from '~/context/app';
@@ -8,6 +17,7 @@ import { TBoard, TTask } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
 import { deleteTask, shiftTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
+import invariant from '~/utils/tiny-invariant';
 import Decrypt from './Decrypt';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setUpdateTaskModalOpen } from './modals/auto-import/UpdateTaskModal';
@@ -27,45 +37,81 @@ export const Task: Component<{
 	index: number;
 }> = (props) => {
 	const [dragging, setDragging] = createSignal<boolean>(false);
+	const [isBeingDraggedOver, setIsBeingDraggedOver] = createSignal<boolean>(false);
+	const [closestEdge, setClosestEdge] = createSignal<'top' | 'bottom'>('bottom');
 
 	return (
 		<div
-			class={cn(
-				'flex cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
-				dragging() ? 'opacity-50' : 'opacity-100',
-				props.class
-			)}
+			class="relative overflow-hidden"
 			ref={(el) => {
-				draggable({
-					element: el,
-					getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id }),
-					onDragStart: () => setDragging(true),
-					onDrop: () => setDragging(false)
-				});
+				const cleanup = combine(
+					draggable({
+						element: el,
+						getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id }),
+						onDragStart: () => setDragging(true),
+						onDrop: () => setDragging(false)
+					}),
+					dropTargetForElements({
+						element: el,
+						getIsSticky: () => true,
+						canDrop({ source }) {
+							return source.data.taskId !== props.task.id;
+						},
+						getData: ({ input, element }) => {
+							const data = { boardId: props.boardId, taskId: props.task.id };
+							return attachClosestEdge(data, { input, element, allowedEdges: ['top', 'bottom'] });
+						},
+						onDrag: ({ self }) => {
+							const edge = extractClosestEdge(self.data);
+							invariant((edge && edge === 'top') || edge === 'bottom');
+							setClosestEdge(edge);
+						},
+						onDragEnter: () => setIsBeingDraggedOver(true),
+						onDragLeave: () => setIsBeingDraggedOver(false),
+						onDrop: () => setIsBeingDraggedOver(false)
+					})
+				);
+				onCleanup(cleanup);
 			}}
 		>
-			<span class="flex items-center gap-2 overflow-hidden">
-				<span
-					class={cn(
-						'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-						props.task.userId === 'pending' ? 'inline-block' : '!hidden'
-					)}
-				/>
-				<HoverCard>
-					<HoverCardTrigger class="truncate">
-						<Decrypt value={props.task.title} fallback>
-							{(title) => <span class="text-sm">{title()}</span>}
-						</Decrypt>
-					</HoverCardTrigger>
-					<HoverCardContent>
-						<Decrypt value={props.task.title} fallback>
-							{(title) => <span class="text-sm">{title()}</span>}
-						</Decrypt>
-					</HoverCardContent>
-				</HoverCard>
-			</span>
-			<span class="grow" />
-			<TaskContextMenu task={props.task} index={props.index} class="shrink-0" />
+			<div
+				class={cn(
+					'absolute inset-x-0 h-px w-full bg-blue-400',
+					isBeingDraggedOver() ? 'opacity-100' : 'opacity-0',
+					closestEdge() === 'top' ? 'top-0' : 'bottom-2'
+				)}
+			></div>
+			<div
+				class={cn(
+					'relative flex cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
+					dragging() ? 'opacity-0' : 'opacity-100',
+					props.class
+				)}
+			>
+				<span class="flex items-center gap-2 overflow-hidden">
+					<span
+						class={cn(
+							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
+							props.task.userId === 'pending' ? 'inline-block' : '!hidden'
+						)}
+					/>
+					<HoverCard>
+						<HoverCardTrigger class="truncate">
+							<Decrypt value={props.task.title} fallback>
+								{(title) => <span class="text-sm">{title()}</span>}
+							</Decrypt>
+						</HoverCardTrigger>
+						<HoverCardContent>
+							<Decrypt value={props.task.title} fallback>
+								{(title) => <span class="text-sm">{title()}</span>}
+							</Decrypt>
+						</HoverCardContent>
+					</HoverCard>
+				</span>
+				<span class="grow" />
+				<TaskContextMenu task={props.task} index={props.index} class="shrink-0" />
+			</div>
+			<div class="h-2"></div>
 		</div>
 	);
 };
