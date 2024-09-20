@@ -1,6 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
 import { A, createAsync, RouteDefinition, useAction, useSubmissions } from '@solidjs/router';
-import { For, Show } from 'solid-js';
+import { Show } from 'solid-js';
 import { produce, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';

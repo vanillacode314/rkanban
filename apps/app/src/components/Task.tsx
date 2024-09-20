@@ -8,8 +8,7 @@ import {
 	dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { revalidate, useAction } from '@solidjs/router';
-import { animate, spring } from 'motion';
-import { Component, createEffect, createSignal, onCleanup, Show } from 'solid-js';
+import { Component, createSignal, onCleanup, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '~/components/ui/hover-card';
 import { useApp } from '~/context/app';

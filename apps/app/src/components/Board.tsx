@@ -1,4 +1,3 @@
-import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
@@ -25,7 +24,7 @@ import {
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
-import { createTask, moveTask } from '~/db/utils/tasks';
+import { createTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import { decryptWithUserKeys } from '~/utils/auth.server';

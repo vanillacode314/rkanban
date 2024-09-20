@@ -15,7 +15,6 @@ import {
 	Setter,
 	Show,
 	createComputed,
-	createEffect,
 	createMemo,
 	createSignal,
 	onCleanup,
