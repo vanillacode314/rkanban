@@ -43,7 +43,7 @@ export const Task: Component<{
 
 	return (
 		<div
-			class="relative overflow-hidden"
+			class="relative shrink-0 overflow-hidden"
 			ref={(el) => {
 				const cleanup = combine(
 					draggable({
