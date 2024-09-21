@@ -12,10 +12,6 @@ import { listenForWaitingServiceWorker } from './utils/service-worker';
 
 const queryClient = new QueryClient();
 
-const a = () => {
-	throw new Error('hi');
-};
-
 const ErrorPage: Component = () => {
 	const [updateAvailable, setUpdateAvailable] = createSignal<boolean>(false);
 
@@ -67,7 +63,6 @@ export default function App() {
 		<Router
 			root={(props) => (
 				<ErrorBoundary fallback={<ErrorPage />}>
-					{a()}
 					<Suspense
 						fallback={
 							<div class="grid h-full place-content-center gap-2">
