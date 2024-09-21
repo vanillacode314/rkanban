@@ -224,7 +224,7 @@ export default function ProjectPage() {
 								);
 							}}
 						>
-							<span class="i-heroicons:check-circle-solid shrink-0 text-xl"></span>
+							<span class="i-heroicons:check-circle-solid shrink-0 text-xl" />
 							<span>Apply Changes</span>
 						</Button>
 						<Button
@@ -234,7 +234,7 @@ export default function ProjectPage() {
 								setBoards(() => $boards.latest);
 							}}
 						>
-							<span class="i-heroicons:x-circle-solid shrink-0 text-xl"></span>
+							<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
 							<span>Cancel</span>
 						</Button>
 					</div>
@@ -242,7 +242,7 @@ export default function ProjectPage() {
 				<Show when={hasBoards()}>
 					<div class="flex justify-end gap-4">
 						<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
-							<span class="i-heroicons:plus text-lg"></span>
+							<span class="i-heroicons:plus text-lg" />
 							<span>Create Board</span>
 						</Button>
 					</div>
@@ -262,7 +262,7 @@ export default function ProjectPage() {
 									class="flex items-center gap-2"
 									onClick={() => setCreateBoardModalOpen(true)}
 								>
-									<span class="i-heroicons:plus text-lg"></span>
+									<span class="i-heroicons:plus text-lg" />
 									<span>Create Board</span>
 								</Button>
 							</div>
@@ -363,7 +363,6 @@ const AnimatedBoardsList: ParentComponent<{
 						:	destinationBoard.tasks.findIndex((task) => task.id === destination.data.taskId);
 					const sourceIndex = sourceBoard.tasks.findIndex((task) => task.id === source.data.taskId);
 					invariant(destinationIndex !== -1 && sourceIndex !== -1);
-					console.log(sourceBoardIndex, destinationBoardIndex, sourceIndex, destinationIndex);
 
 					if (destinationBoard === sourceBoard) {
 						props.setBoards((boards) =>
@@ -421,7 +420,7 @@ function SkeletonBoard(props: { class?: string }) {
 			class={cn('flex h-full w-full items-center gap-2', props.class)}
 			onClick={() => setCreateBoardModalOpen(true)}
 		>
-			<span class="i-heroicons:plus text-lg"></span>
+			<span class="i-heroicons:plus text-lg" />
 			<span>Create Board</span>
 		</Button>
 	);

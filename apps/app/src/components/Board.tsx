@@ -9,7 +9,7 @@ import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { createAsync, revalidate, useAction } from '@solidjs/router';
+import { revalidate, useAction } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import { Component, createSignal, onCleanup, ParentComponent, Show } from 'solid-js';
@@ -42,7 +42,7 @@ export const Board: Component<{
 	board: TBoard & { tasks: TTask[] };
 	index: number;
 }> = (props) => {
-	const [_appContext, setAppContext] = useApp();
+	const [, setAppContext] = useApp();
 	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
 	const [isDraggedOver, setIsDraggedOver] = createSignal<boolean>(false);
 
@@ -79,8 +79,6 @@ export const Board: Component<{
 			always: true
 		}
 	);
-
-	const title = createAsync(() => decryptWithUserKeys(props.board.title));
 
 	return (
 		<Card
@@ -168,7 +166,7 @@ export const Board: Component<{
 								setAppContext('currentBoard', props.board);
 							}}
 						>
-							<span class="i-heroicons:plus text-lg"></span>
+							<span class="i-heroicons:plus text-lg" />
 						</Button>
 						<BoardContextMenu board={props.board} index={props.index} />
 					</div>
@@ -197,7 +195,7 @@ const AnimatedTaskList: ParentComponent = (props) => {
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
 	const transition = createListTransition(resolved.toArray, {
-		onChange({ list: _list, added, removed, unchanged, finishRemoved }) {
+		onChange({ added, removed, unchanged, finishRemoved }) {
 			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
@@ -245,7 +243,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 		<div class="flex-col">
 			<DropdownMenu>
 				<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost">
-					<span class="i-heroicons:ellipsis-vertical text-lg"></span>
+					<span class="i-heroicons:ellipsis-vertical text-lg" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
@@ -258,7 +256,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 					>
 						<span>Edit</span>
 						<DropdownMenuShortcut class="text-base">
-							<span class="i-heroicons:pencil-solid"></span>
+							<span class="i-heroicons:pencil-solid" />
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
@@ -283,7 +281,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 					>
 						<span>Delete</span>
 						<DropdownMenuShortcut class="text-base">
-							<span class="i-heroicons:trash"></span>
+							<span class="i-heroicons:trash" />
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<Show when={props.index < appContext.boards.length - 1}>
@@ -306,7 +304,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 						>
 							<span>Shift Right</span>
 							<DropdownMenuShortcut class="text-base">
-								<span class="i-heroicons:arrow-long-right-solid"></span>
+								<span class="i-heroicons:arrow-long-right-solid" />
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
 					</Show>
@@ -330,7 +328,7 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 						>
 							<span>Shift Left</span>
 							<DropdownMenuShortcut class="text-base">
-								<span class="i-heroicons:arrow-long-left-solid"></span>
+								<span class="i-heroicons:arrow-long-left-solid" />
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
 					</Show>

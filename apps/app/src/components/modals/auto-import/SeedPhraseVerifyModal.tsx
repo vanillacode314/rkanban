@@ -90,7 +90,7 @@ export function SeedPhrase() {
 							variant="ghost"
 							size="sm"
 						>
-							<span class="i-heroicons:clipboard"></span>
+							<span class="i-heroicons:clipboard" />
 							<span>Paste</span>
 						</Button>
 					</div>

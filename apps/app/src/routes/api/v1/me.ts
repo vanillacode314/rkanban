@@ -6,11 +6,12 @@ import { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema } from '~/
 import { getUser } from '~/utils/auth.server';
 
 export async function POST() {
-	const user = await getUser();
+	const user = await getUser({ shouldThrow: false });
 	if (!user) return new Response(null, { status: 401 });
+
 	const result = await readValidatedBody(
 		z.object({
-			nodes: nodesSchema.pick({ id: true, parentId: true, name: true }).array(),
+			nodes: nodesSchema.pick({ id: true, parentId: true, name: true, isDirectory: true }).array(),
 			boards: boardsSchema.pick({ id: true, nodeId: true, title: true, index: true }).array(),
 			tasks: tasksSchema.pick({ boardId: true, title: true, index: true }).array()
 		}).safeParse
@@ -29,7 +30,7 @@ export async function POST() {
 
 	const data = result.data;
 
-	await db.transaction(async (tx) => {
+	await db.transaction(async () => {
 		if (data.nodes.length > 0) {
 			await db.insert(nodes).values(data.nodes.map((node) => ({ ...node, userId: user.id })));
 		}

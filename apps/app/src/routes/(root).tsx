@@ -17,7 +17,7 @@ import { getUser } from '~/utils/auth.server';
 import { localforage } from '~/utils/localforage';
 
 const RootLayout = (props: { children: JSXElement }) => {
-	const user = createAsync(() => getUser(null));
+	const user = createAsync(() => getUser({ shouldThrow: false }));
 	createEffect(() => {
 		const $user = user();
 		if (!$user) return;

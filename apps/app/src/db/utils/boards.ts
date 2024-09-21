@@ -1,4 +1,4 @@
-import { action, cache, redirect } from '@solidjs/router';
+import { action, cache } from '@solidjs/router';
 import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from '~/db';
@@ -12,8 +12,7 @@ async function $getBoards(path: string): Promise<Array<TBoard & { tasks: TTask[]
 async function $getBoards(path: string | null) {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw redirect('/auth/signin');
+	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
 
 	if (path === null) {
 		const $boards = await db.select().from(boards).where(eq(boards.userId, user.id));
@@ -49,8 +48,7 @@ const getBoards = cache($getBoards, 'get-boards');
 const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const [board] = await db
 		.select()
@@ -85,8 +83,7 @@ const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
 const shiftBoard = async (boardId: TBoard['id'], direction: 1 | -1) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const [board] = await db
 		.select({ index: boards.index })
@@ -121,8 +118,7 @@ const shiftBoard = async (boardId: TBoard['id'], direction: 1 | -1) => {
 const createBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const title = String(formData.get('title')).trim();
 	const id = String(formData.get('id') ?? nanoid()).trim();
@@ -130,7 +126,10 @@ const createBoard = action(async (formData: FormData) => {
 	const publisherId =
 		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
 
-	const { node } = await getNodes(path);
+	const result = await getNodes(path);
+	if (result instanceof Error) throw result;
+
+	const node = result.node;
 
 	let index;
 	{
@@ -153,8 +152,7 @@ const createBoard = action(async (formData: FormData) => {
 const updateBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
@@ -174,8 +172,7 @@ const updateBoard = action(async (formData: FormData) => {
 const deleteBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const boardId = String(formData.get('id')).trim();
 	const publisherId =

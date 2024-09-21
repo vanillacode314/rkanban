@@ -4,14 +4,15 @@
   "type": "module",
   "scripts": {
     "dev": "vinxi dev",
-    "build": "npm run test:once && npm run build:solid && npm run build:sw",
+    "build": "npm run test:once && build:nocheck",
+    "build:nocheck": "npm run build:solid && npm run build:sw",
     "build:solid": "TURSO_BUILDING=1 vinxi build",
     "build:sw": "node ./workbox.js",
     "test": "vitest",
-    "test:once": "vitest --run",
+    "test:once": "vitest --run && npm run lint",
     "start": "vinxi start",
-    "format": "prettier --write .",
-    "lint": "eslint --fix .",
+    "format": "prettier --write src",
+    "lint": "eslint --fix src",
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "simple-git-hooks": {

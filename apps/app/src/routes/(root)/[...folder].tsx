@@ -20,9 +20,10 @@ import {
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { TNode } from '~/db/schema';
-import { copyNode, createNode, deleteNode, getNodes, isFolder, updateNode } from '~/db/utils/nodes';
+import { copyNode, createNode, deleteNode, getNodes, updateNode } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
 import * as path from '~/utils/path';
+import { assertNotError } from '~/utils/types';
 
 export const route: RouteDefinition = {
 	preload: ({ location }) => {
@@ -35,26 +36,8 @@ export const route: RouteDefinition = {
 };
 
 export default function FolderPage() {
-	const [appContext, _setAppContext] = useApp();
-	const serverNodes = createAsync(() => getNodes(appContext.path, { includeChildren: true }));
-
-	return (
-		<Show
-			when={serverNodes() instanceof Error}
-			fallback={<Folder serverNodes={serverNodes() as { node: TNode; children: TNode[] }} />}
-		>
-			<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
-				<div>Folder Not Found</div>
-				<Button as={A} href="/">
-					Go Home
-				</Button>
-			</div>
-		</Show>
-	);
-}
-
-function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 	const [appContext, setAppContext] = useApp();
+	const serverNodes = createAsync(() => getNodes(appContext.path, { includeChildren: true }));
 	const submissions = useSubmissions(createNode);
 	const $updateNode = useAction(updateNode);
 	const $copyNode = useAction(copyNode);
@@ -65,177 +48,193 @@ function Folder(props: { serverNodes?: { node: TNode; children: TNode[] } }) {
 			.map((submission) => ({
 				id: String(submission.input[0].get('id')),
 				name: String(submission.input[0].get('name')),
-				parentId: props.serverNodes!.node.id,
+				isDirectory: String(submission.input[0].get('isDirectory')) === 'true',
+				parentId: assertNotError(serverNodes())!.node.id,
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				userId: 'pending'
 			}));
 
 	const nodes = () =>
-		props.serverNodes ? [...props.serverNodes!.children, ...pendingNodes()] : [];
-	const currentNode = () => props.serverNodes!.node;
-	const folders = () => nodes()?.filter(isFolder) ?? [];
-	const files = () => nodes()?.filter((node) => !isFolder(node)) ?? [];
+		serverNodes() ? [...assertNotError(serverNodes())!.children, ...pendingNodes()] : [];
+	const currentNode = () => assertNotError(serverNodes())!.node;
+	const folders = () => nodes()?.filter((node) => node.isDirectory) ?? [];
+	const files = () => nodes()?.filter((node) => !node.isDirectory) ?? [];
 	const nodesInClipboard = () => appContext.clipboard.filter((item) => item.type === 'id/node');
 
 	return (
-		<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-			<div class="flex justify-end gap-4 empty:hidden">
-				<Show when={nodesInClipboard().length > 0}>
-					<Button
-						class="flex items-center gap-2"
-						onClick={() => {
-							const items = structuredClone(unwrap(nodesInClipboard()));
-							for (const [index, item] of items.toReversed().entries()) {
-								const { node, path } = item.meta as { node: TNode; path: string };
-								if (node.id === currentNode().id && item.mode === 'move') {
-									toast.info(`Skipping ${path} because it is the current folder`);
-									items.splice(items.length - index - 1, 1);
-								} else if (node.parentId === currentNode().id && item.mode === 'move') {
-									toast.info(`Skipping ${path} because it is already in the current folder`);
-									items.splice(items.length - index - 1, 1);
-								}
-							}
-							if (items.length > 0)
-								toast.promise(
-									async () => {
-										await Promise.all(
-											items.map((item) => {
-												const formData = new FormData();
-												formData.set('id', item.data);
-												const { node } = item.meta as { node: TNode; path: string };
-												formData.set('parentId', currentNode().id);
-												if (item.mode === 'move') formData.set('name', node.name);
-												return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
-											})
-										);
-										setAppContext('clipboard', ($items) =>
-											$items.filter(($item) => !items.some((item) => $item.data === item.data))
-										);
-									},
-									{
-										loading: 'Pasting...',
-										success: 'Pasted',
-										error: 'Paste Failed'
+		<Show
+			when={!(serverNodes() instanceof Error)}
+			fallback={
+				<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
+					<div>Folder Not Found</div>
+					<Button as={A} href="/">
+						Go Home
+					</Button>
+				</div>
+			}
+		>
+			<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
+				<div class="flex justify-end gap-4 empty:hidden">
+					<Show when={nodesInClipboard().length > 0}>
+						<Button
+							class="flex items-center gap-2"
+							onClick={() => {
+								const items = structuredClone(unwrap(nodesInClipboard()));
+								for (const [index, item] of items.toReversed().entries()) {
+									const { node, path } = item.meta as { node: TNode; path: string };
+									if (node.id === currentNode().id && item.mode === 'move') {
+										toast.info(`Skipping ${path} because it is the current folder`);
+										items.splice(items.length - index - 1, 1);
+									} else if (node.parentId === currentNode().id && item.mode === 'move') {
+										toast.info(`Skipping ${path} because it is already in the current folder`);
+										items.splice(items.length - index - 1, 1);
 									}
-								);
-						}}
-						variant="secondary"
-					>
-						<span class="i-heroicons:clipboard text-lg"></span>
-						<span>Paste</span>
-					</Button>
-				</Show>
-				<Show when={nodes().length > 0}>
-					<Button class="flex items-center gap-2" onClick={() => setCreateFileModalOpen(true)}>
-						<span class="i-heroicons:document-plus text-lg"></span>
-						<span>Create Project</span>
-					</Button>
-					<Button class="flex items-center gap-2" onClick={() => setCreateFolderModalOpen(true)}>
-						<span class="i-heroicons:folder-plus text-lg"></span>
-						<span>Create Folder</span>
-					</Button>
-				</Show>
-			</div>
-			<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-				<Show when={appContext.path === '/'}>
-					<Button
-						variant="outline"
-						class="flex items-center justify-start gap-2"
-						as={A}
-						href="/settings"
-					>
-						<span class="i-heroicons:cog text-lg" />
-						<span>Settings</span>
-					</Button>
-				</Show>
-			</div>
-			<PathCrumbs />
-			<Show
-				when={nodes().length > 0}
-				fallback={
-					<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
-						<img
-							src="/empty.svg"
-							class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
-						/>
-						<span>Empty Folder</span>
-						<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
-							<Button class="flex items-center gap-2" onClick={() => setCreateFileModalOpen(true)}>
-								<span class="i-heroicons:document-plus text-lg"></span>
-								<span>Create Project</span>
-							</Button>
-							OR
-							<Button
-								class="flex items-center gap-2"
-								onClick={() => setCreateFolderModalOpen(true)}
-							>
-								<span class="i-heroicons:folder-plus text-lg"></span>
-								<span>Create Folder</span>
-							</Button>
-						</div>
-					</div>
-				}
-			>
+								}
+								if (items.length > 0)
+									toast.promise(
+										async () => {
+											await Promise.all(
+												items.map((item) => {
+													const formData = new FormData();
+													formData.set('id', item.data);
+													const { node } = item.meta as { node: TNode; path: string };
+													formData.set('parentId', currentNode().id);
+													if (item.mode === 'move') formData.set('name', node.name);
+													return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
+												})
+											);
+											setAppContext('clipboard', ($items) =>
+												$items.filter(($item) => !items.some((item) => $item.data === item.data))
+											);
+										},
+										{
+											loading: 'Pasting...',
+											success: 'Pasted',
+											error: 'Paste Failed'
+										}
+									);
+							}}
+							variant="secondary"
+						>
+							<span class="i-heroicons:clipboard text-lg" />
+							<span>Paste</span>
+						</Button>
+					</Show>
+					<Show when={nodes().length > 0}>
+						<Button class="flex items-center gap-2" onClick={() => setCreateFileModalOpen(true)}>
+							<span class="i-heroicons:document-plus text-lg" />
+							<span>Create Project</span>
+						</Button>
+						<Button class="flex items-center gap-2" onClick={() => setCreateFolderModalOpen(true)}>
+							<span class="i-heroicons:folder-plus text-lg" />
+							<span>Create Folder</span>
+						</Button>
+					</Show>
+				</div>
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-					<Show when={currentNode().parentId !== null}>
+					<Show when={appContext.path === '/'}>
 						<Button
 							variant="outline"
 							class="flex items-center justify-start gap-2"
 							as={A}
-							href={path.join(appContext.path, '..')}
+							href="/settings"
 						>
-							<span class="i-heroicons:folder text-lg" />
-							<span>..</span>
+							<span class="i-heroicons:cog text-lg" />
+							<span>Settings</span>
 						</Button>
 					</Show>
-					<Key each={folders()} by="id">
-						{(node) => (
-							<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
-								<A
-									class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-									href={path.join(appContext.path, node().name)}
-								>
-									<span class="i-heroicons:folder text-lg" />
-									<span class="flex items-center gap-2 overflow-hidden">
-										<span
-											class={cn(
-												'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-												node().userId === 'pending' ? 'inline-block' : '!hidden'
-											)}
-										/>
-										<span class="truncate">{node().name}</span>
-									</span>
-								</A>
-								<FolderDropdownMenu node={node()} />
-							</div>
-						)}
-					</Key>
-					<Key each={files()} by="id">
-						{(node) => (
-							<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
-								<A
-									class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 overflow-hidden px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-									href={path.join(appContext.path, node().name)}
-								>
-									<span class="i-heroicons:document text-lg" />
-									<span class="flex items-center gap-2 overflow-hidden">
-										<span
-											class={cn(
-												'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-												node().userId === 'pending' ? 'inline-block' : '!hidden'
-											)}
-										/>
-										<span class="truncate">{node().name}</span>
-									</span>
-								</A>
-								<FileDropdownMenu node={node()} />
-							</div>
-						)}
-					</Key>
 				</div>
-			</Show>
-		</div>
+				<PathCrumbs />
+				<Show
+					when={nodes().length > 0}
+					fallback={
+						<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
+							<img
+								src="/empty.svg"
+								class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+							/>
+							<span>Empty Folder</span>
+							<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
+								<Button
+									class="flex items-center gap-2"
+									onClick={() => setCreateFileModalOpen(true)}
+								>
+									<span class="i-heroicons:document-plus text-lg" />
+									<span>Create Project</span>
+								</Button>
+								OR
+								<Button
+									class="flex items-center gap-2"
+									onClick={() => setCreateFolderModalOpen(true)}
+								>
+									<span class="i-heroicons:folder-plus text-lg" />
+									<span>Create Folder</span>
+								</Button>
+							</div>
+						</div>
+					}
+				>
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+						<Show when={currentNode().parentId !== null}>
+							<Button
+								variant="outline"
+								class="flex items-center justify-start gap-2"
+								as={A}
+								href={path.join(appContext.path, '..')}
+							>
+								<span class="i-heroicons:folder text-lg" />
+								<span>..</span>
+							</Button>
+						</Show>
+						<Key each={folders()} by="id">
+							{(node) => (
+								<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
+									<A
+										class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+										href={path.join(appContext.path, node().name)}
+									>
+										<span class="i-heroicons:folder text-lg" />
+										<span class="flex items-center gap-2 overflow-hidden">
+											<span
+												class={cn(
+													'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
+													node().userId === 'pending' ? 'inline-block' : '!hidden'
+												)}
+											/>
+											<span class="truncate">{node().name}</span>
+										</span>
+									</A>
+									<FolderDropdownMenu node={node()} />
+								</div>
+							)}
+						</Key>
+						<Key each={files()} by="id">
+							{(node) => (
+								<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
+									<A
+										class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 overflow-hidden px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+										href={path.join(appContext.path, node().name)}
+									>
+										<span class="i-heroicons:document text-lg" />
+										<span class="flex items-center gap-2 overflow-hidden">
+											<span
+												class={cn(
+													'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
+													node().userId === 'pending' ? 'inline-block' : '!hidden'
+												)}
+											/>
+											<span class="truncate">{node().name}</span>
+										</span>
+									</A>
+									<FileDropdownMenu node={node()} />
+								</div>
+							)}
+						</Key>
+					</div>
+				</Show>
+			</div>
+		</Show>
 	);
 }
 
@@ -247,7 +246,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost" class="rounded-none">
-				<span class="i-heroicons:ellipsis-vertical text-lg"></span>
+				<span class="i-heroicons:ellipsis-vertical text-lg" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent class="w-48">
 				<DropdownMenuItem
@@ -258,7 +257,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Rename</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:pencil-solid"></span>
+						<span class="i-heroicons:pencil-solid" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -287,7 +286,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Copy</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:document-duplicate"></span>
+						<span class="i-heroicons:document-duplicate" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -316,7 +315,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Cut</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:scissors"></span>
+						<span class="i-heroicons:scissors" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -338,7 +337,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Delete</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:trash"></span>
+						<span class="i-heroicons:trash" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 			</DropdownMenuContent>
@@ -354,7 +353,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost" class="rounded-none">
-				<span class="i-heroicons:ellipsis-vertical text-lg"></span>
+				<span class="i-heroicons:ellipsis-vertical text-lg" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent class="w-48">
 				<DropdownMenuItem
@@ -365,7 +364,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Rename</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:pencil-solid"></span>
+						<span class="i-heroicons:pencil-solid" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -388,7 +387,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Copy</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:document-duplicate"></span>
+						<span class="i-heroicons:document-duplicate" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -411,7 +410,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Cut</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:scissors"></span>
+						<span class="i-heroicons:scissors" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 				<DropdownMenuItem
@@ -433,7 +432,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 				>
 					<span>Delete</span>
 					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:trash"></span>
+						<span class="i-heroicons:trash" />
 					</DropdownMenuShortcut>
 				</DropdownMenuItem>
 			</DropdownMenuContent>

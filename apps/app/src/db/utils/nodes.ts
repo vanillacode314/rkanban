@@ -1,4 +1,4 @@
-import { action, cache, redirect } from '@solidjs/router';
+import { action, cache } from '@solidjs/router';
 import { and, eq, isNull, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { RESERVED_PATHS } from '~/consts';
@@ -12,10 +12,10 @@ const getNodes = cache(
 	async (path: string, { includeChildren = false }: Partial<{ includeChildren: boolean }> = {}) => {
 		'use server';
 
-		const user = await getUser();
-		if (!user) throw redirect('/auth/signin');
+		const user = (await getUser({ redirectOnUnauthenticated: true }))!;
 
-		const query = GET_NODES_BY_PATH_QUERY(path, user.id, includeChildren);
+		const query = `${GET_NODES_BY_PATH_QUERY(path, user.id, includeChildren)}`;
+		console.log(query);
 		const $nodes = (await db.all(sql.raw(query))) as TNode[];
 		if ($nodes.length === 0) return new Error(`Not Found`, { cause: 'NOT_FOUND' });
 		const node = $nodes.shift()!;
@@ -27,8 +27,7 @@ const getNodes = cache(
 const createNode = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const name = String(formData.get('name')).trim();
 	if (!name) throw new Error('name is required');
@@ -36,10 +35,12 @@ const createNode = action(async (formData: FormData) => {
 	if (!parentPath) throw new Error('parentPath is required');
 	if (!parentPath.startsWith('/')) throw new Error('parentPath must start with /');
 	const id = String(formData.get('id') ?? nanoid()).trim();
+	const isDirectory = String(formData.get('isDirectory') ?? 'false') === 'true';
 
 	if (parentPath === '/' && RESERVED_PATHS.includes(parentPath + name)) {
 		throw new Error(`custom:/${name} is reserved`);
 	}
+
 	const [parentNode] = (await db.all(
 		sql.raw(GET_NODES_BY_PATH_QUERY(parentPath, user.id))
 	)) as TNode[];
@@ -49,7 +50,8 @@ const createNode = action(async (formData: FormData) => {
 			id,
 			parentId: parentNode.id,
 			name: name,
-			userId: user.id
+			userId: user.id,
+			isDirectory
 		})
 		.returning();
 
@@ -61,8 +63,7 @@ const createNode = action(async (formData: FormData) => {
 const updateNode = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
@@ -78,9 +79,7 @@ const updateNode = action(async (formData: FormData) => {
 			.from(nodes)
 			.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 	]);
-	if (!currentNode.name.endsWith('.project') && name.endsWith('.project')) {
-		throw new Error(`custom:Cannot rename folder to ${name} ending in .project`);
-	}
+
 	if (currentNode.parentId === rootNode.id && RESERVED_PATHS.includes(`/${name}`)) {
 		throw new Error(`custom:/${name} is reserved`);
 	}
@@ -102,8 +101,7 @@ const updateNode = action(async (formData: FormData) => {
 const deleteNode = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const nodeId = String(formData.get('id')).trim();
 
@@ -115,14 +113,10 @@ const deleteNode = action(async (formData: FormData) => {
 	void notify({ type: 'delete', id: nodeId });
 }, 'delete-node');
 
-async function $copyNode(
-	formData: FormData,
-	{ shouldNotify = true }: { shouldNotify?: boolean } = {}
-) {
+async function $copyNode(formData: FormData) {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const id = String(formData.get('id')).trim();
 	const parentId = String(formData.get('parentId')).trim();
@@ -178,7 +172,8 @@ async function $copyNode(
 					:	$node.name,
 				id: newNodeId,
 				parentId,
-				userId: user.id
+				userId: user.id,
+				isDirectory: $node.isDirectory
 			})
 			.returning();
 		if ($node.name.endsWith('.project')) {
@@ -218,14 +213,14 @@ async function $copyNode(
 			const formData = new FormData();
 			formData.set('id', node.id);
 			formData.set('parentId', newNodeId);
-			return $copyNode(formData, { shouldNotify: false });
+			return $copyNode(formData);
 		})
 	);
 }
 const copyNode = action($copyNode, 'copy-node');
 
 function isFolder(node: TNode): boolean {
-	return !node.name.endsWith('.project');
+	return !node.isDirectory;
 }
 
 const GET_NODES_BY_PATH_QUERY = (
@@ -274,7 +269,6 @@ const GET_NODES_BY_PATH_QUERY = (
 		.replace(
 			/__includeChildren/g,
 			includeChildren ?
-				// with children
 				`UNION ALL
 				SELECT 
 					* 

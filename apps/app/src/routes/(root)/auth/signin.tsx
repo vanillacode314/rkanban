@@ -104,7 +104,7 @@ export default function SignInPage() {
 			if (!result) return;
 			if (result instanceof Error) {
 				switch (result.cause) {
-					case 'VALIDATION_ERROR':
+					case 'VALIDATION_ERROR': {
 						const validationMap = new Map<string, string[]>();
 						for (const message of result.message.split(';;;')) {
 							const [path, error] = message.split(';;');
@@ -113,6 +113,7 @@ export default function SignInPage() {
 						setFormErrors(validationMap.get('form') ?? []);
 						toast.error('Invalid Data', { id: toastId, duration: 3000 });
 						break;
+					}
 					default:
 						console.error(result);
 				}
@@ -198,9 +199,9 @@ export default function SignInPage() {
 								{(state) => (
 									<Show
 										when={state.pressed()}
-										fallback={<span class="i-heroicons:eye-slash text-lg"></span>}
+										fallback={<span class="i-heroicons:eye-slash text-lg" />}
 									>
-										<span class="i-heroicons:eye-solid text-lg"></span>
+										<span class="i-heroicons:eye-solid text-lg" />
 									</Show>
 								)}
 							</Toggle>

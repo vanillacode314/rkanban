@@ -122,6 +122,7 @@ const nodes = sqliteTable(
 		parentId: text('parentId').references((): AnySQLiteColumn => nodes.id, {
 			onDelete: 'cascade'
 		}),
+		isDirectory: integer('isDirectory', { mode: 'boolean' }).notNull(),
 		userId: text('userId')
 			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),

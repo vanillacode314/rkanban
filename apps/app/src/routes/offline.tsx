@@ -7,7 +7,7 @@ import {
 import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
 import { useNavigate } from '@solidjs/router';
-import { JSXElement, createEffect } from 'solid-js';
+import { createEffect } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { getCookie } from 'vinxi/http';
 import { Button } from '~/components/ui/button';
@@ -36,14 +36,14 @@ function OfflinePage() {
 				</div>
 			</nav>
 			<div class="grid h-full place-content-center place-items-center">
-				<span class="i-heroicons:exclamation-circle text-8xl"></span>
+				<span class="i-heroicons:exclamation-circle text-8xl" />
 				<p>You are offline</p>
 			</div>
 		</>
 	);
 }
 
-export default function Layout(props: { children: JSXElement }) {
+export default function Layout() {
 	const storageManager = cookieStorageManagerSSR(isServer ? getServerCookies() : document.cookie);
 	return (
 		<>

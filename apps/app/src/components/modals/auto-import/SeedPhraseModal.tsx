@@ -76,7 +76,7 @@ export function SeedPhrase() {
 									seedPhraseModal.close();
 									toast.promise(
 										async () => {
-											let password = prompt('Enter your password');
+											const password = prompt('Enter your password');
 											if (!password) {
 												alert('You need to enter your password to enable encryption');
 												throw new Error('No password');
@@ -133,7 +133,7 @@ export function SeedPhrase() {
 								variant="ghost"
 								size="sm"
 							>
-								<span class="i-heroicons:arrow-down-circle-solid"></span>
+								<span class="i-heroicons:arrow-down-circle-solid" />
 								<span>Download</span>
 							</Button>
 							<Button
@@ -147,7 +147,7 @@ export function SeedPhrase() {
 								variant="ghost"
 								size="sm"
 							>
-								<span class="i-heroicons:clipboard"></span>
+								<span class="i-heroicons:clipboard" />
 								<span>Copy</span>
 							</Button>
 						</div>

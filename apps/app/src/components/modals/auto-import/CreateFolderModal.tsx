@@ -11,7 +11,7 @@ import BaseModal from '../BaseModal';
 export const [createFolderModalOpen, setCreateFolderModalOpen] = createSignal<boolean>(false);
 
 export default function CreateFolderModal() {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, _setAppContext] = useApp();
 
 	const didDispatch = onSubmission(createNode, {
 		async onPending(input) {
@@ -49,6 +49,7 @@ export default function CreateFolderModal() {
 					<input type="hidden" name="parentPath" value={appContext.path} />
 					<input type="hidden" name="id" value={nanoid()} />
 					<input type="hidden" name="publisherId" value={appContext.id} />
+					<input type="hidden" name="isDirectory" value="true" />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>
 						<TextFieldInput
@@ -61,13 +62,7 @@ export default function CreateFolderModal() {
 							required
 						/>
 					</TextField>
-					<Button
-						type="submit"
-						class="self-end"
-						onClick={() => {
-							close();
-						}}
-					>
+					<Button type="submit" class="self-end" onClick={close}>
 						Submit
 					</Button>
 				</form>

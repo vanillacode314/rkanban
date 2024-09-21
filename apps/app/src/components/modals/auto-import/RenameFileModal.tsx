@@ -12,7 +12,7 @@ export const [renameFileModalOpen, setRenameFileModalOpen] = createSignal<boolea
 
 export default function RenameFileModal() {
 	let el!: HTMLFormElement;
-	const [appContext, setAppContext] = useApp();
+	const [appContext, _setAppContext] = useApp();
 	const $updateNode = useAction(updateNode);
 
 	const didDispatch = onSubmission(updateNode, {
@@ -53,7 +53,11 @@ export default function RenameFileModal() {
 						await $updateNode(formData);
 					}}
 				>
-					<input type="hidden" name="parentId" value={appContext.currentNode?.parentId!} />
+					<input
+						type="hidden"
+						name="parentId"
+						value={appContext.currentNode?.parentId ?? undefined}
+					/>
 					<input type="hidden" name="id" value={appContext.currentNode?.id} />
 					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">

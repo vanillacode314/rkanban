@@ -70,7 +70,9 @@ const signUp = action(async (formData: FormData) => {
 			tx.rollback();
 			return [null, null];
 		}
-		await tx.insert(nodes).values({ name: 'root', parentId: null, userId: user.id });
+		await tx
+			.insert(nodes)
+			.values({ name: 'root', parentId: null, userId: user.id, isDirectory: true });
 		return [user, token];
 	});
 
@@ -145,7 +147,7 @@ export default function SignUpPage() {
 			if (!result) return;
 			if (result instanceof Error) {
 				switch (result.cause) {
-					case 'VALIDATION_ERROR':
+					case 'VALIDATION_ERROR': {
 						const validationMap = new Map<string, string[]>();
 						for (const message of result.message.split(';;;')) {
 							const [path, error] = message.split(';;');
@@ -156,6 +158,7 @@ export default function SignUpPage() {
 						setFormErrors(validationMap.get('form') ?? []);
 						toast.error('Invalid Data', { id: toastId, duration: 3000 });
 						break;
+					}
 					default:
 						console.error(result);
 				}
@@ -215,9 +218,9 @@ export default function SignUpPage() {
 								{(state) => (
 									<Show
 										when={state.pressed()}
-										fallback={<span class="i-heroicons:eye-slash text-lg"></span>}
+										fallback={<span class="i-heroicons:eye-slash text-lg" />}
 									>
-										<span class="i-heroicons:eye-solid text-lg"></span>
+										<span class="i-heroicons:eye-solid text-lg" />
 									</Show>
 								)}
 							</Toggle>

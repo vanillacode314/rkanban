@@ -10,9 +10,9 @@ import tseslint from 'typescript-eslint';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const gitignorePath = path.resolve(__dirname, '.gitignore');
+
 export default [
 	includeIgnoreFile(gitignorePath),
-	{ files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'] },
 	{ languageOptions: { globals: { ...globals.browser, ...globals.node } } },
 	pluginJs.configs.recommended,
 	{
@@ -25,5 +25,18 @@ export default [
 			}
 		}
 	},
-	...tseslint.configs.recommended
+	...tseslint.configs.recommended,
+	{
+		files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
+		rules: {
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_'
+				}
+			],
+			'prefer-const': ['error', { destructuring: 'all' }]
+		}
+	}
 ];

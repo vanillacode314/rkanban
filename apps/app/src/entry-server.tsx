@@ -25,7 +25,7 @@ export default createHandler(() => (
 								defer
 								data-domain="kanban.raqueeb.com"
 								src="https://plausible.raqueeb.com/js/script.js"
-							></script>
+							/>
 						)}
 					</head>
 					<body>

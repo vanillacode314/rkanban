@@ -33,8 +33,7 @@ import {
 const deleteUser = action(async () => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw redirect('/auth/signin');
+	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
 	await db.delete(users).where(eq(users.id, user.id));
 	deleteCookie('accessToken');
 	deleteCookie('refreshToken');
@@ -129,7 +128,7 @@ export default function SettingsPage() {
 		let backupData: TBackup;
 		try {
 			backupData = JSON.parse(text);
-		} catch (e) {
+		} catch {
 			toast.error('Invalid backup file');
 			return;
 		}
@@ -265,7 +264,7 @@ export default function SettingsPage() {
 			<div class="flex flex-col items-start gap-4 py-4">
 				<header class="flex w-full flex-col gap-1 border-b pb-4">
 					<div class="flex items-center gap-4">
-						<A class="i-heroicons:arrow-left text-xl" href="/"></A>
+						<A class="i-heroicons:arrow-left text-xl" href="/" />
 						<h3 class="text-2xl font-bold">Settings</h3>
 					</div>
 					<p class="text-muted-foreground">Manage your settings</p>

@@ -15,7 +15,7 @@ function createSubscription(
 ) {
 	if (isServer) return;
 	const ws = createWS(env.PUBLIC_SOCKET_URL);
-	const [appContext, _setAppContext] = useApp();
+	const [appContext] = useApp();
 	ws.send(JSON.stringify({ type: 'subscribe', id: appContext.id }));
 
 	ws.addEventListener('message', (event) => {

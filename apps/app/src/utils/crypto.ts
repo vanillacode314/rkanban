@@ -30,7 +30,7 @@ async function encryptDataWithKey(secretData: string, aesKey: CryptoKey) {
 		);
 
 		const encryptedContentArr = new Uint8Array(encryptedContent);
-		let buff = new Uint8Array(iv.byteLength + encryptedContentArr.byteLength);
+		const buff = new Uint8Array(iv.byteLength + encryptedContentArr.byteLength);
 		buff.set(iv, 0);
 		buff.set(encryptedContentArr, iv.byteLength);
 		const base64Buff = buf_to_base64(buff);

@@ -10,7 +10,7 @@ import BaseModal from '../BaseModal';
 export const [renameFolderModalOpen, setRenameFolderModalOpen] = createSignal<boolean>(false);
 
 export default function RenameFolderModal() {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, _setAppContext] = useApp();
 
 	const didDispatch = onSubmission(updateNode, {
 		async onPending(input) {
@@ -46,7 +46,11 @@ export default function RenameFolderModal() {
 					class="flex flex-col gap-4"
 					onSubmit={() => didDispatch()}
 				>
-					<input type="hidden" name="parentId" value={appContext.currentNode?.parentId!} />
+					<input
+						type="hidden"
+						name="parentId"
+						value={appContext.currentNode?.parentId ?? undefined}
+					/>
 					<input type="hidden" name="id" value={appContext.currentNode?.id} />
 					<input type="hidden" name="publisherId" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">

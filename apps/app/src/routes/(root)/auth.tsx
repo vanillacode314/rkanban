@@ -3,9 +3,9 @@ import { JSXElement } from 'solid-js';
 import { getUser } from '~/utils/auth.server';
 
 export const route: RouteDefinition = {
-	preload: () => getUser(false)
+	preload: () => getUser({ redirectOnAuthenticated: true })
 };
 export default function AuthLayout(props: { children: JSXElement }): JSXElement {
-	createAsync(() => getUser(false), { deferStream: true });
+	createAsync(() => getUser({ redirectOnAuthenticated: true }), { deferStream: true });
 	return <>{props.children}</>;
 }

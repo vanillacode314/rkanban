@@ -6,7 +6,9 @@ import Unocss from 'unocss/vite';
 import clientEnv from './src/utils/env/client';
 import serverEnv from './src/utils/env/server';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 clientEnv;
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 serverEnv;
 
 export default defineConfig({

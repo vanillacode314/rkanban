@@ -15,6 +15,13 @@
       "when": 1724948372257,
       "tag": "20240829161932_minor_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1726915622265,
+      "tag": "20240921104702_lean_ink",
+      "breakpoints": true
     }
   ]
 }

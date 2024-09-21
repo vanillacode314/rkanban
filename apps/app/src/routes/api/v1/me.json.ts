@@ -1,12 +1,11 @@
 import { json } from '@solidjs/router';
-import { APIEvent } from '@solidjs/start/server';
 import { eq } from 'drizzle-orm';
 import { db } from '~/db';
 import { boards, nodes, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 
-export async function GET(event: APIEvent) {
-	const user = await getUser();
+export async function GET() {
+	const user = await getUser({ shouldThrow: false });
 	if (!user) return new Response(null, { status: 401 });
 
 	const [$nodes, $boards, $tasks] = await Promise.all([
@@ -15,7 +14,8 @@ export async function GET(event: APIEvent) {
 				id: nodes.id,
 				name: nodes.name,
 				parentId: nodes.parentId,
-				updatedAt: nodes.updatedAt
+				updatedAt: nodes.updatedAt,
+				isDirectory: nodes.isDirectory
 			})
 			.from(nodes)
 			.where(eq(nodes.userId, user.id)),

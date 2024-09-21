@@ -53,7 +53,7 @@ export function ConfirmModal() {
 			open={confirmModalState.open}
 			setOpen={(value) => setConfirmModalState('open', value)}
 		>
-			{(close) => (
+			{() => (
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();

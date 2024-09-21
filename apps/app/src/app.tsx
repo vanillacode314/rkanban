@@ -16,7 +16,7 @@ export default function App() {
 				<Suspense
 					fallback={
 						<div class="grid h-full place-content-center gap-2">
-							<span class="i-svg-spinners:180-ring-with-bg text-7xl"></span>
+							<span class="i-svg-spinners:180-ring-with-bg text-7xl" />
 							<span>Loading...</span>
 						</div>
 					}

@@ -1,4 +1,4 @@
-import { action, cache, redirect } from '@solidjs/router';
+import { action, cache } from '@solidjs/router';
 import { and, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from '~/db';
@@ -9,8 +9,7 @@ import { createNotifier } from '~/utils/publish';
 const getTasks = cache(async function () {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw redirect('/auth/signin');
+	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
 
 	const $tasks = await db.select().from(tasks).where(eq(tasks.userId, user.id));
 	return $tasks;
@@ -20,14 +19,13 @@ const moveTasks = async (
 	inputs: Array<{ id: TTask['id']; boardId: TBoard['id']; index: number }>
 ) => {
 	'use server';
-	const user = await getUser();
-	if (!user) throw new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	if (inputs.length === 0) throw new Error('No tasks to move');
 	console.log(inputs);
 	const ids = inputs.map((input) => input.id);
 
-	await db.transaction(async (tx) => {
+	await db.transaction(async () => {
 		await db
 			.update(tasks)
 			.set({
@@ -50,21 +48,20 @@ const moveTasks = async (
 					sql.raw(' ')
 				)
 			})
-			.where(inArray(tasks.id, ids));
+			.where(and(inArray(tasks.id, ids), eq(tasks.userId, user.id)));
 		await db
 			.update(tasks)
 			.set({
 				index: sql`${tasks.index} - 10000`
 			})
-			.where(inArray(tasks.id, ids));
+			.where(and(inArray(tasks.id, ids), eq(tasks.userId, user.id)));
 	});
 };
 
 const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const [task] = await db
 		.select()
@@ -101,8 +98,7 @@ const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
 const createTask = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const title = String(formData.get('title')).trim();
 	const boardId = String(formData.get('boardId')).trim();
@@ -131,8 +127,7 @@ const createTask = action(async (formData: FormData) => {
 const updateTask = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
@@ -151,8 +146,7 @@ const updateTask = action(async (formData: FormData) => {
 const deleteTask = action(async (formData: FormData) => {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser())!;
 
 	const taskId = String(formData.get('id')).trim();
 	const publisherId =

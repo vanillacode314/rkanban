@@ -79,7 +79,7 @@ export const Task: Component<{
 					isBeingDraggedOver() ? 'opacity-100' : 'opacity-0',
 					closestEdge() === 'top' ? 'top-0' : 'bottom-2'
 				)}
-			></div>
+			/>
 			<div
 				class={cn(
 					'relative flex cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
@@ -110,7 +110,7 @@ export const Task: Component<{
 				<span class="grow" />
 				<TaskContextMenu task={props.task} index={props.index} class="shrink-0" />
 			</div>
-			<div class="h-2"></div>
+			<div class="h-2" />
 		</div>
 	);
 };
@@ -125,7 +125,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 		<div class={cn('flex-col', props.class)}>
 			<DropdownMenu>
 				<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost">
-					<span class="i-heroicons:ellipsis-vertical text-lg"></span>
+					<span class="i-heroicons:ellipsis-vertical text-lg" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
@@ -138,7 +138,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 					>
 						<span>Edit</span>
 						<DropdownMenuShortcut class="text-base">
-							<span class="i-heroicons:pencil-solid"></span>
+							<span class="i-heroicons:pencil-solid" />
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
@@ -163,7 +163,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 					>
 						<span>Delete</span>
 						<DropdownMenuShortcut class="text-base">
-							<span class="i-heroicons:trash"></span>
+							<span class="i-heroicons:trash" />
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<Show when={props.index < allTasks().length - 1}>
@@ -186,7 +186,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 						>
 							<span>Shift Down</span>
 							<DropdownMenuShortcut class="text-base">
-								<span class="i-heroicons:arrow-long-down-solid"></span>
+								<span class="i-heroicons:arrow-long-down-solid" />
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
 					</Show>
@@ -210,7 +210,7 @@ function TaskContextMenu(props: { task: TTask; class?: string; index: number }) 
 						>
 							<span>Shift Up</span>
 							<DropdownMenuShortcut class="text-base">
-								<span class="i-heroicons:arrow-long-up-solid"></span>
+								<span class="i-heroicons:arrow-long-up-solid" />
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
 					</Show>

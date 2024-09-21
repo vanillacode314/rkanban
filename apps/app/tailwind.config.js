@@ -101,7 +101,7 @@ export default {
 		}
 	},
 	plugins: [
-		animate(),
+		animate,
 		plugin(function ({ addVariant }) {
 			addVariant('hocus', ['&:hover', '&:focus']);
 			addVariant('group-hocus', ['.group:hover &', '.group:focus &']);

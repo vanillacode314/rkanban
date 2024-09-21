@@ -4,7 +4,7 @@ import 'solid-devtools';
 import { toast } from 'solid-sonner';
 
 function listenForWaitingServiceWorker(registration: ServiceWorkerRegistration): Promise<void> {
-	return new Promise<void>((resolve, reject) => {
+	return new Promise<void>((resolve) => {
 		function awaitStateChange() {
 			registration.installing?.addEventListener('statechange', function () {
 				if (this.state === 'installed') resolve();

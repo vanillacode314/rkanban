@@ -12,7 +12,7 @@ export default function Nav(props: { class?: string }) {
 	const location = useLocation();
 	const [user, { refetch: refetchUser }] = createResource(
 		() => location.pathname,
-		() => getUser(null),
+		() => getUser({ shouldThrow: false }),
 		{ initialValue: null, deferStream: true }
 	);
 	const { toggleColorMode } = useColorMode();
@@ -36,7 +36,7 @@ export default function Nav(props: { class?: string }) {
 						>
 							<Button type="submit" class="flex items-center gap-2" variant="outline">
 								<span>Sign Out</span>
-								<span class="i-heroicons:arrow-right-end-on-rectangle text-xl"></span>
+								<span class="i-heroicons:arrow-right-end-on-rectangle text-xl" />
 							</Button>
 						</form>
 					</Show>

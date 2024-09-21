@@ -152,7 +152,7 @@ export default function ResetPasswordPage() {
 			if (!result) return;
 			if (result instanceof Error) {
 				switch (result.cause) {
-					case 'VALIDATION_ERROR':
+					case 'VALIDATION_ERROR': {
 						const validationMap = new Map<string, string[]>();
 						for (const message of result.message.split(';;;')) {
 							const [path, error] = message.split(';;');
@@ -163,7 +163,8 @@ export default function ResetPasswordPage() {
 						setFormErrors(validationMap.get('form') ?? []);
 						toast.error('Invalid Data', { id: toastId, duration: 3000 });
 						break;
-					case 'INVALID_TOKEN':
+					}
+					case 'INVALID_TOKEN': {
 						toast.error('Invalid Token', {
 							action: {
 								label: 'Go to sign in page',
@@ -173,9 +174,11 @@ export default function ResetPasswordPage() {
 							}
 						});
 						break;
-					case 'INVALID_EMAIL':
+					}
+					case 'INVALID_EMAIL': {
 						toast.error('Invalid Email', { id: toastId, duration: 3000 });
 						break;
+					}
 					default:
 						console.error(result);
 				}
@@ -280,9 +283,9 @@ export default function ResetPasswordPage() {
 									{() => (
 										<Show
 											when={passwordVisible()}
-											fallback={<span class="i-heroicons:eye-slash text-lg"></span>}
+											fallback={<span class="i-heroicons:eye-slash text-lg" />}
 										>
-											<span class="i-heroicons:eye-solid text-lg"></span>
+											<span class="i-heroicons:eye-solid text-lg" />
 										</Show>
 									)}
 								</Toggle>

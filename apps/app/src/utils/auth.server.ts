@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { getRequestEvent, isServer } from 'solid-js/web';
-import { deleteCookie, getCookie, getRequestURL, setCookie } from 'vinxi/http';
+import { deleteCookie, getCookie, setCookie } from 'vinxi/http';
 import { db } from '~/db';
 import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS } from '../consts';
@@ -13,22 +13,27 @@ import env from './env/server';
 import { localforage } from './localforage';
 import { resend } from './resend.server';
 
-const getUser = cache(async (shouldBeAuthenticated: boolean | null = true) => {
-	'use server';
+const getUser = cache(
+	async ({
+		redirectOnAuthenticated = false,
+		redirectOnUnauthenticated = true,
+		shouldThrow = true
+	}: Partial<{
+		redirectOnUnauthenticated: boolean;
+		redirectOnAuthenticated: boolean;
+		shouldThrow: boolean;
+	}> = {}) => {
+		'use server';
+		const user = await parseUser();
 
-	const url = getRequestURL();
-	const user = await parseUser();
-	if (shouldBeAuthenticated === null) return user;
-	if (!user && shouldBeAuthenticated) {
-		console.log(`Unauthorized: redirecting to /auth/signin from ${url.pathname}`);
-		throw redirect('/auth/signin');
-	}
-	if (user && !shouldBeAuthenticated) {
-		console.log(`Authorized: redirecting to / from ${url.pathname}`);
-		throw redirect('/');
-	}
-	return user;
-}, 'get-user');
+		if (!user && redirectOnUnauthenticated) throw redirect('/auth/signin');
+		if (user && redirectOnAuthenticated) throw redirect('/');
+		if (!user && shouldThrow) throw new Error('Unauthorized');
+
+		return user;
+	},
+	'get-user'
+);
 
 async function parseUser() {
 	'use server';
@@ -41,7 +46,7 @@ async function parseUser() {
 		} else {
 			return parseRefreshAccessToken();
 		}
-	} catch (err) {
+	} catch {
 		return parseRefreshAccessToken();
 	}
 }
@@ -107,8 +112,7 @@ async function isEncryptionEnabled() {
 async function isEncryptionEnabledServer() {
 	'use server';
 
-	const user = await getUser();
-	if (user === null) throw redirect('/auth/signin');
+	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
 
 	return user.salt !== null;
 }
@@ -116,12 +120,13 @@ async function isEncryptionEnabledServer() {
 async function verifyPassword(password: string): Promise<boolean | Error> {
 	'use server';
 
-	const user = await getUser();
-	if (!user) return new Error('Unauthorized');
+	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
+
 	const [$user] = await db
 		.select({ passwordHash: users.passwordHash })
 		.from(users)
 		.where(eq(users.id, user.id));
+
 	return await bcrypt.compare(password, $user.passwordHash);
 }
 const $signOut = async () => {
@@ -138,8 +143,8 @@ const signOut = action($signOut, 'sign-out');
 async function resendVerificationEmail() {
 	'use server';
 
-	const user = await getUser();
-	if (!user) throw new Error('Unauthorized');
+	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
+
 	const event = getRequestEvent()!;
 
 	const verificationToken = await db.transaction(async (tx) => {
@@ -174,14 +179,13 @@ async function getUserEncryptionKeys(): Promise<{
 	salt: Uint8Array;
 } | null> {
 	if (isServer) return null;
-	// TODO: resolve any
-	const [$publicKey, $privateKey, salt] = await localforage.getMany<any>([
+	const [$publicKey, $privateKey, salt] = await localforage.getMany<[string, string, Uint8Array]>([
 		'publicKey',
 		'privateKey',
 		'salt'
 	]);
 	if (!$publicKey || !$privateKey || !salt) {
-		const user = await getUser();
+		const user = await getUser({ shouldThrow: false });
 		if (!user) return null;
 		if (user.salt === null) return null;
 		$signOut();
@@ -205,6 +209,7 @@ async function encryptWithUserKeys(data: string) {
 
 async function decryptWithUserKeys(data: undefined): Promise<null>;
 async function decryptWithUserKeys(data: string): Promise<string>;
+async function decryptWithUserKeys(data: string | undefined): Promise<string | null>;
 async function decryptWithUserKeys(data: string | undefined) {
 	if (data === undefined) return null;
 	if (isServer) return data;
