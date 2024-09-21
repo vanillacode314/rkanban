@@ -66,9 +66,6 @@ const updateNode = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
-	if (name.endsWith('.project')) {
-		throw new Error(`custom:Cannot rename folder to ${name} ending in .project`);
-	}
 	const parentId = String(formData.get('parentId')).trim();
 
 	const [[rootNode], [currentNode]] = await Promise.all([
@@ -77,11 +74,13 @@ const updateNode = action(async (formData: FormData) => {
 			.from(nodes)
 			.where(and(isNull(nodes.parentId), eq(nodes.userId, user.id))),
 		db
-			.select({ parentId: nodes.parentId })
+			.select({ name: nodes.name, parentId: nodes.parentId })
 			.from(nodes)
 			.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 	]);
-
+	if (!currentNode.name.endsWith('.project') && name.endsWith('.project')) {
+		throw new Error(`custom:Cannot rename folder to ${name} ending in .project`);
+	}
 	if (currentNode.parentId === rootNode.id && RESERVED_PATHS.includes(`/${name}`)) {
 		throw new Error(`custom:/${name} is reserved`);
 	}
