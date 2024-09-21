@@ -13,9 +13,7 @@ const getNodes = cache(
 		'use server';
 
 		const user = (await getUser({ redirectOnUnauthenticated: true }))!;
-
-		const query = `${GET_NODES_BY_PATH_QUERY(path, user.id, includeChildren)}`;
-		console.log(query);
+		const query = GET_NODES_BY_PATH_QUERY(path, user.id, { includeChildren, orderBy: 'name' });
 		const $nodes = (await db.all(sql.raw(query))) as TNode[];
 		if ($nodes.length === 0) return new Error(`Not Found`, { cause: 'NOT_FOUND' });
 		const node = $nodes.shift()!;
@@ -226,7 +224,10 @@ function isFolder(node: TNode): boolean {
 const GET_NODES_BY_PATH_QUERY = (
 	path: string,
 	userId: string,
-	includeChildren: boolean = false
+	{
+		includeChildren = false,
+		orderBy = ''
+	}: Partial<{ includeChildren: boolean; orderBy: string }> = {}
 ) => {
 	const query = `
 	WITH RECURSIVE
@@ -273,7 +274,7 @@ const GET_NODES_BY_PATH_QUERY = (
 				SELECT 
 					* 
 				FROM 
-					nodes 
+          (SELECT * FROM nodes __orderBy)
 				WHERE 
 					parentId = (
 				    SELECT
@@ -283,7 +284,9 @@ const GET_NODES_BY_PATH_QUERY = (
 				    WHERE
 				      parent_path = __path 
 				  )
-					`.replace(/__path/g, `'${path}'`)
+					`
+					.replace(/__path/g, `'${path}'`)
+					.replace(/__orderBy/g, orderBy === '' ? '' : `ORDER BY ${orderBy}`)
 			:	''
 		);
 };

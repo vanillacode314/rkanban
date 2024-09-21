@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vinxi dev",
-    "build": "npm run test:once && build:nocheck",
+    "build": "npm run test:once && npm run build:nocheck",
     "build:nocheck": "npm run build:solid && npm run build:sw",
     "build:solid": "TURSO_BUILDING=1 vinxi build",
     "build:sw": "node ./workbox.js",
