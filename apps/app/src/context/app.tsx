@@ -1,31 +1,32 @@
 import { nanoid } from 'nanoid';
 import { createComputed, createContext, JSXElement, untrack, useContext } from 'solid-js';
 import { createStore, SetStoreFunction } from 'solid-js/store';
+
 import { TBoard, TNode, TTask } from '~/db/schema';
 
 type TClipboardItem = {
-	type: `${string}/${string}`;
 	data: string;
 	meta?: unknown;
-	mode: 'move' | 'copy';
+	mode: 'copy' | 'move';
+	type: `${string}/${string}`;
 };
 const DEFAULT_APP_CONTEXT = {
-	currentBoard: null,
-	currentTask: null,
-	currentNode: null,
-	clipboard: [],
 	boards: [],
-	path: '/',
-	id: nanoid()
+	clipboard: [],
+	currentBoard: null,
+	currentNode: null,
+	currentTask: null,
+	id: nanoid(),
+	path: '/'
 } satisfies TAppContext;
 type TAppContext = {
-	id: string;
-	currentBoard: null | TBoard;
-	currentTask: null | TTask;
+	boards: Array<{ tasks: TTask[] } & TBoard>;
 	clipboard: TClipboardItem[];
-	boards: Array<TBoard & { tasks: TTask[] }>;
+	currentBoard: null | TBoard;
+	currentNode: null | TNode;
+	currentTask: null | TTask;
+	id: string;
 	path: string;
-	currentNode: TNode | null;
 };
 const AppContext =
 	createContext<[appContext: TAppContext, setAppContext: SetStoreFunction<TAppContext>]>();

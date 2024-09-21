@@ -1,4 +1,4 @@
-function uniqBy<T>(array: T[], getKey: (item: T) => string | number) {
+function uniqBy<T>(array: T[], getKey: (item: T) => number | string) {
 	const seen = new Set();
 	return array.filter((item) => {
 		const key = getKey(item);

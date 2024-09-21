@@ -2,11 +2,12 @@ import { A, action, useAction, useNavigate, useSubmission } from '@solidjs/route
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
-import { Show, createEffect, createSignal, untrack } from 'solid-js';
+import { createEffect, createSignal, Show, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { setCookie } from 'vinxi/http';
 import { z } from 'zod';
+
 import ValidationErrors from '~/components/form/ValidationErrors';
 import { Button } from '~/components/ui/button';
 import {
@@ -61,24 +62,24 @@ const signIn = action(async (formData: FormData) => {
 	});
 
 	await db.insert(refreshTokens).values({
-		userId: user.id,
+		expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN_SECONDS * 1000),
 		token: refreshToken,
-		expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN_SECONDS * 1000)
+		userId: user.id
 	});
 
 	setCookie('accessToken', accessToken, {
 		httpOnly: true,
-		secure: import.meta.env.PROD,
+		maxAge: 2 ** 31,
 		path: '/',
 		sameSite: 'lax',
-		maxAge: 2 ** 31
+		secure: import.meta.env.PROD
 	});
 	setCookie('refreshToken', refreshToken, {
 		httpOnly: true,
-		secure: import.meta.env.PROD,
+		maxAge: 2 ** 31,
 		path: '/',
 		sameSite: 'lax',
-		maxAge: 2 ** 31
+		secure: import.meta.env.PROD
 	});
 	return { ...user, passwordHash: undefined };
 }, 'signin');
@@ -91,9 +92,9 @@ export default function SignInPage() {
 	const navigate = useNavigate();
 	const [formErrors, setFormErrors] = createStore<string[]>([]);
 
-	let toastId: string | number | undefined;
+	let toastId: number | string | undefined;
 	createEffect(() => {
-		const { result, pending } = submission;
+		const { pending, result } = submission;
 
 		untrack(() => {
 			if (pending) {
@@ -111,14 +112,14 @@ export default function SignInPage() {
 							validationMap.set(path, [...(validationMap.get(path) ?? []), error]);
 						}
 						setFormErrors(validationMap.get('form') ?? []);
-						toast.error('Invalid Data', { id: toastId, duration: 3000 });
+						toast.error('Invalid Data', { duration: 3000, id: toastId });
 						break;
 					}
 					default:
 						console.error(result);
 				}
 			} else {
-				toast.success('Login successful', { id: toastId, duration: 3000 });
+				toast.success('Login successful', { duration: 3000, id: toastId });
 			}
 			toastId = undefined;
 		});
@@ -133,7 +134,7 @@ export default function SignInPage() {
 				const formData = new FormData(form);
 				const result = await $signIn(formData);
 				if (result instanceof Error) return;
-				const { encryptedPrivateKey, salt, publicKey } = result;
+				const { encryptedPrivateKey, publicKey, salt } = result;
 				if (encryptedPrivateKey === null || salt === null || publicKey === null) {
 					navigate('/');
 					return;
@@ -144,8 +145,8 @@ export default function SignInPage() {
 				const decryptedPrivateKey = await decryptDataWithKey(encryptedPrivateKey, privateKey);
 				await localforage.setMany({
 					privateKey: decryptedPrivateKey,
-					salt: parsedSalt,
-					publicKey: atob(publicKey)
+					publicKey: atob(publicKey),
+					salt: parsedSalt
 				});
 			}}
 		>
@@ -159,15 +160,15 @@ export default function SignInPage() {
 					<TextField>
 						<TextFieldLabel for="email">Email</TextFieldLabel>
 						<TextFieldInput
+							autocomplete="username"
 							autofocus
-							value={email()}
-							onInput={(e) => setEmail(e.currentTarget.value)}
 							id="email"
-							type="email"
 							name="email"
+							onInput={(e) => setEmail(e.currentTarget.value)}
 							placeholder="m@example.com"
 							required
-							autocomplete="username"
+							type="email"
+							value={email()}
 						/>
 					</TextField>
 					<TextField>
@@ -179,7 +180,7 @@ export default function SignInPage() {
 										const $email = z.string().email().parse(email());
 										navigate('/auth/forgot-password?email=' + $email);
 									} catch {
-										toast.error('Invalid email', { id: toastId, duration: 3000 });
+										toast.error('Invalid email', { duration: 3000, id: toastId });
 									}
 								}}
 								variant="link"
@@ -189,17 +190,17 @@ export default function SignInPage() {
 						</div>
 						<div class="flex gap-2">
 							<TextFieldInput
-								name="password"
-								id="password"
-								type={passwordVisible() ? 'text' : 'password'}
-								required
 								autocomplete="current-password"
+								id="password"
+								name="password"
+								required
+								type={passwordVisible() ? 'text' : 'password'}
 							/>
 							<Toggle aria-label="toggle password" onChange={(value) => setPasswordVisible(value)}>
 								{(state) => (
 									<Show
-										when={state.pressed()}
 										fallback={<span class="i-heroicons:eye-slash text-lg" />}
+										when={state.pressed()}
 									>
 										<span class="i-heroicons:eye-solid text-lg" />
 									</Show>
@@ -209,10 +210,10 @@ export default function SignInPage() {
 					</TextField>
 				</CardContent>
 				<CardFooter class="grid gap-4 sm:grid-cols-2">
-					<Button type="submit" class="w-full">
+					<Button class="w-full" type="submit">
 						Sign in
 					</Button>
-					<Button variant="ghost" href="/auth/signup" as={A}>
+					<Button as={A} href="/auth/signup" variant="ghost">
 						Sign Up Instead
 					</Button>
 				</CardFooter>

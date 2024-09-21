@@ -9,10 +9,11 @@ import {
 } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
-import { Show, createEffect, createSignal, untrack } from 'solid-js';
+import { createEffect, createSignal, Show, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { z } from 'zod';
+
 import ValidationErrors from '~/components/form/ValidationErrors';
 import { useSeedPhraseVerifyModal } from '~/components/modals/auto-import/SeedPhraseVerifyModal';
 import { Button } from '~/components/ui/button';
@@ -39,11 +40,11 @@ import {
 
 const resetPasswordSchema = z
 	.object({
-		email: z.string({ required_error: 'Email is required' }).email(),
-		password: passwordSchema,
 		confirmPassword: z.string(),
-		token: z.string({ required_error: 'Token is required' }),
-		encryptedPrivateKey: z.string().optional()
+		email: z.string({ required_error: 'Email is required' }).email(),
+		encryptedPrivateKey: z.string().optional(),
+		password: passwordSchema,
+		token: z.string({ required_error: 'Token is required' })
 	})
 	.refine((data) => data.password === data.confirmPassword, 'Passwords do not match');
 const resetPassword = action(async (formData: FormData) => {
@@ -59,7 +60,7 @@ const resetPassword = action(async (formData: FormData) => {
 			}
 		);
 	}
-	const { token, email, password, encryptedPrivateKey } = result.data;
+	const { email, encryptedPrivateKey, password, token } = result.data;
 
 	const [$token] = await db
 		.select()
@@ -87,7 +88,7 @@ const resetPassword = action(async (formData: FormData) => {
 	await db.transaction(async (tx) => {
 		await tx
 			.update(users)
-			.set({ passwordHash, encryptedPrivateKey })
+			.set({ encryptedPrivateKey, passwordHash })
 			.where(eq(users.email, email))
 			.returning();
 		await tx.delete(forgotPasswordTokens).where(eq(forgotPasswordTokens.userId, user.id));
@@ -139,9 +140,9 @@ export default function ResetPasswordPage() {
 	const [encryptedPrivateKey, setEncryptedPrivateKey] = createSignal<string>('');
 	const $resetPassword = useAction(resetPassword);
 
-	let toastId: string | number | undefined;
+	let toastId: number | string | undefined;
 	createEffect(() => {
-		const { result, pending } = submission;
+		const { pending, result } = submission;
 
 		untrack(() => {
 			if (pending) {
@@ -161,7 +162,7 @@ export default function ResetPasswordPage() {
 						setEmailErrors(validationMap.get('email') ?? []);
 						setPasswordErrors(validationMap.get('password') ?? []);
 						setFormErrors(validationMap.get('form') ?? []);
-						toast.error('Invalid Data', { id: toastId, duration: 3000 });
+						toast.error('Invalid Data', { duration: 3000, id: toastId });
 						break;
 					}
 					case 'INVALID_TOKEN': {
@@ -176,14 +177,14 @@ export default function ResetPasswordPage() {
 						break;
 					}
 					case 'INVALID_EMAIL': {
-						toast.error('Invalid Email', { id: toastId, duration: 3000 });
+						toast.error('Invalid Email', { duration: 3000, id: toastId });
 						break;
 					}
 					default:
 						console.error(result);
 				}
 			} else {
-				toast.success('Login successful', { id: toastId, duration: 3000 });
+				toast.success('Login successful', { duration: 3000, id: toastId });
 			}
 			toastId = undefined;
 		});
@@ -191,15 +192,15 @@ export default function ResetPasswordPage() {
 
 	return (
 		<Show
-			when={token()}
 			fallback={
 				<div class="grid w-full place-content-center place-items-center gap-4 p-5">
 					<p>Invalid token</p>
-					<Button class="w-full" href="/" as={A}>
+					<Button as={A} class="w-full" href="/">
 						Go to home page
 					</Button>
 				</div>
 			}
+			when={token()}
 		>
 			<form
 				class="grid h-full place-content-center"
@@ -216,12 +217,11 @@ export default function ResetPasswordPage() {
 						return;
 					}
 					if (challenge !== null) {
-						const { encryptedString, salt, decryptedString } = challenge;
+						const { decryptedString, encryptedString, salt } = challenge;
 						await new Promise<void>((resolve) => {
 							seedPhraseVerifyModal.open({
-								encryptedString,
 								decryptedString,
-								salt,
+								encryptedString,
 								onDismiss() {
 									setEncryptedPrivateKey('');
 									resolve();
@@ -234,7 +234,8 @@ export default function ResetPasswordPage() {
 									const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
 									setEncryptedPrivateKey(encryptedPrivateKey);
 									resolve();
-								}
+								},
+								salt
 							});
 						});
 					}
@@ -250,19 +251,19 @@ export default function ResetPasswordPage() {
 						<CardDescription>Create a new password</CardDescription>
 					</CardHeader>
 					<CardContent class="grid gap-4">
-						<input type="hidden" name="token" value={token()} />
-						<input type="hidden" name="encryptedPrivateKey" value={encryptedPrivateKey()} />
+						<input name="token" type="hidden" value={token()} />
+						<input name="encryptedPrivateKey" type="hidden" value={encryptedPrivateKey()} />
 						<ValidationErrors errors={formErrors} />
 						<TextField>
 							<TextFieldLabel for="email">Email</TextFieldLabel>
 							<TextFieldInput
+								autocomplete="username"
 								autofocus
 								id="email"
-								type="email"
 								name="email"
 								placeholder="m@example.com"
 								required
-								autocomplete="username"
+								type="email"
 							/>
 						</TextField>
 						<ValidationErrors errors={emailErrors} />
@@ -270,11 +271,11 @@ export default function ResetPasswordPage() {
 							<TextFieldLabel for="password">New Password</TextFieldLabel>
 							<div class="flex gap-2">
 								<TextFieldInput
-									name="password"
-									id="password"
-									type={passwordVisible() ? 'text' : 'password'}
-									required
 									autocomplete="current-password"
+									id="password"
+									name="password"
+									required
+									type={passwordVisible() ? 'text' : 'password'}
 								/>
 								<Toggle
 									aria-label="toggle password"
@@ -282,8 +283,8 @@ export default function ResetPasswordPage() {
 								>
 									{() => (
 										<Show
-											when={passwordVisible()}
 											fallback={<span class="i-heroicons:eye-slash text-lg" />}
+											when={passwordVisible()}
 										>
 											<span class="i-heroicons:eye-solid text-lg" />
 										</Show>
@@ -295,16 +296,16 @@ export default function ResetPasswordPage() {
 						<TextField>
 							<TextFieldLabel for="confirm-password">Confirm Password</TextFieldLabel>
 							<TextFieldInput
-								name="confirmPassword"
-								id="confirm-password"
-								type={passwordVisible() ? 'text' : 'password'}
-								required
 								autocomplete="current-password"
+								id="confirm-password"
+								name="confirmPassword"
+								required
+								type={passwordVisible() ? 'text' : 'password'}
 							/>
 						</TextField>
 					</CardContent>
 					<CardFooter>
-						<Button type="submit" class="w-full">
+						<Button class="w-full" type="submit">
 							Reset Password
 						</Button>
 					</CardFooter>

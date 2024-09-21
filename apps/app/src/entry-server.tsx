@@ -10,20 +10,20 @@ export default createHandler(() => (
 					<head>
 						<meta charset="utf-8" />
 						<meta
-							name="viewport"
 							content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
+							name="viewport"
 						/>
-						<meta name="description" content="The best way to manage your projects" />
-						<link rel="manifest" href="/manifest.webmanifest" />
-						<link rel="icon" href="/favicon.ico" sizes="48x48" />
-						<link rel="icon" href="/favicon-flattened.svg" sizes="any" type="image/svg+xml" />
-						<link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
-						<meta name="theme-color" content="#000000" />
+						<meta content="The best way to manage your projects" name="description" />
+						<link href="/manifest.webmanifest" rel="manifest" />
+						<link href="/favicon.ico" rel="icon" sizes="48x48" />
+						<link href="/favicon-flattened.svg" rel="icon" sizes="any" type="image/svg+xml" />
+						<link href="/apple-touch-icon-180x180.png" rel="apple-touch-icon" />
+						<meta content="#000000" name="theme-color" />
 						{assets}
 						{import.meta.env.PROD && (
 							<script
-								defer
 								data-domain="kanban.raqueeb.com"
+								defer
 								src="https://plausible.raqueeb.com/js/script.js"
 							/>
 						)}

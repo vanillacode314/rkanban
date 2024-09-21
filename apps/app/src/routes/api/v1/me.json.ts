@@ -1,5 +1,6 @@
 import { json } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
+
 import { db } from '~/db';
 import { boards, nodes, tasks } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
@@ -12,34 +13,34 @@ export async function GET() {
 		db
 			.select({
 				id: nodes.id,
+				isDirectory: nodes.isDirectory,
 				name: nodes.name,
 				parentId: nodes.parentId,
-				updatedAt: nodes.updatedAt,
-				isDirectory: nodes.isDirectory
+				updatedAt: nodes.updatedAt
 			})
 			.from(nodes)
 			.where(eq(nodes.userId, user.id)),
 		db
 			.select({
 				id: boards.id,
-				title: boards.title,
 				index: boards.index,
 				nodeId: boards.nodeId,
+				title: boards.title,
 				updatedAt: boards.updatedAt
 			})
 			.from(boards)
 			.where(eq(boards.userId, user.id)),
 		db
 			.select({
-				id: tasks.id,
-				title: tasks.title,
-				index: tasks.index,
 				boardId: tasks.boardId,
+				id: tasks.id,
+				index: tasks.index,
+				title: tasks.title,
 				updatedAt: tasks.updatedAt
 			})
 			.from(tasks)
 			.where(eq(tasks.userId, user.id))
 	]);
 
-	return json({ nodes: $nodes, boards: $boards, tasks: $tasks });
+	return json({ boards: $boards, nodes: $nodes, tasks: $tasks });
 }

@@ -1,11 +1,13 @@
 import { useColorMode } from '@kobalte/core/color-mode';
 import { A, useAction, useLocation } from '@solidjs/router';
 import { RequestEventLocals } from '@solidjs/start/server';
-import { Show, Suspense, createResource, createSignal } from 'solid-js';
-import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
+import { createResource, createSignal, Show, Suspense } from 'solid-js';
+
 import { cn } from '~/lib/utils';
 import { getUser, refreshAccessToken, resendVerificationEmail, signOut } from '~/utils/auth.server';
 import { localforage } from '~/utils/localforage';
+
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
 
 export default function Nav(props: { class?: string }) {
@@ -13,7 +15,7 @@ export default function Nav(props: { class?: string }) {
 	const [user, { refetch: refetchUser }] = createResource(
 		() => location.pathname,
 		() => getUser({ shouldThrow: false }),
-		{ initialValue: null, deferStream: true }
+		{ deferStream: true, initialValue: null }
 	);
 	const { toggleColorMode } = useColorMode();
 	const $signOut = useAction(signOut);
@@ -34,27 +36,27 @@ export default function Nav(props: { class?: string }) {
 								await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 							}}
 						>
-							<Button type="submit" class="flex items-center gap-2" variant="outline">
+							<Button class="flex items-center gap-2" type="submit" variant="outline">
 								<span>Sign Out</span>
 								<span class="i-heroicons:arrow-right-end-on-rectangle text-xl" />
 							</Button>
 						</form>
 					</Show>
 				</Suspense>
-				<Button onClick={() => toggleColorMode()} variant="outline" size="icon">
+				<Button onClick={() => toggleColorMode()} size="icon" variant="outline">
 					<div class="i-heroicons:sun rotate-0 scale-100 text-xl transition-all dark:-rotate-90 dark:scale-0" />
 					<div class="i-heroicons:moon absolute rotate-90 scale-0 text-xl transition-all dark:rotate-0 dark:scale-100" />
 					<span class="sr-only">Toggle theme</span>
 				</Button>
 			</div>
-			<VerificationEmailAlert user={user()} refetchUser={refetchUser} />
+			<VerificationEmailAlert refetchUser={refetchUser} user={user()} />
 		</nav>
 	);
 }
 
 function VerificationEmailAlert(props: {
-	user: RequestEventLocals['user'];
 	refetchUser: () => void;
+	user: RequestEventLocals['user'];
 }) {
 	const [cooldown, setCooldown] = createSignal<number>(0);
 
@@ -80,17 +82,17 @@ function VerificationEmailAlert(props: {
 					</AlertDescription>
 				</div>
 				<div class="flex gap-4">
-					<Button variant="secondary" onClick={() => refreshAccessToken()}>
+					<Button onClick={() => refreshAccessToken()} variant="secondary">
 						Check Again
 					</Button>
 					<Button
-						variant="outline"
+						disabled={cooldown() > 0}
 						onClick={async () => {
 							countdown();
 							await resendVerificationEmail();
 							props.refetchUser();
 						}}
-						disabled={cooldown() > 0}
+						variant="outline"
 					>
 						Send Again{' '}
 						{cooldown() > 0 ?

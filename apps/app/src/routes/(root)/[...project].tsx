@@ -1,30 +1,31 @@
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
-import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
-import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, RouteDefinition, createAsync, revalidate } from '@solidjs/router';
+import { A, createAsync, revalidate, RouteDefinition } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import {
-	ParentComponent,
-	Setter,
-	Show,
 	createComputed,
 	createMemo,
 	createSignal,
 	onCleanup,
 	onMount,
+	ParentComponent,
+	Setter,
+	Show,
 	untrack
 } from 'solid-js';
 import { toast } from 'solid-sonner';
+
 import Board from '~/components/Board';
-import PathCrumbs from '~/components/PathCrumbs';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
+import PathCrumbs from '~/components/PathCrumbs';
 import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
@@ -38,12 +39,12 @@ import { createSubscription } from '~/utils/subscribe';
 import invariant from '~/utils/tiny-invariant';
 
 export const route: RouteDefinition = {
-	preload: ({ location }) => {
-		getBoards(location.pathname);
-	},
 	matchFilters: {
 		project: (pathname: string) =>
 			pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
+	},
+	preload: ({ location }) => {
+		getBoards(location.pathname);
 	}
 };
 
@@ -63,25 +64,25 @@ export default function ProjectPage() {
 	onSubmission(
 		createBoard,
 		{
+			onError(toastId: number | string | undefined) {
+				toast.error('Error', { id: toastId });
+			},
 			onPending(input) {
 				setBoards((boards) =>
 					produce(boards, (boards) => {
 						boards?.push({
-							id: String(input[0].get('id')),
-							title: String(input[0].get('title')),
-							tasks: [],
 							createdAt: new Date(),
-							updatedAt: new Date(),
-							userId: 'pending',
+							id: String(input[0].get('id')),
 							index: boards!.length,
-							nodeId: 'pending'
+							nodeId: 'pending',
+							tasks: [],
+							title: String(input[0].get('title')),
+							updatedAt: new Date(),
+							userId: 'pending'
 						});
 					})
 				);
 				return toast.loading('Creating Board');
-			},
-			onError(toastId) {
-				toast.error('Error', { id: toastId });
 			},
 			onSuccess(board, toastId) {
 				decryptWithUserKeys(board.title).then((title) => {
@@ -100,6 +101,45 @@ export default function ProjectPage() {
 	});
 
 	createSubscription({
+		boards: {
+			create: ({ data }) => {
+				const board = { ...(data as TBoard), tasks: [] };
+				setBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						boards.push(board);
+					})
+				);
+				decryptWithUserKeys(board.title).then((title) =>
+					toast.info(`Another client created board: ${title}`)
+				);
+			},
+			delete: ({ id }) => {
+				setBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const index = boards.findIndex((board) => board.id === id);
+						if (-1 === index) return boards;
+						boards.splice(index, 1);
+					})
+				);
+				toast.info('Another client deleted board');
+			},
+			update: ({ data }) => {
+				const board = data as TBoard;
+				setBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const index = boards.findIndex((b) => b.id === board.id);
+						if (-1 === index) return boards;
+						boards[index] = { ...boards[index], ...board };
+					})
+				);
+				decryptWithUserKeys(board.title).then((title) =>
+					toast.info(`Another client updated board: ${title}`)
+				);
+			}
+		},
 		tasks: {
 			create: ({ data }) => {
 				const task = data as TTask;
@@ -114,6 +154,19 @@ export default function ProjectPage() {
 				decryptWithUserKeys(task.title).then((title) =>
 					toast.info(`Another client created task: ${title}`)
 				);
+			},
+			delete: ({ id }) => {
+				setBoards((boards) =>
+					produce(boards, (boards) => {
+						if (!boards) return boards;
+						const board = boards.find((board) => board.tasks.some((task) => task.id === id));
+						if (!board) return boards;
+						const taskIndex = board.tasks.findIndex((task) => task.id === id);
+						if (-1 === taskIndex) return boards;
+						board.tasks.splice(taskIndex, 1);
+					})
+				);
+				toast.info('Another client deleted a task');
 			},
 			update: ({ data }) => {
 				const task = data as TTask;
@@ -130,65 +183,12 @@ export default function ProjectPage() {
 				decryptWithUserKeys(task.title).then((title) =>
 					toast.info(`Another client update task: ${title}`)
 				);
-			},
-			delete: ({ id }) => {
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const board = boards.find((board) => board.tasks.some((task) => task.id === id));
-						if (!board) return boards;
-						const taskIndex = board.tasks.findIndex((task) => task.id === id);
-						if (-1 === taskIndex) return boards;
-						board.tasks.splice(taskIndex, 1);
-					})
-				);
-				toast.info('Another client deleted a task');
-			}
-		},
-		boards: {
-			create: ({ data }) => {
-				const board = { ...(data as TBoard), tasks: [] };
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						boards.push(board);
-					})
-				);
-				decryptWithUserKeys(board.title).then((title) =>
-					toast.info(`Another client created board: ${title}`)
-				);
-			},
-			update: ({ data }) => {
-				const board = data as TBoard;
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const index = boards.findIndex((b) => b.id === board.id);
-						if (-1 === index) return boards;
-						boards[index] = { ...boards[index], ...board };
-					})
-				);
-				decryptWithUserKeys(board.title).then((title) =>
-					toast.info(`Another client updated board: ${title}`)
-				);
-			},
-			delete: ({ id }) => {
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const index = boards.findIndex((board) => board.id === id);
-						if (-1 === index) return boards;
-						boards.splice(index, 1);
-					})
-				);
-				toast.info('Another client deleted board');
 			}
 		}
 	});
 
 	return (
 		<Show
-			when={!(boards() instanceof Error)}
 			fallback={
 				<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
 					<div>Project Not Found</div>
@@ -197,6 +197,7 @@ export default function ProjectPage() {
 					</Button>
 				</div>
 			}
+			when={!(boards() instanceof Error)}
 		>
 			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
 				<Show when={boardsDirty()}>
@@ -211,15 +212,15 @@ export default function ProjectPage() {
 												const data = [];
 												for (const [index, task] of board.tasks.entries()) {
 													if (index === task.index && task.boardId === board.id) continue;
-													data.push({ id: task.id, index, boardId: board.id });
+													data.push({ boardId: board.id, id: task.id, index });
 												}
 												return data;
 											})
 										).then(() => revalidate(getBoards.key)),
 									{
+										error: 'Failed to apply changes',
 										loading: 'Applying changes...',
-										success: 'Changes applied',
-										error: 'Failed to apply changes'
+										success: 'Changes applied'
 									}
 								);
 							}}
@@ -229,10 +230,10 @@ export default function ProjectPage() {
 						</Button>
 						<Button
 							class="flex items-center gap-2"
-							variant="secondary"
 							onClick={() => {
 								setBoards(() => $boards.latest);
 							}}
+							variant="secondary"
 						>
 							<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
 							<span>Cancel</span>
@@ -249,12 +250,11 @@ export default function ProjectPage() {
 				</Show>
 				<PathCrumbs />
 				<Show
-					when={hasBoards()}
 					fallback={
 						<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
 							<img
-								src="/empty.svg"
 								class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+								src="/empty.svg"
 							/>
 							<span>Empty Project</span>
 							<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
@@ -268,13 +268,14 @@ export default function ProjectPage() {
 							</div>
 						</div>
 					}
+					when={hasBoards()}
 				>
-					<AnimatedBoardsList setBoards={setBoards} boards={boards()!}>
-						<Key each={boards()} by="id">
+					<AnimatedBoardsList boards={boards()!} setBoards={setBoards}>
+						<Key by="id" each={boards()}>
 							{(board, index) => (
 								<Board
-									class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
 									board={board()}
+									class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
 									index={index()}
 								/>
 							)}
@@ -288,15 +289,15 @@ export default function ProjectPage() {
 }
 
 const AnimatedBoardsList: ParentComponent<{
-	boards: Array<TBoard & { tasks: TTask[] }>;
-	setBoards: Setter<Array<TBoard & { tasks: TTask[] }> | undefined>;
+	boards: Array<{ tasks: TTask[] } & TBoard>;
+	setBoards: Setter<Array<{ tasks: TTask[] } & TBoard> | undefined>;
 }> = (props) => {
 	const resolved = resolveElements(
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
 	const transition = createListTransition(resolved.toArray, {
-		onChange({ list: _list, added, removed, unchanged, finishRemoved }) {
+		onChange({ added, finishRemoved, list: _list, removed, unchanged }) {
 			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
@@ -304,7 +305,7 @@ const AnimatedBoardsList: ParentComponent<{
 				});
 			}
 			for (const el of removed) {
-				const { left, top, width, height } = el.getBoundingClientRect();
+				const { height, left, top, width } = el.getBoundingClientRect();
 				queueMicrotask(() => {
 					el.style.position = 'absolute';
 					el.style.left = `${left}px`;
@@ -343,7 +344,7 @@ const AnimatedBoardsList: ParentComponent<{
 					return 'taskId' in source.data;
 				},
 				onDragStart: () => setIsBeingDragged(true),
-				onDrop({ source, location }) {
+				onDrop({ location, source }) {
 					setIsBeingDragged(false);
 					const destination = location.current.dropTargets[0];
 					if (!destination) return;
@@ -370,11 +371,11 @@ const AnimatedBoardsList: ParentComponent<{
 								invariant(boards);
 								const board = boards[destinationBoardIndex];
 								board.tasks = reorderWithEdge({
-									list: board.tasks,
-									startIndex: sourceIndex,
-									indexOfTarget: destinationIndex,
+									axis: 'vertical',
 									closestEdgeOfTarget,
-									axis: 'vertical'
+									indexOfTarget: destinationIndex,
+									list: board.tasks,
+									startIndex: sourceIndex
 								});
 							})
 						);
@@ -402,11 +403,11 @@ const AnimatedBoardsList: ParentComponent<{
 	});
 	return (
 		<div
-			ref={el}
 			class={cn(
 				'flex h-full gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] lg:[--cols:3] xl:[--cols:4]',
 				isBeingDragged() ? '' : 'snap-x snap-mandatory'
 			)}
+			ref={el}
 		>
 			{transition()}
 		</div>
@@ -416,9 +417,9 @@ const AnimatedBoardsList: ParentComponent<{
 function SkeletonBoard(props: { class?: string }) {
 	return (
 		<Button
-			variant="ghost"
 			class={cn('flex h-full w-full items-center gap-2', props.class)}
 			onClick={() => setCreateBoardModalOpen(true)}
+			variant="ghost"
 		>
 			<span class="i-heroicons:plus text-lg" />
 			<span>Create Board</span>

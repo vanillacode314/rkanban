@@ -7,41 +7,41 @@ const w = d * 7;
 const y = d * 365.25;
 
 type Unit =
-	| 'Years'
-	| 'Year'
-	| 'Yrs'
-	| 'Yr'
-	| 'Y'
-	| 'Weeks'
-	| 'Week'
-	| 'W'
-	| 'Days'
-	| 'Day'
 	| 'D'
-	| 'Hours'
-	| 'Hour'
-	| 'Hrs'
-	| 'Hr'
+	| 'Day'
+	| 'Days'
 	| 'H'
-	| 'Minutes'
-	| 'Minute'
-	| 'Mins'
-	| 'Min'
+	| 'Hour'
+	| 'Hours'
+	| 'Hr'
+	| 'Hrs'
 	| 'M'
-	| 'Seconds'
-	| 'Second'
-	| 'Secs'
-	| 'Sec'
-	| 's'
-	| 'Milliseconds'
 	| 'Millisecond'
-	| 'Msecs'
+	| 'Milliseconds'
+	| 'Min'
+	| 'Mins'
+	| 'Minute'
+	| 'Minutes'
+	| 'Ms'
 	| 'Msec'
-	| 'Ms';
+	| 'Msecs'
+	| 's'
+	| 'Sec'
+	| 'Second'
+	| 'Seconds'
+	| 'Secs'
+	| 'W'
+	| 'Week'
+	| 'Weeks'
+	| 'Y'
+	| 'Year'
+	| 'Years'
+	| 'Yr'
+	| 'Yrs';
 
-type UnitAnyCase = Unit | Uppercase<Unit> | Lowercase<Unit>;
+type UnitAnyCase = Lowercase<Unit> | Unit | Uppercase<Unit>;
 
-export type StringValue = `${number}` | `${number}${UnitAnyCase}` | `${number} ${UnitAnyCase}`;
+export type StringValue = `${number} ${UnitAnyCase}` | `${number}${UnitAnyCase}` | `${number}`;
 
 interface Options {
 	/**
@@ -59,7 +59,7 @@ interface Options {
  */
 function msFn(value: StringValue, options?: Options): number;
 function msFn(value: number, options?: Options): string;
-function msFn(value: StringValue | number, options?: Options): number | string {
+function msFn(value: number | StringValue, options?: Options): number | string {
 	try {
 		if (typeof value === 'string') {
 			return parse(value);
@@ -93,51 +93,51 @@ export function parse(str: string): number {
 		);
 	// Named capture groups need to be manually typed today.
 	// https://github.com/microsoft/TypeScript/issues/32098
-	const groups = match?.groups as { value: string; type?: string } | undefined;
+	const groups = match?.groups as { type?: string; value: string } | undefined;
 	if (!groups) {
 		return NaN;
 	}
 	const n = parseFloat(groups.value);
 	const type = (groups.type || 'ms').toLowerCase() as Lowercase<Unit>;
 	switch (type) {
-		case 'years':
-		case 'year':
-		case 'yrs':
-		case 'yr':
-		case 'y':
-			return n * y;
-		case 'weeks':
-		case 'week':
-		case 'w':
-			return n * w;
-		case 'days':
-		case 'day':
 		case 'd':
+		case 'day':
+		case 'days':
 			return n * d;
-		case 'hours':
-		case 'hour':
-		case 'hrs':
-		case 'hr':
 		case 'h':
+		case 'hour':
+		case 'hours':
+		case 'hr':
+		case 'hrs':
 			return n * h;
-		case 'minutes':
-		case 'minute':
-		case 'mins':
-		case 'min':
 		case 'm':
+		case 'min':
+		case 'mins':
+		case 'minute':
+		case 'minutes':
 			return n * m;
-		case 'seconds':
-		case 'second':
-		case 'secs':
-		case 'sec':
-		case 's':
-			return n * s;
-		case 'milliseconds':
 		case 'millisecond':
-		case 'msecs':
-		case 'msec':
+		case 'milliseconds':
 		case 'ms':
+		case 'msec':
+		case 'msecs':
 			return n;
+		case 's':
+		case 'sec':
+		case 'second':
+		case 'seconds':
+		case 'secs':
+			return n * s;
+		case 'w':
+		case 'week':
+		case 'weeks':
+			return n * w;
+		case 'y':
+		case 'year':
+		case 'years':
+		case 'yr':
+		case 'yrs':
+			return n * y;
 		default:
 			// This should never occur.
 			throw new Error(`The unit ${type as string} was matched, but no matching case exists.`);

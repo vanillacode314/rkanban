@@ -2,10 +2,11 @@ import { ColorModeProvider, cookieStorageManagerSSR } from '@kobalte/core/color-
 import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
 import { createAsync, useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
-import { For, JSXElement, Match, Show, Switch, createEffect, untrack } from 'solid-js';
+import { createEffect, For, JSXElement, Match, Show, Switch, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { getCookie } from 'vinxi/http';
+
 import Nav from '~/components/Nav';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
@@ -81,8 +82,8 @@ function Clipboard() {
 							<Switch>
 								<Match when={item.type === 'id/node'}>
 									<Button
-										class="grid grid-cols-[auto_1fr_auto] items-center gap-2"
 										as="div"
+										class="grid grid-cols-[auto_1fr_auto] items-center gap-2"
 										variant="secondary"
 									>
 										<span

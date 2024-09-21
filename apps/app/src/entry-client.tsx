@@ -3,18 +3,7 @@ import { mount, StartClient } from '@solidjs/start/client';
 import 'solid-devtools';
 import { toast } from 'solid-sonner';
 
-function listenForWaitingServiceWorker(registration: ServiceWorkerRegistration): Promise<void> {
-	return new Promise<void>((resolve) => {
-		function awaitStateChange() {
-			registration.installing?.addEventListener('statechange', function () {
-				if (this.state === 'installed') resolve();
-			});
-		}
-		if (registration.waiting) return resolve();
-		if (registration.installing) awaitStateChange();
-		registration.addEventListener('updatefound', awaitStateChange);
-	});
-}
+import { listenForWaitingServiceWorker } from './utils/service-worker';
 
 let refreshing: boolean;
 navigator.serviceWorker.addEventListener('controllerchange', function () {
@@ -25,11 +14,11 @@ navigator.serviceWorker.addEventListener('controllerchange', function () {
 
 function promptUserToRefresh(registration: ServiceWorkerRegistration) {
 	toast('New version available!', {
-		duration: Number.POSITIVE_INFINITY,
 		action: {
 			label: 'Update',
 			onClick: () => registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
-		}
+		},
+		duration: Number.POSITIVE_INFINITY
 	});
 }
 

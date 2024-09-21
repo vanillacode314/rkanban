@@ -1,13 +1,14 @@
-import { A, RouteDefinition, action, createAsync, redirect, useAction } from '@solidjs/router';
+import { A, action, createAsync, redirect, RouteDefinition, useAction } from '@solidjs/router';
 import { eq, sql } from 'drizzle-orm';
 import { Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 import { deleteCookie } from 'vinxi/http';
+
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
-import { TBoard, TTask, boards, tasks, users } from '~/db/schema';
+import { boards, tasks, TBoard, TTask, users } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
 import { getTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
@@ -22,12 +23,13 @@ import { generateSeedPhrase } from '~/utils/crypto';
 import { download, getFileText } from '~/utils/file';
 import itertools from '~/utils/itertools';
 import { localforage } from '~/utils/localforage';
+
 import {
+	diffBoards,
+	diffNodes,
 	TStrippedBoard,
 	TStrippedNode,
-	TStrippedTask,
-	diffBoards,
-	diffNodes
+	TStrippedTask
 } from './settings.utils';
 
 const deleteUser = action(async () => {
@@ -51,15 +53,15 @@ const disableEncryption = action(async (decryptedBoards: TBoard[], decryptedTask
 				.insert(boards)
 				.values(decryptedBoards)
 				.onConflictDoUpdate({
-					target: boards.id,
-					set: { title: sql`excluded.title` }
+					set: { title: sql`excluded.title` },
+					target: boards.id
 				}),
 			tx
 				.insert(tasks)
 				.values(decryptedTasks)
 				.onConflictDoUpdate({
-					target: tasks.id,
-					set: { title: sql`excluded.title` }
+					set: { title: sql`excluded.title` },
+					target: tasks.id
 				}),
 			tx
 				.update(users)
@@ -75,8 +77,8 @@ export const route: RouteDefinition = {
 };
 
 type TBackup = {
-	nodes: TStrippedNode[];
 	boards: TStrippedBoard[];
+	nodes: TStrippedNode[];
 	tasks: TStrippedTask[];
 };
 
@@ -193,11 +195,11 @@ export default function SettingsPage() {
 			);
 		}
 		response = await fetch('/api/v1/me', {
-			method: 'POST',
+			body: JSON.stringify({ boards: newBoards.boards, nodes: newNodes.nodes, tasks: newTasks }),
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ nodes: newNodes.nodes, boards: newBoards.boards, tasks: newTasks })
+			method: 'POST'
 		});
 		if (response.ok) {
 			toast.success('Restore successful', { id: toastId });
@@ -223,9 +225,9 @@ export default function SettingsPage() {
 				await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 			},
 			{
+				error: 'Error',
 				loading: 'Deleting User',
-				success: 'Deleted User',
-				error: 'Error'
+				success: 'Deleted User'
 			}
 		);
 	}
@@ -252,9 +254,9 @@ export default function SettingsPage() {
 				await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
 			},
 			{
+				error: 'Error',
 				loading: 'Disabling Encryption',
-				success: 'Disabled Encryption',
-				error: 'Error'
+				success: 'Disabled Encryption'
 			}
 		);
 	}
@@ -271,26 +273,26 @@ export default function SettingsPage() {
 				</header>
 				<h3 class="text-lg font-medium">Data</h3>
 				<div class="flex gap-4">
-					<Button variant="secondary" onClick={() => onBackup()}>
+					<Button onClick={() => onBackup()} variant="secondary">
 						Download Backup
 					</Button>
-					<Button variant="secondary" onClick={() => onRestore()}>
+					<Button onClick={() => onRestore()} variant="secondary">
 						Restore Backup
 					</Button>
 					<Button
-						variant="secondary"
+						class="flex items-center gap-2"
 						onClick={async () => {
 							if (encryptionEnabled()) {
 								confirmModal.open({
 									message: 'Are you sure you want to disable encryption?',
-									title: 'Disable Encryption',
-									onYes: onDisableEncryption
+									onYes: onDisableEncryption,
+									title: 'Disable Encryption'
 								});
 							} else {
 								enableEncryption();
 							}
 						}}
-						class="flex items-center gap-2"
+						variant="secondary"
 					>
 						<span
 							class={cn(
@@ -310,12 +312,12 @@ export default function SettingsPage() {
 							e.preventDefault();
 							confirmModal.open({
 								message: 'Are you sure you want to delete your account?',
-								title: 'Delete User',
-								onYes: onDeleteUser
+								onYes: onDeleteUser,
+								title: 'Delete User'
 							});
 						}}
 					>
-						<Button variant="destructive" type="submit">
+						<Button type="submit" variant="destructive">
 							Delete User
 						</Button>
 					</form>

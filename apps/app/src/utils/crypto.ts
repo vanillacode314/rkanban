@@ -6,13 +6,13 @@ const getPasswordKey = (password: string) =>
 const deriveKey = (passwordKey: CryptoKey, salt: Uint8Array, keyUsage: KeyUsage[]) =>
 	crypto.subtle.deriveKey(
 		{
-			name: 'PBKDF2',
-			salt,
+			hash: 'SHA-256',
 			iterations: 250000,
-			hash: 'SHA-256'
+			name: 'PBKDF2',
+			salt
 		},
 		passwordKey,
-		{ name: 'AES-GCM', length: 256 },
+		{ length: 256, name: 'AES-GCM' },
 		true,
 		keyUsage
 	);
@@ -22,8 +22,8 @@ async function encryptDataWithKey(secretData: string, aesKey: CryptoKey) {
 		const iv = crypto.getRandomValues(new Uint8Array(12));
 		const encryptedContent = await crypto.subtle.encrypt(
 			{
-				name: 'AES-GCM',
-				iv: iv
+				iv: iv,
+				name: 'AES-GCM'
 			},
 			aesKey,
 			encoder.encode(secretData)
@@ -53,8 +53,8 @@ async function decryptDataWithKey(encryptedData: string, aesKey: CryptoKey) {
 		const data = encryptedDataBuff.slice(12);
 		const decryptedContent = await crypto.subtle.decrypt(
 			{
-				name: 'AES-GCM',
-				iv: iv
+				iv: iv,
+				name: 'AES-GCM'
 			},
 			aesKey,
 			data
@@ -95,7 +95,7 @@ async function importKey(key: string, keyUsage: KeyUsage[]) {
 	return crypto.subtle.importKey(
 		'jwk',
 		JSON.parse(key),
-		{ name: 'AES-GCM', length: 256 },
+		{ length: 256, name: 'AES-GCM' },
 		false,
 		keyUsage
 	);

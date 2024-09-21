@@ -1,8 +1,9 @@
-import { Navigate, createAsync, useSearchParams } from '@solidjs/router';
+import { createAsync, Navigate, useSearchParams } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
 import { z } from 'zod';
+
 import { db } from '~/db';
 import { forgotPasswordTokens, users } from '~/db/schema';
 import env from '~/utils/env/server';
@@ -30,16 +31,16 @@ const sendResetPasswordEmail = async (email: string) => {
 	const event = getRequestEvent()!;
 	await resend.emails.send({
 		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
-		to: [user.email],
 		subject: 'Reset Password',
-		text: `Goto this link to reset your password for rkanban: ${new URL(event.request.url).origin}/auth/reset-password?token=${token}
-If you did not request a password reset, you can safely ignore this email.`,
 		tags: [
 			{
 				name: 'category',
 				value: 'reset_password'
 			}
-		]
+		],
+		text: `Goto this link to reset your password for rkanban: ${new URL(event.request.url).origin}/auth/reset-password?token=${token}
+If you did not request a password reset, you can safely ignore this email.`,
+		to: [user.email]
 	});
 };
 

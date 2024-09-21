@@ -3,6 +3,7 @@ import { A, createAsync, RouteDefinition, useAction, useSubmissions } from '@sol
 import { Show } from 'solid-js';
 import { produce, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
+
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFileModal';
 import { setCreateFolderModalOpen } from '~/components/modals/auto-import/CreateFolderModal';
@@ -26,12 +27,12 @@ import * as path from '~/utils/path';
 import { assertNotError } from '~/utils/types';
 
 export const route: RouteDefinition = {
-	preload: ({ location }) => {
-		getNodes(decodeURIComponent(location.pathname), { includeChildren: true });
-	},
 	matchFilters: {
 		folder: (pathname: string) =>
 			!pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
+	},
+	preload: ({ location }) => {
+		getNodes(decodeURIComponent(location.pathname), { includeChildren: true });
 	}
 };
 
@@ -46,11 +47,11 @@ export default function FolderPage() {
 		[...submissions.values()]
 			.filter((submission) => submission.pending)
 			.map((submission) => ({
-				id: String(submission.input[0].get('id')),
-				name: String(submission.input[0].get('name')),
-				isDirectory: String(submission.input[0].get('isDirectory')) === 'true',
-				parentId: assertNotError(serverNodes())!.node.id,
 				createdAt: new Date(),
+				id: String(submission.input[0].get('id')),
+				isDirectory: String(submission.input[0].get('isDirectory')) === 'true',
+				name: String(submission.input[0].get('name')),
+				parentId: assertNotError(serverNodes())!.node.id,
 				updatedAt: new Date(),
 				userId: 'pending'
 			}));
@@ -64,7 +65,6 @@ export default function FolderPage() {
 
 	return (
 		<Show
-			when={!(serverNodes() instanceof Error)}
 			fallback={
 				<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
 					<div>Folder Not Found</div>
@@ -73,6 +73,7 @@ export default function FolderPage() {
 					</Button>
 				</div>
 			}
+			when={!(serverNodes() instanceof Error)}
 		>
 			<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
 				<div class="flex justify-end gap-4 empty:hidden">
@@ -109,9 +110,9 @@ export default function FolderPage() {
 											);
 										},
 										{
+											error: 'Paste Failed',
 											loading: 'Pasting...',
-											success: 'Pasted',
-											error: 'Paste Failed'
+											success: 'Pasted'
 										}
 									);
 							}}
@@ -135,10 +136,10 @@ export default function FolderPage() {
 				<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 					<Show when={appContext.path === '/'}>
 						<Button
-							variant="outline"
-							class="flex items-center justify-start gap-2"
 							as={A}
+							class="flex items-center justify-start gap-2"
 							href="/settings"
+							variant="outline"
 						>
 							<span class="i-heroicons:cog text-lg" />
 							<span>Settings</span>
@@ -147,12 +148,11 @@ export default function FolderPage() {
 				</div>
 				<PathCrumbs />
 				<Show
-					when={nodes().length > 0}
 					fallback={
 						<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
 							<img
-								src="/empty.svg"
 								class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+								src="/empty.svg"
 							/>
 							<span>Empty Folder</span>
 							<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
@@ -174,20 +174,21 @@ export default function FolderPage() {
 							</div>
 						</div>
 					}
+					when={nodes().length > 0}
 				>
 					<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 						<Show when={currentNode().parentId !== null}>
 							<Button
-								variant="outline"
-								class="flex items-center justify-start gap-2"
 								as={A}
+								class="flex items-center justify-start gap-2"
 								href={path.join(appContext.path, '..')}
+								variant="outline"
 							>
 								<span class="i-heroicons:folder text-lg" />
 								<span>..</span>
 							</Button>
 						</Show>
-						<Key each={folders()} by="id">
+						<Key by="id" each={folders()}>
 							{(node) => (
 								<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
 									<A
@@ -209,7 +210,7 @@ export default function FolderPage() {
 								</div>
 							)}
 						</Key>
-						<Key each={files()} by="id">
+						<Key by="id" each={files()}>
 							{(node) => (
 								<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
 									<A
@@ -245,7 +246,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost" class="rounded-none">
+			<DropdownMenuTrigger as={Button<'button'>} class="rounded-none" size="icon" variant="ghost">
 				<span class="i-heroicons:ellipsis-vertical text-lg" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent class="w-48">
@@ -272,13 +273,13 @@ function FolderDropdownMenu(props: { node: TNode }) {
 							'clipboard',
 							produce((clipboard) => {
 								clipboard.push({
-									mode: 'copy',
-									type: 'id/node',
 									data: props.node.id,
 									meta: {
 										node: props.node,
 										path: path.join('/home', appContext.path, props.node.name)
-									}
+									},
+									mode: 'copy',
+									type: 'id/node'
 								});
 							})
 						);
@@ -301,13 +302,13 @@ function FolderDropdownMenu(props: { node: TNode }) {
 							'clipboard',
 							produce((clipboard) => {
 								clipboard.push({
-									mode: 'move',
-									type: 'id/node',
 									data: props.node.id,
 									meta: {
 										node: props.node,
 										path: path.join('/home', appContext.path, props.node.name)
-									}
+									},
+									mode: 'move',
+									type: 'id/node'
 								});
 							})
 						);
@@ -321,17 +322,17 @@ function FolderDropdownMenu(props: { node: TNode }) {
 				<DropdownMenuItem
 					onClick={() => {
 						confirmModal.open({
-							title: 'Delete Folder',
 							message: `Are you sure you want to delete ${props.node.name}?`,
 							onYes() {
 								const formData = new FormData();
 								formData.set('id', props.node.id);
 								toast.promise(() => $deleteNode(formData), {
+									error: 'Error',
 									loading: 'Deleting Folder',
-									success: 'Deleted Folder',
-									error: 'Error'
+									success: 'Deleted Folder'
 								});
-							}
+							},
+							title: 'Delete Folder'
 						});
 					}}
 				>
@@ -352,7 +353,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost" class="rounded-none">
+			<DropdownMenuTrigger as={Button<'button'>} class="rounded-none" size="icon" variant="ghost">
 				<span class="i-heroicons:ellipsis-vertical text-lg" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent class="w-48">
@@ -373,13 +374,13 @@ function FileDropdownMenu(props: { node: TNode }) {
 							'clipboard',
 							produce((clipboard) => {
 								clipboard.push({
-									mode: 'copy',
-									type: 'id/node',
 									data: props.node.id,
 									meta: {
 										node: props.node,
 										path: path.join('/home', appContext.path, props.node.name)
-									}
+									},
+									mode: 'copy',
+									type: 'id/node'
 								});
 							})
 						);
@@ -396,13 +397,13 @@ function FileDropdownMenu(props: { node: TNode }) {
 							'clipboard',
 							produce((clipboard) => {
 								clipboard.push({
-									mode: 'move',
-									type: 'id/node',
 									data: props.node.id,
 									meta: {
 										node: props.node,
 										path: path.join('/home', appContext.path, props.node.name)
-									}
+									},
+									mode: 'move',
+									type: 'id/node'
 								});
 							})
 						);
@@ -416,17 +417,17 @@ function FileDropdownMenu(props: { node: TNode }) {
 				<DropdownMenuItem
 					onClick={() => {
 						confirmModal.open({
-							title: 'Delete File',
 							message: `Are you sure you want to delete ${props.node.name}?`,
 							onYes: () => {
 								const formData = new FormData();
 								formData.set('id', props.node.id);
 								toast.promise(() => $deleteNode(formData), {
+									error: 'Error',
 									loading: 'Deleting File',
-									success: 'Deleted File',
-									error: 'Error'
+									success: 'Deleted File'
 								});
-							}
+							},
+							title: 'Delete File'
 						});
 					}}
 				>

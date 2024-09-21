@@ -1,5 +1,6 @@
-import { RouteDefinition, createAsync } from '@solidjs/router';
+import { createAsync, RouteDefinition } from '@solidjs/router';
 import { JSXElement } from 'solid-js';
+
 import { getUser } from '~/utils/auth.server';
 
 export const route: RouteDefinition = {

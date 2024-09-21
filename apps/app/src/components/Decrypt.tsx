@@ -2,6 +2,7 @@ import { createAsync } from '@solidjs/router';
 import { createQuery } from '@tanstack/solid-query';
 import { createSignal, JSXElement, onMount, Show, Suspense } from 'solid-js';
 import { isServer } from 'solid-js/web';
+
 import { decryptWithUserKeys, isEncryptionEnabled } from '~/utils/auth.server';
 
 const DefaultFallback = () => (
@@ -25,15 +26,15 @@ export const createClientSignal =
 		};
 
 export interface ClientOnlyProps {
-	fallback?: JSXElement;
 	children?: JSXElement;
+	fallback?: JSXElement;
 }
 
 export const ClientOnly = (props: ClientOnlyProps): JSXElement => {
 	const isClient = createClientSignal();
 
 	return (
-		<Show keyed={false} when={isClient()} fallback={props.fallback}>
+		<Show fallback={props.fallback} keyed={false} when={isClient()}>
 			{props.children}
 		</Show>
 	);
@@ -41,12 +42,12 @@ export const ClientOnly = (props: ClientOnlyProps): JSXElement => {
 
 export function BaseDecrypt(props: {
 	children: (decryptedValue: () => string) => JSXElement;
-	value?: string;
 	fallback?: JSXElement | true;
+	value?: string;
 }) {
 	const decryptedValue = createQuery(() => ({
-		queryKey: ['decryptedValue', props.value] as const,
-		queryFn: (context) => decryptWithUserKeys(context.queryKey[1])
+		queryFn: (context) => decryptWithUserKeys(context.queryKey[1]),
+		queryKey: ['decryptedValue', props.value] as const
 	}));
 
 	return (
@@ -58,8 +59,8 @@ export function BaseDecrypt(props: {
 
 export function Decrypt(props: {
 	children: (decryptedValue: () => string) => JSXElement;
-	value?: string;
 	fallback?: JSXElement | true;
+	value?: string;
 }) {
 	const encryptionEnabled = createAsync(isEncryptionEnabled, { deferStream: true });
 	const fallback = () => (props.fallback === true ? <DefaultFallback /> : props.fallback);

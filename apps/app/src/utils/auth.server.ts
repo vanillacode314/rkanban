@@ -5,9 +5,11 @@ import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
 import { getRequestEvent, isServer } from 'solid-js/web';
 import { deleteCookie, getCookie, setCookie } from 'vinxi/http';
+
+import { ACCESS_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { db } from '~/db';
-import { TUser, refreshTokens, users, verificationTokens } from '~/db/schema';
-import { ACCESS_TOKEN_EXPIRES_IN_SECONDS } from '../consts';
+import { refreshTokens, TUser, users, verificationTokens } from '~/db/schema';
+
 import { decryptDataWithKey, encryptDataWithKey, importKey } from './crypto';
 import env from './env/server';
 import { localforage } from './localforage';
@@ -19,8 +21,8 @@ const getUser = cache(
 		redirectOnUnauthenticated = true,
 		shouldThrow = true
 	}: Partial<{
-		redirectOnUnauthenticated: boolean;
 		redirectOnAuthenticated: boolean;
+		redirectOnUnauthenticated: boolean;
 		shouldThrow: boolean;
 	}> = {}) => {
 		'use server';
@@ -57,7 +59,7 @@ async function parseRefreshAccessToken() {
 	const refreshToken = getCookie('refreshToken');
 	if (!refreshToken) return null;
 
-	let data: string | jwt.JwtPayload;
+	let data: jwt.JwtPayload | string;
 	try {
 		data = jwt.verify(refreshToken, env.AUTH_SECRET) as TUser;
 	} catch {
@@ -90,9 +92,9 @@ async function parseRefreshAccessToken() {
 	});
 	setCookie('accessToken', accessToken, {
 		httpOnly: true,
-		secure: true,
+		maxAge: 2 ** 31,
 		path: '/',
-		maxAge: 2 ** 31
+		secure: true
 	});
 	return $user;
 }
@@ -161,21 +163,21 @@ async function resendVerificationEmail() {
 
 	await resend.emails.send({
 		from: env.NOTIFICATIONS_EMAIL_ADDRESS,
-		to: [user.email],
 		subject: 'Confirm your email',
-		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/public/confirm-email?token=${verificationToken}`,
 		tags: [
 			{
 				name: 'category',
 				value: 'confirm_email'
 			}
-		]
+		],
+		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/public/confirm-email?token=${verificationToken}`,
+		to: [user.email]
 	});
 }
 
 async function getUserEncryptionKeys(): Promise<{
-	publicKey: CryptoKey;
 	privateKey: CryptoKey;
+	publicKey: CryptoKey;
 	salt: Uint8Array;
 } | null> {
 	if (isServer) return null;
@@ -195,7 +197,7 @@ async function getUserEncryptionKeys(): Promise<{
 		importKey($publicKey, ['encrypt']),
 		importKey($privateKey, ['decrypt'])
 	]);
-	return { publicKey, privateKey, salt };
+	return { privateKey, publicKey, salt };
 }
 
 async function encryptWithUserKeys(data: string) {
@@ -209,7 +211,7 @@ async function encryptWithUserKeys(data: string) {
 
 async function decryptWithUserKeys(data: undefined): Promise<null>;
 async function decryptWithUserKeys(data: string): Promise<string>;
-async function decryptWithUserKeys(data: string | undefined): Promise<string | null>;
+async function decryptWithUserKeys(data: string | undefined): Promise<null | string>;
 async function decryptWithUserKeys(data: string | undefined) {
 	if (data === undefined) return null;
 	if (isServer) return data;

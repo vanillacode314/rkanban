@@ -1,6 +1,6 @@
 import { JSXElement } from 'solid-js';
 
-export function Trace(props: { name: string; children?: JSXElement }) {
+export function Trace(props: { children?: JSXElement; name: string }) {
 	console.trace(props.name);
 	return props.children;
 }

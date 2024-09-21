@@ -4,6 +4,7 @@ import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { deleteCookie } from 'vinxi/http';
+
 import { default as BaseModal } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
@@ -18,6 +19,7 @@ import {
 	importKey
 } from '~/utils/crypto';
 import { localforage } from '~/utils/localforage';
+
 import { useSeedPhraseVerifyModal } from './SeedPhraseVerifyModal';
 
 type TSeedPhraseState = {
@@ -29,13 +31,13 @@ const [seedPhraseModalState, setSeedPhraseModalState] = createStore<TSeedPhraseS
 
 export function useSeedPhraseModal() {
 	return {
-		open: ({ seedPhrase }: TSeedPhraseState) =>
-			setSeedPhraseModalState({
-				seedPhrase
-			}),
 		close: () =>
 			setSeedPhraseModalState({
 				seedPhrase: ''
+			}),
+		open: ({ seedPhrase }: TSeedPhraseState) =>
+			setSeedPhraseModalState({
+				seedPhrase
 			})
 	};
 }
@@ -50,11 +52,11 @@ export function SeedPhrase() {
 		<>
 			<BaseModal
 				closeOnOutsideClick={false}
-				title="Seed Phrase"
 				open={!!seedPhraseModalState.seedPhrase}
 				setOpen={(value) =>
 					setSeedPhraseModalState('seedPhrase', (seedPhrase) => (value ? seedPhrase : ''))
 				}
+				title="Seed Phrase"
 			>
 				{() => (
 					<form
@@ -68,9 +70,8 @@ export function SeedPhrase() {
 							const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
 							const encryptedString = await encryptDataWithKey(testString, publicKey);
 							seedPhraseVerifyModal.open({
-								salt,
-								encryptedString,
 								decryptedString: testString,
+								encryptedString,
 								onDismiss: () => seedPhraseModal.close(),
 								onVerified: async () => {
 									seedPhraseModal.close();
@@ -94,17 +95,18 @@ export function SeedPhrase() {
 											await $enableEncryption(encryptedPrivateKey, saltString, publicKeyString);
 											await localforage.setMany({
 												privateKey: await exportKey(privateKey),
-												salt: salt,
-												publicKey: await exportKey(publicKey)
+												publicKey: await exportKey(publicKey),
+												salt: salt
 											});
 										},
 										{
+											error: null,
 											loading: 'Enabling Encryption...',
-											success: 'Encryption Enabled',
-											error: null
+											success: 'Encryption Enabled'
 										}
 									);
-								}
+								},
+								salt
 							});
 						}}
 					>
@@ -121,6 +123,7 @@ export function SeedPhrase() {
 						</p>
 						<div class="flex items-center justify-end gap-2">
 							<Button
+								class="flex items-center gap-2"
 								onClick={() => {
 									const a = document.createElement('a');
 									a.href = 'data:text/plain;charset=utf-8,' + seedPhraseModalState.seedPhrase;
@@ -129,23 +132,22 @@ export function SeedPhrase() {
 									a.download = `rkanban-seed-phrase-${dateString}.txt`;
 									a.click();
 								}}
-								class="flex items-center gap-2"
-								variant="ghost"
 								size="sm"
+								variant="ghost"
 							>
 								<span class="i-heroicons:arrow-down-circle-solid" />
 								<span>Download</span>
 							</Button>
 							<Button
+								class="flex items-center gap-2"
 								onClick={() => {
 									const yes = confirm(
 										'Are you sure you want to copy the seed phrase? Other applications on your system can access anything you copy.'
 									);
 									if (yes) navigator.clipboard.writeText(seedPhraseModalState.seedPhrase);
 								}}
-								class="flex items-center gap-2"
-								variant="ghost"
 								size="sm"
+								variant="ghost"
 							>
 								<span class="i-heroicons:clipboard" />
 								<span>Copy</span>
@@ -158,10 +160,10 @@ export function SeedPhrase() {
 						</div>
 						<div class="flex justify-end gap-4">
 							<Button
-								variant="outline"
 								onClick={() => {
 									seedPhraseModal.close();
 								}}
+								variant="outline"
 							>
 								Cancel
 							</Button>

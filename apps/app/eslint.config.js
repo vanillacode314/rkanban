@@ -1,7 +1,9 @@
+import importAlias from '@dword-design/eslint-plugin-import-alias';
 import { includeIgnoreFile } from '@eslint/compat';
 import pluginJs from '@eslint/js';
 import * as tsParser from '@typescript-eslint/parser';
-import solideslint from 'eslint-plugin-solid/configs/typescript';
+import perfectionist from 'eslint-plugin-perfectionist';
+import solid from 'eslint-plugin-solid/configs/typescript';
 import globals from 'globals';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,8 +18,7 @@ export default [
 	{ languageOptions: { globals: { ...globals.browser, ...globals.node } } },
 	pluginJs.configs.recommended,
 	{
-		files: ['**/*.{ts,tsx}'],
-		...solideslint,
+		...solid,
 		languageOptions: {
 			parser: tsParser,
 			parserOptions: {
@@ -27,7 +28,6 @@ export default [
 	},
 	...tseslint.configs.recommended,
 	{
-		files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
 		rules: {
 			'@typescript-eslint/no-unused-vars': [
 				'error',
@@ -38,5 +38,20 @@ export default [
 			],
 			'prefer-const': ['error', { destructuring: 'all' }]
 		}
-	}
+	},
+	{
+		plugins: { importAlias },
+		rules: {
+			'importAlias/prefer-alias': [
+				'error',
+				{
+					alias: {
+						'~': './src'
+					}
+				}
+			]
+		}
+	},
+	perfectionist.configs['recommended-natural'],
+	{ files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'] }
 ];

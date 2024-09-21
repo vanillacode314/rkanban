@@ -1,6 +1,7 @@
 import { redirect } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 import { deleteCookie, getQuery } from 'vinxi/http';
+
 import { db } from '~/db';
 import { users, verificationTokens } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
@@ -11,7 +12,7 @@ export const GET = async () => {
 	if (!token) return redirect('/');
 
 	const [verificationToken] = await db
-		.select({ userId: verificationTokens.userId, expiresAt: verificationTokens.expiresAt })
+		.select({ expiresAt: verificationTokens.expiresAt, userId: verificationTokens.userId })
 		.from(verificationTokens)
 		.where(eq(verificationTokens.token, token));
 

@@ -1,6 +1,7 @@
 import { useAction, useSubmission } from '@solidjs/router';
 import { createEffect, createSignal, untrack } from 'solid-js';
 import { toast } from 'solid-sonner';
+
 import Decrypt from '~/components/Decrypt';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
@@ -18,9 +19,9 @@ export default function UpdateTaskModal() {
 	const task = () => appContext.currentTask;
 	const $updateTask = useAction(updateTask);
 
-	let toastId: string | number | undefined;
+	let toastId: number | string | undefined;
 	createEffect(() => {
-		const { result, pending } = submission;
+		const { pending, result } = submission;
 		untrack(() => {
 			if (pending) {
 				if (toastId) toast.dismiss(toastId);
@@ -33,20 +34,20 @@ export default function UpdateTaskModal() {
 			if (result instanceof Error) {
 				switch (result.cause) {
 					case 'INVALID_CREDENTIALS':
-						toast.error(result.message, { id: toastId, duration: 3000 });
+						toast.error(result.message, { duration: 3000, id: toastId });
 						break;
 					default:
 						console.error(result);
 				}
 			} else {
-				toast.success('Updated Task', { id: toastId, duration: 3000 });
+				toast.success('Updated Task', { duration: 3000, id: toastId });
 			}
 			toastId = undefined;
 		});
 	});
 
 	return (
-		<BaseModal title="Update Task" open={updateTaskModalOpen()} setOpen={setUpdateTaskModalOpen}>
+		<BaseModal open={updateTaskModalOpen()} setOpen={setUpdateTaskModalOpen} title="Update Task">
 			{(close) => (
 				<form
 					class="flex flex-col gap-4"
@@ -58,25 +59,25 @@ export default function UpdateTaskModal() {
 						await $updateTask(formData);
 					}}
 				>
-					<input type="hidden" name="id" value={task()?.id} />
-					<input type="hidden" name="publisherId" value={appContext.id} />
+					<input name="id" type="hidden" value={task()?.id} />
+					<input name="publisherId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<Decrypt value={task()?.title}>
 							{(title) => (
 								<TextFieldInput
 									autofocus
-									type="text"
 									id="title"
 									name="title"
 									placeholder="Title"
-									value={title()}
 									required
+									type="text"
+									value={title()}
 								/>
 							)}
 						</Decrypt>
 					</TextField>
-					<Button type="submit" class="self-end" onClick={close}>
+					<Button class="self-end" onClick={close} type="submit">
 						Submit
 					</Button>
 				</form>

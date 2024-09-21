@@ -1,4 +1,4 @@
-import { useSubmissions, type Action } from '@solidjs/router';
+import { type Action, useSubmissions } from '@solidjs/router';
 import { createEffect, untrack } from 'solid-js';
 
 const memoMap = new Map<unknown, Map<unknown, unknown>>();
@@ -6,19 +6,19 @@ const resolved = new Set<unknown>();
 function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 	action: Action<TInput, TOutput>,
 	handlers: {
-		onPending?: (input: TInput, memo: TMemo | undefined) => MaybePromise<TMemo | void>;
-		onError?: (memo: TMemo | undefined, error: unknown) => MaybePromise<TMemo | void>;
+		onError?: (memo: NoInfer<TMemo> | undefined, error: unknown) => MaybePromise<void>;
+		onPending?: (input: NoInfer<TInput>) => MaybePromise<TMemo>;
 		onSuccess?: (
-			result: Exclude<TOutput, Error>,
-			memo: TMemo | undefined
-		) => MaybePromise<TMemo | void>;
+			result: Exclude<NoInfer<TOutput>, Error>,
+			memo: NoInfer<TMemo> | undefined
+		) => MaybePromise<void>;
 	} = {},
 	{
-		predicate = () => true,
-		always = false
+		always = false,
+		predicate = () => true
 	}: {
-		predicate?: (input: TInput) => boolean;
 		always?: boolean;
+		predicate?: (input: NoInfer<TInput>) => boolean;
 	} = {}
 ) {
 	const submissions = useSubmissions(action);
@@ -40,7 +40,7 @@ function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 				// eslint-disable-next-line solid/reactivity
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
-					const result = await handlers.onPending?.(submission.input, memo);
+					const result = await handlers.onPending?.(submission.input);
 					if (result !== undefined) memo = result;
 					memoMap.get(submission)!.set(handlers, memo);
 				});

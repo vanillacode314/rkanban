@@ -4,12 +4,12 @@ import type { TUser } from './db/schema';
 
 declare module '@solidjs/start/server' {
 	interface RequestEventLocals {
-		user: Omit<TUser, 'passwordHash'> | null;
+		user: null | Omit<TUser, 'passwordHash'>;
 	}
 }
 
 declare global {
-	type MaybePromise<T> = T | Promise<T>;
+	type MaybePromise<T> = Promise<T> | T;
 }
 
 export {};

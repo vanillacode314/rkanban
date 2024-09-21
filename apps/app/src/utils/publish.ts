@@ -1,20 +1,21 @@
 import type { TMessage } from 'schema';
+
 import env from './env/client';
 
 function createNotifier(table: string) {
-	return async <T extends (TMessage & { type: 'publish' })['item']>(
+	return async <T extends ({ type: 'publish' } & TMessage)['item']>(
 		item: Omit<T, 'table'>,
 		id?: string
 	) => {
 		const body = JSON.stringify({
 			id,
-			type: 'publish',
-			item: { ...item, table }
+			item: { ...item, table },
+			type: 'publish'
 		});
 		await fetch(env.PUBLIC_PUBLISH_URL, {
-			method: 'POST',
+			body,
 			headers: { 'Content-Type': 'application/json' },
-			body
+			method: 'POST'
 		});
 	};
 }

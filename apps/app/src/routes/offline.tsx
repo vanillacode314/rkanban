@@ -10,6 +10,7 @@ import { useNavigate } from '@solidjs/router';
 import { createEffect } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { getCookie } from 'vinxi/http';
+
 import { Button } from '~/components/ui/button';
 import { cn } from '~/lib/utils';
 
@@ -28,7 +29,7 @@ function OfflinePage() {
 				<div class="flex items-center gap-4">
 					<p class="font-bold uppercase tracking-wide">RKanban</p>
 					<span class="grow" />
-					<Button onClick={() => toggleColorMode()} variant="outline" size="icon">
+					<Button onClick={() => toggleColorMode()} size="icon" variant="outline">
 						<div class="i-heroicons:sun rotate-0 scale-100 text-xl transition-all dark:-rotate-90 dark:scale-0" />
 						<div class="i-heroicons:moon absolute rotate-90 scale-0 text-xl transition-all dark:rotate-0 dark:scale-100" />
 						<span class="sr-only">Toggle theme</span>

@@ -1,6 +1,7 @@
 import { json } from '@solidjs/router';
 import { readValidatedBody } from 'vinxi/http';
 import { z } from 'zod';
+
 import { db } from '~/db';
 import { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
@@ -11,16 +12,16 @@ export async function POST() {
 
 	const result = await readValidatedBody(
 		z.object({
-			nodes: nodesSchema.pick({ id: true, parentId: true, name: true, isDirectory: true }).array(),
-			boards: boardsSchema.pick({ id: true, nodeId: true, title: true, index: true }).array(),
-			tasks: tasksSchema.pick({ boardId: true, title: true, index: true }).array()
+			boards: boardsSchema.pick({ id: true, index: true, nodeId: true, title: true }).array(),
+			nodes: nodesSchema.pick({ id: true, isDirectory: true, name: true, parentId: true }).array(),
+			tasks: tasksSchema.pick({ boardId: true, index: true, title: true }).array()
 		}).safeParse
 	);
 	if (!result.success) {
 		return new Response(
 			JSON.stringify({
-				success: false,
-				result: { error: result.error.errors, message: 'Invalid request' }
+				result: { error: result.error.errors, message: 'Invalid request' },
+				success: false
 			}),
 			{
 				status: 400

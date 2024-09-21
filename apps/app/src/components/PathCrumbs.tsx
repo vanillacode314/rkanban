@@ -1,13 +1,15 @@
 import { For } from 'solid-js';
+
+import { useApp } from '~/context/app';
+import * as path from '~/utils/path';
+
 import {
 	Breadcrumb,
 	BreadcrumbItem,
 	BreadcrumbLink,
 	BreadcrumbList,
 	BreadcrumbSeparator
-} from '~/components/ui/breadcrumb';
-import { useApp } from '~/context/app';
-import * as path from '~/utils/path';
+} from './ui/breadcrumb';
 
 export function PathCrumbs() {
 	const [appContext, _setAppContext] = useApp();

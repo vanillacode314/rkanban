@@ -1,4 +1,4 @@
-function download(data: string | Record<string, unknown>, filename: string) {
+function download(data: Record<string, unknown> | string, filename: string) {
 	if (typeof data != 'string') {
 		data = JSON.stringify(data, null, 2);
 	}
@@ -10,12 +10,12 @@ function download(data: string | Record<string, unknown>, filename: string) {
 	document.body.removeChild(a);
 }
 
-function getFileText(accept: string = 'application/json'): Promise<string | null> {
+function getFileText(accept: string = 'application/json'): Promise<null | string> {
 	const input = document.createElement('input');
 	input.type = 'file';
 	input.accept = accept;
 	input.click();
-	return new Promise<string | null>((resolve) => {
+	return new Promise<null | string>((resolve) => {
 		input.onchange = () => {
 			const file = input.files?.[0];
 			if (!file) {

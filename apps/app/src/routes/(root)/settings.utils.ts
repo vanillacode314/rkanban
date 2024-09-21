@@ -1,9 +1,10 @@
 import { nanoid } from 'nanoid';
+
 import { TBoard, TNode, TTask } from '~/db/schema';
 
-type TStrippedNode = Omit<TNode, 'userId' | 'createdAt'>;
-type TStrippedBoard = Omit<TBoard, 'userId' | 'createdAt'>;
-type TStrippedTask = Omit<TTask, 'userId' | 'createdAt'>;
+type TStrippedNode = Omit<TNode, 'createdAt' | 'userId'>;
+type TStrippedBoard = Omit<TBoard, 'createdAt' | 'userId'>;
+type TStrippedTask = Omit<TTask, 'createdAt' | 'userId'>;
 
 /**
  * Utility to get path of a node
@@ -37,10 +38,10 @@ function getNodePath(node: TStrippedNode, nodeMap: Map<string, TStrippedNode>): 
 function diffNodes(
 	sources: TStrippedNode[],
 	destinations: TStrippedNode[]
-): { nodes: TStrippedNode[]; changedIdsMap: Map<string, string> } {
+): { changedIdsMap: Map<string, string>; nodes: TStrippedNode[] } {
 	const changedIdsMap = new Map();
-	if (sources.length === 0) return { nodes: [], changedIdsMap };
-	if (destinations.length === 0) return { nodes: sources, changedIdsMap };
+	if (sources.length === 0) return { changedIdsMap, nodes: [] };
+	if (destinations.length === 0) return { changedIdsMap, nodes: sources };
 
 	const sourceIdMap = new Map<string, TStrippedNode>();
 	const sourcePathMap = new Map<string, string>();
@@ -69,7 +70,7 @@ function diffNodes(
 			changedIdsMap.set(source.id, destination.id);
 		}
 	}
-	return { nodes, changedIdsMap };
+	return { changedIdsMap, nodes };
 }
 
 /**
@@ -100,8 +101,8 @@ function diffBoards(
 			retval.push({
 				...source,
 				id,
-				title,
-				index: destinationIds.size + index
+				index: destinationIds.size + index,
+				title
 			});
 			changedIdsMap.set(source.id, id);
 			continue;

@@ -1,12 +1,13 @@
 import { useAction } from '@solidjs/router';
 import { nanoid } from 'nanoid';
 import { createSignal } from 'solid-js';
+
+import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { createTask } from '~/db/utils/tasks';
 import { encryptWithUserKeys } from '~/utils/auth.server';
-import BaseModal from '../BaseModal';
 
 export const [createTaskModalOpen, setCreateTaskModalOpen] = createSignal<boolean>(false);
 
@@ -16,7 +17,7 @@ export default function CreateTaskModal() {
 	const $createTask = useAction(createTask);
 
 	return (
-		<BaseModal title="Create Task" open={createTaskModalOpen()} setOpen={setCreateTaskModalOpen}>
+		<BaseModal open={createTaskModalOpen()} setOpen={setCreateTaskModalOpen} title="Create Task">
 			{(close) => (
 				<form
 					class="flex flex-col gap-4"
@@ -30,22 +31,22 @@ export default function CreateTaskModal() {
 						idInput.value = nanoid();
 					}}
 				>
-					<input type="hidden" name="boardId" value={board()?.id} />
-					<input type="hidden" name="id" value={nanoid()} />
-					<input type="hidden" name="publisherId" value={appContext.id} />
+					<input name="boardId" type="hidden" value={board()?.id} />
+					<input name="id" type="hidden" value={nanoid()} />
+					<input name="publisherId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<TextFieldInput
+							autocomplete="off"
 							autofocus
-							type="text"
 							id="title"
 							name="title"
 							placeholder="Title"
-							autocomplete="off"
 							required
+							type="text"
 						/>
 					</TextField>
-					<Button type="submit" class="self-end" onClick={close}>
+					<Button class="self-end" onClick={close} type="submit">
 						Submit
 					</Button>
 				</form>

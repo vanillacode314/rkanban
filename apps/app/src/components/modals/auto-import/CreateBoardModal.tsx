@@ -1,12 +1,13 @@
 import { useAction } from '@solidjs/router';
 import { nanoid } from 'nanoid';
 import { createSignal } from 'solid-js';
+
+import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { createBoard } from '~/db/utils/boards';
 import { encryptWithUserKeys } from '~/utils/auth.server';
-import BaseModal from '../BaseModal';
 
 export const [createBoardModalOpen, setCreateBoardModalOpen] = createSignal<boolean>(false);
 
@@ -15,7 +16,7 @@ export default function CreateBoardModal() {
 	const $createBoard = useAction(createBoard);
 
 	return (
-		<BaseModal title="Create Board" open={createBoardModalOpen()} setOpen={setCreateBoardModalOpen}>
+		<BaseModal open={createBoardModalOpen()} setOpen={setCreateBoardModalOpen} title="Create Board">
 			{(close) => (
 				<form
 					class="flex flex-col gap-4"
@@ -29,22 +30,22 @@ export default function CreateBoardModal() {
 						idInput.value = nanoid();
 					}}
 				>
-					<input type="hidden" name="id" value={nanoid()} />
-					<input type="hidden" name="path" value={appContext.path} />
-					<input type="hidden" name="publisherId" value={appContext.id} />
+					<input name="id" type="hidden" value={nanoid()} />
+					<input name="path" type="hidden" value={appContext.path} />
+					<input name="publisherId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<TextFieldInput
+							autocomplete="off"
 							autofocus
-							type="text"
 							id="title"
 							name="title"
 							placeholder="Title"
-							autocomplete="off"
 							required
+							type="text"
 						/>
 					</TextField>
-					<Button type="submit" class="self-end" onClick={close}>
+					<Button class="self-end" onClick={close} type="submit">
 						Submit
 					</Button>
 				</form>

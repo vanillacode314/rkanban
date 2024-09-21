@@ -5,12 +5,12 @@ export const Sortable = (props) => {
 	const [state] = useDragDropContext()!;
 	return (
 		<div
-			use:sortable
 			class="sortable"
 			classList={{
 				'opacity-25': sortable.isActiveDraggable,
 				'transition-transform': !!state.active.draggable
 			}}
+			use:sortable
 		>
 			{props.item}
 		</div>

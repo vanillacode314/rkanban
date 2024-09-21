@@ -1,15 +1,17 @@
 import { action, cache } from '@solidjs/router';
 import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { db } from '~/db';
-import { type TBoard, type TTask, boards, tasks } from '~/db/schema';
+
+import { boards, tasks, type TBoard, type TTask } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
+
+import { db } from './..';
 import { getNodes } from './nodes';
 
 async function $getBoards(path: null): Promise<TBoard[]>;
-async function $getBoards(path: string): Promise<Array<TBoard & { tasks: TTask[] }>>;
-async function $getBoards(path: string | null) {
+async function $getBoards(path: string): Promise<Array<{ tasks: TTask[] } & TBoard>>;
+async function $getBoards(path: null | string) {
 	'use server';
 
 	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
@@ -30,7 +32,7 @@ async function $getBoards(path: string | null) {
 		.leftJoin(tasks, eq(boards.id, tasks.boardId))
 		.orderBy(asc(boards.index), asc(tasks.index));
 
-	const $boards: (TBoard & { tasks: TTask[] })[] = [];
+	const $boards: ({ tasks: TTask[] } & TBoard)[] = [];
 
 	for (const row of rows) {
 		const board = $boards.find((board) => board.id === row.boards.id);
@@ -80,7 +82,7 @@ const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
 	});
 };
 
-const shiftBoard = async (boardId: TBoard['id'], direction: 1 | -1) => {
+const shiftBoard = async (boardId: TBoard['id'], direction: -1 | 1) => {
 	'use server';
 
 	const user = (await getUser())!;
@@ -142,10 +144,10 @@ const createBoard = action(async (formData: FormData) => {
 	}
 	const [$board] = await db
 		.insert(boards)
-		.values({ id, index, title: title, userId: user.id, nodeId: node.id })
+		.values({ id, index, nodeId: node.id, title: title, userId: user.id })
 		.returning();
 
-	void notify({ type: 'create', id: $board.id, data: $board }, publisherId);
+	void notify({ data: $board, id: $board.id, type: 'create' }, publisherId);
 	return $board;
 }, 'create-board');
 
@@ -165,7 +167,7 @@ const updateBoard = action(async (formData: FormData) => {
 		.where(and(eq(boards.id, id), eq(boards.userId, user.id)))
 		.returning();
 
-	void notify({ type: 'update', id: $board.id, data: $board }, publisherId);
+	void notify({ data: $board, id: $board.id, type: 'update' }, publisherId);
 	return $board;
 }, 'update-board');
 
@@ -196,7 +198,7 @@ const deleteBoard = action(async (formData: FormData) => {
 			);
 	});
 
-	void notify({ type: 'delete', id: boardId }, publisherId);
+	void notify({ id: boardId, type: 'delete' }, publisherId);
 }, 'delete-board');
 
 const notify = createNotifier('boards');

@@ -1,12 +1,14 @@
 import { action, cache } from '@solidjs/router';
 import { and, eq, isNull, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+
 import { RESERVED_PATHS } from '~/consts';
-import { db } from '~/db';
 import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
 import { uniqBy } from '~/utils/array';
 import { getUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
+
+import { db } from './..';
 
 const getNodes = cache(
 	async (path: string, { includeChildren = false }: Partial<{ includeChildren: boolean }> = {}) => {
@@ -17,7 +19,7 @@ const getNodes = cache(
 		const $nodes = (await db.all(sql.raw(query))) as TNode[];
 		if ($nodes.length === 0) return new Error(`Not Found`, { cause: 'NOT_FOUND' });
 		const node = $nodes.shift()!;
-		return { node, children: $nodes };
+		return { children: $nodes, node };
 	},
 	'get-nodes'
 );
@@ -46,14 +48,14 @@ const createNode = action(async (formData: FormData) => {
 		.insert(nodes)
 		.values({
 			id,
-			parentId: parentNode.id,
+			isDirectory,
 			name: name,
-			userId: user.id,
-			isDirectory
+			parentId: parentNode.id,
+			userId: user.id
 		})
 		.returning();
 
-	void notify({ type: 'create', id: $node.id, data: $node });
+	void notify({ data: $node, id: $node.id, type: 'create' });
 
 	return $node;
 }, 'create-node');
@@ -91,7 +93,7 @@ const updateNode = action(async (formData: FormData) => {
 		.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 		.returning();
 
-	void notify({ type: 'update', id: $node.id, data: $node });
+	void notify({ data: $node, id: $node.id, type: 'update' });
 
 	return $node;
 }, 'update-node');
@@ -108,7 +110,7 @@ const deleteNode = action(async (formData: FormData) => {
 		.where(and(eq(nodes.id, nodeId), eq(nodes.userId, user.id)))
 		.returning();
 
-	void notify({ type: 'delete', id: nodeId });
+	void notify({ id: nodeId, type: 'delete' });
 }, 'delete-node');
 
 async function $copyNode(formData: FormData) {
@@ -163,15 +165,15 @@ async function $copyNode(formData: FormData) {
 		const [$newNode] = await tx
 			.insert(nodes)
 			.values({
+				id: newNodeId,
+				isDirectory: $node.isDirectory,
 				name:
 					duplicateCount > 0 ?
 						extension ? `${name} (copy ${duplicateCount}).${extension}`
 						:	`${name} (copy ${duplicateCount})`
 					:	$node.name,
-				id: newNodeId,
 				parentId,
-				userId: user.id,
-				isDirectory: $node.isDirectory
+				userId: user.id
 			})
 			.returning();
 		if ($node.name.endsWith('.project')) {
@@ -181,20 +183,20 @@ async function $copyNode(formData: FormData) {
 					await tx.insert(boards).values({
 						id: newBoardId,
 						index: board.index,
+						nodeId: newNodeId,
 						title: board.title,
-						userId: user.id,
-						nodeId: newNodeId
+						userId: user.id
 					});
 					await Promise.all(
 						$tasks
 							.filter((task) => task.boardId === board.id)
 							.map((task) =>
 								tx.insert(tasks).values({
+									boardId: newBoardId,
 									id: nanoid(),
 									index: task.index,
 									title: task.title,
-									userId: user.id,
-									boardId: newBoardId
+									userId: user.id
 								})
 							)
 					);
@@ -204,7 +206,7 @@ async function $copyNode(formData: FormData) {
 		return $newNode;
 	});
 
-	void notify({ type: 'create', id: $newNode.id, data: $newNode });
+	void notify({ data: $newNode, id: $newNode.id, type: 'create' });
 
 	await Promise.all(
 		children.map((node) => {

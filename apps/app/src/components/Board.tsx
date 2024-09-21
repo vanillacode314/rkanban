@@ -1,10 +1,10 @@
-import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
-import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import {
 	dropTargetForElements,
 	monitorForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
@@ -14,13 +14,7 @@ import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import { Component, createSignal, onCleanup, ParentComponent, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuShortcut,
-	DropdownMenuTrigger
-} from '~/components/ui/dropdown-menu';
+
 import { useApp } from '~/context/app';
 import { TBoard, TTask } from '~/db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
@@ -29,6 +23,7 @@ import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import { decryptWithUserKeys } from '~/utils/auth.server';
 import invariant from '~/utils/tiny-invariant';
+
 import Decrypt from './Decrypt';
 import { useConfirmModal } from './modals/auto-import/ConfirmModal';
 import { setCreateTaskModalOpen } from './modals/auto-import/CreateTaskModal';
@@ -36,10 +31,17 @@ import { setUpdateBoardModalOpen } from './modals/auto-import/UpdateBoardModal';
 import Task from './Task';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuShortcut,
+	DropdownMenuTrigger
+} from './ui/dropdown-menu';
 
 export const Board: Component<{
+	board: { tasks: TTask[] } & TBoard;
 	class?: string;
-	board: TBoard & { tasks: TTask[] };
 	index: number;
 }> = (props) => {
 	const [, setAppContext] = useApp();
@@ -49,17 +51,20 @@ export const Board: Component<{
 	onSubmission(
 		createTask,
 		{
+			onError(toastId: number | string | undefined) {
+				toast.error('Error', { id: toastId });
+			},
 			onPending(input) {
 				setTasks((tasks) =>
 					produce(tasks, (tasks) => {
 						tasks.push({
-							title: String(input[0].get('title')),
-							id: String(input[0].get('id')),
-							userId: 'pending',
-							index: props.board.tasks.length + 1,
+							boardId: props.board.id,
 							createdAt: new Date(),
+							id: String(input[0].get('id')),
+							index: props.board.tasks.length + 1,
+							title: String(input[0].get('title')),
 							updatedAt: new Date(),
-							boardId: props.board.id
+							userId: 'pending'
 						});
 					})
 				);
@@ -69,14 +74,11 @@ export const Board: Component<{
 				decryptWithUserKeys(task.title).then((title) => {
 					toast.success(`Created Task: ${title}`, { id: toastId });
 				});
-			},
-			onError(toastId) {
-				toast.error('Error', { id: toastId });
 			}
 		},
 		{
-			predicate: (input) => input[0].get('boardId') === props.board.id,
-			always: true
+			always: true,
+			predicate: (input) => input[0].get('boardId') === props.board.id
 		}
 	);
 
@@ -97,7 +99,7 @@ export const Board: Component<{
 							if (source.data.boardId !== props.board.id) return false;
 							return true;
 						},
-						onDrop({ source, location }) {
+						onDrop({ location, source }) {
 							const destination = location.current.dropTargets[0];
 							if (!destination) return;
 							const closestEdgeOfTarget = extractClosestEdge(destination.data);
@@ -110,17 +112,16 @@ export const Board: Component<{
 
 							setTasks(
 								reorderWithEdge({
-									list: tasks(),
-									startIndex: sourceIndex,
-									indexOfTarget: destinationIndex,
+									axis: 'vertical',
 									closestEdgeOfTarget,
-									axis: 'vertical'
+									indexOfTarget: destinationIndex,
+									list: tasks(),
+									startIndex: sourceIndex
 								})
 							);
 						}
 					}),
 					dropTargetForElements({
-						element: el,
 						canDrop: ({ source }) => {
 							invariant(
 								source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
@@ -128,6 +129,7 @@ export const Board: Component<{
 							if (source.data.boardId === props.board.id) return false;
 							return true;
 						},
+						element: el,
 						getData: () => ({ boardId: props.board.id }),
 						onDragEnter: ({ source }) => {
 							if (source.data.boardId === props.board.id) return;
@@ -152,19 +154,19 @@ export const Board: Component<{
 								props.board.userId === 'pending' ? 'inline-block' : '!hidden'
 							)}
 						/>
-						<Decrypt value={props.board.title} fallback>
+						<Decrypt fallback value={props.board.title}>
 							{(title) => <span>{title()}</span>}
 						</Decrypt>
 					</CardTitle>
 					<div class="flex items-center justify-end gap-2">
 						<Button
 							class="flex items-center gap-2"
-							title="Create Task"
-							size="icon"
 							onClick={() => {
 								setCreateTaskModalOpen(true);
 								setAppContext('currentBoard', props.board);
 							}}
+							size="icon"
+							title="Create Task"
 						>
 							<span class="i-heroicons:plus text-lg" />
 						</Button>
@@ -173,12 +175,12 @@ export const Board: Component<{
 				</div>
 			</CardHeader>
 			<CardContent class="overflow-hidden">
-				<Show when={tasks().length > 0} fallback={<p>No tasks in this board</p>}>
+				<Show fallback={<p>No tasks in this board</p>} when={tasks().length > 0}>
 					<div class="flex h-full flex-col overflow-y-auto overflow-x-hidden">
 						<AnimatedTaskList>
-							<Key each={tasks()} by="id">
+							<Key by="id" each={tasks()}>
 								{(task, index) => (
-									<Task task={task()} boardId={props.board.id} class="origin-top" index={index()} />
+									<Task boardId={props.board.id} class="origin-top" index={index()} task={task()} />
 								)}
 							</Key>
 						</AnimatedTaskList>
@@ -195,7 +197,7 @@ const AnimatedTaskList: ParentComponent = (props) => {
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
 	const transition = createListTransition(resolved.toArray, {
-		onChange({ added, removed, unchanged, finishRemoved }) {
+		onChange({ added, finishRemoved, removed, unchanged }) {
 			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
@@ -203,7 +205,7 @@ const AnimatedTaskList: ParentComponent = (props) => {
 				});
 			}
 			for (const el of removed) {
-				const { left, top, width, height } = el.getBoundingClientRect();
+				const { height, left, top, width } = el.getBoundingClientRect();
 				queueMicrotask(() => {
 					el.style.position = 'absolute';
 					el.style.left = `${left}px`;
@@ -234,7 +236,7 @@ const AnimatedTaskList: ParentComponent = (props) => {
 	return <>{transition()}</>;
 };
 
-function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: number }) {
+function BoardContextMenu(props: { board: { tasks: TTask[] } & TBoard; index: number }) {
 	const [appContext, setAppContext] = useApp();
 	const confirmModal = useConfirmModal();
 	const $deleteBoard = useAction(deleteBoard);
@@ -264,18 +266,18 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 						class="w-full"
 						onClick={() => {
 							confirmModal.open({
-								title: 'Delete Board',
 								message: 'Are you sure you want to delete this board and all its tasks?',
 								onYes: async () => {
 									const formData = new FormData();
 									formData.set('id', props.board.id.toString());
 									formData.set('publisherId', appContext.id);
 									toast.promise(() => $deleteBoard(formData), {
+										error: 'Error',
 										loading: 'Deleting Board',
-										success: 'Deleted Board',
-										error: 'Error'
+										success: 'Deleted Board'
 									});
-								}
+								},
+								title: 'Delete Board'
 							});
 						}}
 					>
@@ -295,9 +297,9 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 										await revalidate(getBoards.key);
 									},
 									{
+										error: 'Error',
 										loading: 'Moving Board',
-										success: 'Moved Board',
-										error: 'Error'
+										success: 'Moved Board'
 									}
 								);
 							}}
@@ -319,9 +321,9 @@ function BoardContextMenu(props: { board: TBoard & { tasks: TTask[] }; index: nu
 										await revalidate(getBoards.key);
 									},
 									{
+										error: 'Error',
 										loading: 'Moving Board',
-										success: 'Moved Board',
-										error: 'Error'
+										success: 'Moved Board'
 									}
 								);
 							}}

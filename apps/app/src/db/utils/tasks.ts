@@ -1,10 +1,12 @@
 import { action, cache } from '@solidjs/router';
 import { and, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { db } from '~/db';
-import { type TBoard, type TTask, tasks } from '~/db/schema';
+
+import { tasks, type TBoard, type TTask } from '~/db/schema';
 import { getUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
+
+import { db } from './..';
 
 const getTasks = cache(async function () {
 	'use server';
@@ -16,7 +18,7 @@ const getTasks = cache(async function () {
 }, 'get-tasks');
 
 const moveTasks = async (
-	inputs: Array<{ id: TTask['id']; boardId: TBoard['id']; index: number }>
+	inputs: Array<{ boardId: TBoard['id']; id: TTask['id']; index: number }>
 ) => {
 	'use server';
 	const user = (await getUser())!;
@@ -29,20 +31,20 @@ const moveTasks = async (
 		await db
 			.update(tasks)
 			.set({
+				boardId: sql.join(
+					[
+						sql`(case`,
+						...inputs.map((input) => sql`when ${tasks.id} = ${input.id} then ${input.boardId}`),
+						sql`end)`
+					],
+					sql.raw(' ')
+				),
 				index: sql.join(
 					[
 						sql`(case`,
 						...inputs.map(
 							(input) => sql`when ${tasks.id} = ${input.id} then ${input.index + 10000}`
 						),
-						sql`end)`
-					],
-					sql.raw(' ')
-				),
-				boardId: sql.join(
-					[
-						sql`(case`,
-						...inputs.map((input) => sql`when ${tasks.id} = ${input.id} then ${input.boardId}`),
 						sql`end)`
 					],
 					sql.raw(' ')
@@ -58,7 +60,7 @@ const moveTasks = async (
 	});
 };
 
-const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
+const shiftTask = async (taskId: TTask['id'], direction: -1 | 1) => {
 	'use server';
 
 	const user = (await getUser())!;
@@ -90,8 +92,8 @@ const shiftTask = async (taskId: TTask['id'], direction: 1 | -1) => {
 		);
 
 	await moveTasks([
-		{ id: task.id, boardId: task.boardId, index: task.index + direction },
-		{ id: siblingTask.id, boardId: siblingTask.boardId, index: task.index }
+		{ boardId: task.boardId, id: task.id, index: task.index + direction },
+		{ boardId: siblingTask.boardId, id: siblingTask.id, index: task.index }
 	]);
 };
 
@@ -117,10 +119,10 @@ const createTask = action(async (formData: FormData) => {
 	}
 	const [task] = await db
 		.insert(tasks)
-		.values({ id, index, title, boardId, userId: user.id })
+		.values({ boardId, id, index, title, userId: user.id })
 		.returning();
 
-	void notify({ type: 'create', id: task.id, data: task }, publisherId);
+	void notify({ data: task, id: task.id, type: 'create' }, publisherId);
 	return task;
 }, 'create-task');
 
@@ -139,7 +141,7 @@ const updateTask = action(async (formData: FormData) => {
 		.set({ title })
 		.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
 		.returning();
-	void notify({ type: 'update', id: $task.id, data: $task }, publisherId);
+	void notify({ data: $task, id: $task.id, type: 'update' }, publisherId);
 	return $task;
 }, 'update-task');
 
@@ -165,7 +167,7 @@ const deleteTask = action(async (formData: FormData) => {
 				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
 			);
 	});
-	void notify({ type: 'delete', id: taskId }, publisherId);
+	void notify({ id: taskId, type: 'delete' }, publisherId);
 	return;
 }, 'delete-task');
 

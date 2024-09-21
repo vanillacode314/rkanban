@@ -1,8 +1,8 @@
-import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
-import { Show, splitProps } from 'solid-js';
-
 import type { PolymorphicProps } from '@kobalte/core';
+import type { Component, ComponentProps, JSX, ValidComponent } from 'solid-js';
+
 import * as BreadcrumbPrimitive from '@kobalte/core/breadcrumbs';
+import { Show, splitProps } from 'solid-js';
 
 import { cn } from '~/lib/utils';
 
@@ -26,8 +26,9 @@ const BreadcrumbItem: Component<ComponentProps<'li'>> = (props) => {
 	return <li class={cn('inline-flex items-center gap-1.5', local.class)} {...others} />;
 };
 
-type BreadcrumbLinkProps<T extends ValidComponent = 'a'> =
-	BreadcrumbPrimitive.BreadcrumbsLinkProps<T> & { class?: string | undefined };
+type BreadcrumbLinkProps<T extends ValidComponent = 'a'> = {
+	class?: string | undefined;
+} & BreadcrumbPrimitive.BreadcrumbsLinkProps<T>;
 
 const BreadcrumbLink = <T extends ValidComponent = 'a'>(
 	props: PolymorphicProps<T, BreadcrumbLinkProps<T>>
@@ -44,11 +45,10 @@ const BreadcrumbLink = <T extends ValidComponent = 'a'>(
 	);
 };
 
-type BreadcrumbSeparatorProps<T extends ValidComponent = 'span'> =
-	BreadcrumbPrimitive.BreadcrumbsSeparatorProps<T> & {
-		class?: string | undefined;
-		children?: JSX.Element;
-	};
+type BreadcrumbSeparatorProps<T extends ValidComponent = 'span'> = {
+	children?: JSX.Element;
+	class?: string | undefined;
+} & BreadcrumbPrimitive.BreadcrumbsSeparatorProps<T>;
 
 const BreadcrumbSeparator = <T extends ValidComponent = 'span'>(
 	props: PolymorphicProps<T, BreadcrumbSeparatorProps<T>>
@@ -57,20 +57,20 @@ const BreadcrumbSeparator = <T extends ValidComponent = 'span'>(
 	return (
 		<BreadcrumbPrimitive.Separator class={cn('[&>svg]:size-3.5', local.class)} {...others}>
 			<Show
-				when={local.children}
 				fallback={
 					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
-						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
+						stroke-width="2"
+						viewBox="0 0 24 24"
+						xmlns="http://www.w3.org/2000/svg"
 					>
 						<path d="M9 6l6 6l-6 6" />
 					</svg>
 				}
+				when={local.children}
 			>
 				{local.children}
 			</Show>
@@ -83,14 +83,14 @@ const BreadcrumbEllipsis: Component<ComponentProps<'span'>> = (props) => {
 	return (
 		<span class={cn('flex size-9 items-center justify-center', local.class)} {...others}>
 			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				viewBox="0 0 24 24"
+				class="size-4"
 				fill="none"
 				stroke="currentColor"
-				stroke-width="2"
 				stroke-linecap="round"
 				stroke-linejoin="round"
-				class="size-4"
+				stroke-width="2"
+				viewBox="0 0 24 24"
+				xmlns="http://www.w3.org/2000/svg"
 			>
 				<path d="M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
 				<path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />

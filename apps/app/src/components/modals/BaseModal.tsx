@@ -1,23 +1,24 @@
 import {
-	JSXElement,
 	createEffect,
 	createSignal,
 	createUniqueId,
+	JSXElement,
 	mergeProps,
 	untrack
 } from 'solid-js';
 import { Portal } from 'solid-js/web';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import Untrack from '../Untrack';
+
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
+import Untrack from '~/components/Untrack';
 
 type Props = {
-	id?: string;
-	title: string;
 	children: (close: () => void) => JSXElement;
 	closeOnOutsideClick?: boolean;
+	id?: string;
 	onOpenChange?: (value: boolean) => void;
 	open: boolean;
 	setOpen: (open: boolean) => void;
+	title: string;
 };
 
 export function Modal(props: Props) {
@@ -25,13 +26,13 @@ export function Modal(props: Props) {
 	const [internalOpen, setInternalOpen] = createSignal<boolean>(false);
 	const mergedProps = mergeProps(
 		{
+			closeOnOutsideClick: true,
+			id: internalId,
+			onOpenChange: () => {},
 			get open() {
 				return internalOpen();
 			},
-			id: internalId,
-			setOpen: setInternalOpen,
-			closeOnOutsideClick: true,
-			onOpenChange: () => {}
+			setOpen: setInternalOpen
 		},
 		props
 	);
@@ -53,14 +54,14 @@ export function Modal(props: Props) {
 	return (
 		<Portal>
 			<dialog
+				class="m-0 h-full w-full max-w-full bg-transparent"
 				id={mergedProps.id}
-				ref={setEl}
 				onClose={() => {
 					mergedProps.setOpen(false);
 					const forms = el()?.querySelectorAll('form');
 					forms?.forEach((form) => form.reset());
 				}}
-				class="m-0 h-full w-full max-w-full bg-transparent"
+				ref={setEl}
 			>
 				<div
 					class="grid h-full w-full items-end sm:place-content-center"

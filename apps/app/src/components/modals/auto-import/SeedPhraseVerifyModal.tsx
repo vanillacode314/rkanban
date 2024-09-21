@@ -1,36 +1,37 @@
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
+
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput } from '~/components/ui/text-field';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
 
 type TSeedPhraseState = {
-	encryptedString: string;
 	decryptedString: string;
-	salt: Uint8Array;
-	onVerified: (seedPhrase: string) => void;
+	encryptedString: string;
 	onDismiss: () => void;
+	onVerified: (seedPhrase: string) => void;
+	salt: Uint8Array;
 };
 const [seedPhraseVerifyModalState, setSeedPhraseVerifyModalState] = createStore<TSeedPhraseState>({
-	encryptedString: '',
 	decryptedString: '',
-	salt: new Uint8Array(),
+	encryptedString: '',
+	onDismiss: () => {},
 	onVerified: () => {},
-	onDismiss: () => {}
+	salt: new Uint8Array()
 });
 export function useSeedPhraseVerifyModal() {
 	return {
-		open: (state: TSeedPhraseState) => setSeedPhraseVerifyModalState(state),
 		close: () =>
 			setSeedPhraseVerifyModalState({
-				encryptedString: '',
 				decryptedString: '',
-				salt: new Uint8Array(),
+				encryptedString: '',
+				onDismiss: () => {},
 				onVerified: () => {},
-				onDismiss: () => {}
-			})
+				salt: new Uint8Array()
+			}),
+		open: (state: TSeedPhraseState) => setSeedPhraseVerifyModalState(state)
 	};
 }
 
@@ -40,17 +41,17 @@ export function SeedPhrase() {
 
 	return (
 		<BaseModal
+			closeOnOutsideClick={false}
 			onOpenChange={(value) => {
 				if (value) setInputs(Array(16).fill(''));
 			}}
-			title="Seed Phrase"
-			closeOnOutsideClick={false}
 			open={seedPhraseVerifyModalState.encryptedString !== ''}
 			setOpen={(value) =>
 				value ?
 					seedPhraseVerifyModal.close()
 				:	seedPhraseVerifyModal.open(seedPhraseVerifyModalState)
 			}
+			title="Seed Phrase"
 		>
 			{() => (
 				<form
@@ -74,6 +75,7 @@ export function SeedPhrase() {
 					<p>Paste or write down the pass phrase in the input boxes given to verify it.</p>
 					<div class="flex items-center justify-end gap-2">
 						<Button
+							class="flex items-center gap-2"
 							onClick={async () => {
 								const clipText = await navigator.clipboard.readText();
 								const phrases = clipText
@@ -86,9 +88,8 @@ export function SeedPhrase() {
 								}
 								setInputs(phrases);
 							}}
-							class="flex items-center gap-2"
-							variant="ghost"
 							size="sm"
+							variant="ghost"
 						>
 							<span class="i-heroicons:clipboard" />
 							<span>Paste</span>
@@ -99,6 +100,7 @@ export function SeedPhrase() {
 							{(_, index) => (
 								<TextField>
 									<TextFieldInput
+										onInput={(e) => setInputs(index(), e.currentTarget.value)}
 										onPaste={(event: ClipboardEvent) => {
 											const data = event.clipboardData?.getData('text/plain');
 											setTimeout(() => {
@@ -112,7 +114,6 @@ export function SeedPhrase() {
 										}}
 										type="text"
 										value={inputs[index()]}
-										onInput={(e) => setInputs(index(), e.currentTarget.value)}
 									/>
 								</TextField>
 							)}
@@ -120,11 +121,11 @@ export function SeedPhrase() {
 					</div>
 					<div class="flex justify-end gap-4">
 						<Button
-							variant="outline"
 							onClick={() => {
 								seedPhraseVerifyModal.close();
 								seedPhraseVerifyModalState.onDismiss();
 							}}
+							variant="outline"
 						>
 							Cancel
 						</Button>
