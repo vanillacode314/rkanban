@@ -75,7 +75,6 @@ const resetPassword = action(async (formData: FormData) => {
 
 	if (user.email !== email) return new Error('Invalid email', { cause: 'INVALID_EMAIL' });
 
-	console.log(formData);
 	if (user.salt !== null) {
 		if (!encryptedPrivateKey)
 			return new Error('Please enter your seed phrase to reset your password.', {

@@ -24,7 +24,6 @@ const moveTasks = async (
 	const user = (await getUser())!;
 
 	if (inputs.length === 0) throw new Error('No tasks to move');
-	console.log(inputs);
 	const ids = inputs.map((input) => input.id);
 
 	await db.transaction(async () => {
