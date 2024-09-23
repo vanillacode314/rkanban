@@ -1,5 +1,5 @@
 import { action, cache } from '@solidjs/router';
-import { and, asc, eq, gt, gte, inArray, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { boards, tasks, type TBoard, type TTask } from '~/db/schema';
