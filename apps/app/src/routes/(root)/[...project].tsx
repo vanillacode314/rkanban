@@ -12,6 +12,7 @@ import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import {
 	createComputed,
+	createEffect,
 	createMemo,
 	createSignal,
 	onCleanup,
@@ -26,9 +27,11 @@ import { toast } from 'solid-sonner';
 import Board from '~/components/Board';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
 import PathCrumbs from '~/components/PathCrumbs';
+import { TransitionSlide } from '~/components/transitions/TransitionSlide';
 import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
+import { useDirty } from '~/context/dirty';
 import { TBoard, TTask } from '~/db/schema';
 import { createBoard, getBoards } from '~/db/utils/boards';
 import { moveTasks } from '~/db/utils/tasks';
@@ -60,6 +63,10 @@ export default function ProjectPage() {
 			board.tasks.some((task, index) => task.index !== index || task.boardId !== board.id)
 		);
 	});
+
+	const [isDirty, setIsDirty] = useDirty();
+
+	createEffect(() => setIsDirty('project', boardsDirty()));
 
 	onSubmission(
 		createBoard,
@@ -200,49 +207,55 @@ export default function ProjectPage() {
 			when={!(boards() instanceof Error)}
 		>
 			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-				<Show when={boardsDirty()}>
-					<div class="absolute left-1/2 top-4 flex -translate-x-1/2 place-content-center items-center justify-center gap-2 rounded-lg border border-border p-2">
-						<Button
-							class="flex items-center gap-2"
-							onClick={async () => {
-								toast.promise(
-									() =>
-										moveTasks(
-											boards()!.flatMap((board) => {
-												const data = [];
-												for (const [index, task] of board.tasks.entries()) {
-													if (index === task.index && task.boardId === board.id) continue;
-													data.push({ boardId: board.id, id: task.id, index });
-												}
-												return data;
-											})
-										).then(() => revalidate(getBoards.key)),
-									{
-										error: 'Failed to apply changes',
-										loading: 'Applying changes...',
-										success: 'Changes applied'
-									}
-								);
-							}}
-						>
-							<span class="i-heroicons:check-circle-solid shrink-0 text-xl" />
-							<span>Apply Changes</span>
-						</Button>
-						<Button
-							class="flex items-center gap-2"
-							onClick={() => {
-								setBoards(() => $boards.latest);
-							}}
-							variant="secondary"
-						>
-							<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
-							<span>Cancel</span>
-						</Button>
-					</div>
-				</Show>
+				<TransitionSlide appear>
+					<Show when={boardsDirty()}>
+						<div class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2 rounded-lg border border-border p-2">
+							<Button
+								class="flex items-center gap-2"
+								onClick={async () => {
+									toast.promise(
+										() =>
+											moveTasks(
+												boards()!.flatMap((board) => {
+													const data = [];
+													for (const [index, task] of board.tasks.entries()) {
+														if (index === task.index && task.boardId === board.id) continue;
+														data.push({ boardId: board.id, id: task.id, index });
+													}
+													return data;
+												})
+											).then(() => revalidate(getBoards.key)),
+										{
+											error: 'Failed to apply changes',
+											loading: 'Applying changes...',
+											success: 'Changes applied'
+										}
+									);
+								}}
+							>
+								<span class="i-heroicons:check-circle-solid shrink-0 text-xl" />
+								<span>Apply Changes</span>
+							</Button>
+							<Button
+								class="flex items-center gap-2"
+								onClick={() => {
+									setBoards(() => $boards.latest);
+								}}
+								variant="secondary"
+							>
+								<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
+								<span>Cancel</span>
+							</Button>
+						</div>
+					</Show>
+				</TransitionSlide>
 				<Show when={hasBoards()}>
 					<div class="flex justify-end gap-4">
-						<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
+						<Button
+							class="flex items-center gap-2"
+							disabled={isDirty('project')}
+							onClick={() => setCreateBoardModalOpen(true)}
+						>
 							<span class="i-heroicons:plus text-lg" />
 							<span>Create Board</span>
 						</Button>
@@ -415,9 +428,12 @@ const AnimatedBoardsList: ParentComponent<{
 };
 
 function SkeletonBoard(props: { class?: string }) {
+	const [isDirty, _setIsDirty] = useDirty();
+
 	return (
 		<Button
 			class={cn('flex h-full w-full items-center gap-2', props.class)}
+			disabled={isDirty('project')}
 			onClick={() => setCreateBoardModalOpen(true)}
 			variant="ghost"
 		>

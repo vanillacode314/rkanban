@@ -12,6 +12,7 @@ import { Component, createSignal, onCleanup, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
+import { useDirty } from '~/context/dirty';
 import { TBoard, TTask } from '~/db/schema';
 import { getBoards } from '~/db/utils/boards';
 import { deleteTask, shiftTask } from '~/db/utils/tasks';
@@ -40,6 +41,7 @@ export const Task: Component<{
 	const [dragging, setDragging] = createSignal<boolean>(false);
 	const [isBeingDraggedOver, setIsBeingDraggedOver] = createSignal<boolean>(false);
 	const [closestEdge, setClosestEdge] = createSignal<'bottom' | 'top'>('bottom');
+	const [isDirty, _setIsDirty] = useDirty();
 
 	return (
 		<div
@@ -84,8 +86,8 @@ export const Task: Component<{
 			/>
 			<div
 				class={cn(
-					'relative flex cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
-					dragging() ? 'opacity-0' : 'opacity-100',
+					'relative flex h-10 cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
+					dragging() ? 'opacity-30' : 'opacity-100',
 					props.class
 				)}
 			>
@@ -110,14 +112,24 @@ export const Task: Component<{
 					</HoverCard>
 				</span>
 				<span class="grow" />
-				<TaskContextMenu class="shrink-0" index={props.index} task={props.task} />
+				<TaskContextMenu
+					class={cn('shrink-0')}
+					disabled={isDirty(['project', props.boardId, props.task.id])}
+					index={props.index}
+					task={props.task}
+				/>
 			</div>
 			<div class="h-2" />
 		</div>
 	);
 };
 
-function TaskContextMenu(props: { class?: string; index: number; task: TTask }) {
+function TaskContextMenu(props: {
+	class?: string;
+	disabled?: boolean;
+	index: number;
+	task: TTask;
+}) {
 	const [appContext, setAppContext] = useApp();
 	const allTasks = () => appContext.boards.find((board) => board.id === props.task.boardId)!.tasks;
 	const confirmModal = useConfirmModal();
@@ -126,7 +138,12 @@ function TaskContextMenu(props: { class?: string; index: number; task: TTask }) 
 	return (
 		<div class={cn('flex-col', props.class)}>
 			<DropdownMenu>
-				<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost">
+				<DropdownMenuTrigger
+					as={Button<'button'>}
+					disabled={props.disabled}
+					size="icon"
+					variant="ghost"
+				>
 					<span class="i-heroicons:ellipsis-vertical text-lg" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">

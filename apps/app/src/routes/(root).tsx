@@ -12,6 +12,7 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
 import { Toaster } from '~/components/ui/sonner';
 import { AppProvider, useApp } from '~/context/app';
+import { DirtyProvider } from '~/context/dirty';
 import { TNode } from '~/db/schema';
 import { cn } from '~/lib/utils';
 import { getUser } from '~/utils/auth.server';
@@ -39,14 +40,16 @@ const RootLayout = (props: { children: JSXElement }) => {
 	return (
 		<ColorModeProvider storageManager={storageManager}>
 			<AppProvider path={path()}>
-				<Title>RKanban</Title>
-				<Toaster closeButton duration={5000} />
-				<div class="flex h-full flex-col overflow-hidden">
-					<Nav class="full-width content-grid" />
-					<div class="content-grid h-full overflow-hidden">{props.children}</div>
-				</div>
-				<AutoImportModals />
-				<Clipboard />
+				<DirtyProvider>
+					<Title>RKanban</Title>
+					<Toaster closeButton duration={5000} />
+					<div class="flex h-full flex-col overflow-hidden">
+						<Nav class="full-width content-grid" />
+						<div class="content-grid h-full overflow-hidden">{props.children}</div>
+					</div>
+					<AutoImportModals />
+					<Clipboard />
+				</DirtyProvider>
 			</AppProvider>
 		</ColorModeProvider>
 	);

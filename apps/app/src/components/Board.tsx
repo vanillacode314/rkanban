@@ -16,6 +16,7 @@ import { Component, createSignal, onCleanup, ParentComponent, Show } from 'solid
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
+import { useDirty } from '~/context/dirty';
 import { TBoard, TTask } from '~/db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask } from '~/db/utils/tasks';
@@ -47,6 +48,7 @@ export const Board: Component<{
 	const [, setAppContext] = useApp();
 	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
 	const [isDraggedOver, setIsDraggedOver] = createSignal<boolean>(false);
+	const [isDirty, _setIsDirty] = useDirty();
 
 	onSubmission(
 		createTask,
@@ -158,9 +160,10 @@ export const Board: Component<{
 							{(title) => <span>{title()}</span>}
 						</Decrypt>
 					</CardTitle>
-					<div class="flex items-center justify-end gap-2">
+					<div class={cn('flex items-center justify-end gap-2')}>
 						<Button
 							class="flex items-center gap-2"
+							disabled={isDirty(['project', props.board.id])}
 							onClick={() => {
 								setCreateTaskModalOpen(true);
 								setAppContext('currentBoard', props.board);
@@ -170,7 +173,11 @@ export const Board: Component<{
 						>
 							<span class="i-heroicons:plus text-lg" />
 						</Button>
-						<BoardContextMenu board={props.board} index={props.index} />
+						<BoardContextMenu
+							board={props.board}
+							disabled={isDirty(['project', props.board.id])}
+							index={props.index}
+						/>
 					</div>
 				</div>
 			</CardHeader>
@@ -236,7 +243,11 @@ const AnimatedTaskList: ParentComponent = (props) => {
 	return <>{transition()}</>;
 };
 
-function BoardContextMenu(props: { board: { tasks: TTask[] } & TBoard; index: number }) {
+function BoardContextMenu(props: {
+	board: { tasks: TTask[] } & TBoard;
+	disabled?: boolean;
+	index: number;
+}) {
 	const [appContext, setAppContext] = useApp();
 	const confirmModal = useConfirmModal();
 	const $deleteBoard = useAction(deleteBoard);
@@ -244,7 +255,12 @@ function BoardContextMenu(props: { board: { tasks: TTask[] } & TBoard; index: nu
 	return (
 		<div class="flex-col">
 			<DropdownMenu>
-				<DropdownMenuTrigger as={Button<'button'>} size="icon" variant="ghost">
+				<DropdownMenuTrigger
+					as={Button<'button'>}
+					disabled={props.disabled}
+					size="icon"
+					variant="ghost"
+				>
 					<span class="i-heroicons:ellipsis-vertical text-lg" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
