@@ -208,7 +208,7 @@ export default function ProjectPage() {
 		>
 			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
 				<TransitionSlide appear>
-					<Show when={boardsDirty()}>
+					<Show when={isDirty('project')}>
 						<div class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2 rounded-lg border border-border p-2">
 							<Button
 								class="flex items-center gap-2"
