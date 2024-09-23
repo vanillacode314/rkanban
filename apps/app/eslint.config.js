@@ -26,6 +26,12 @@ export default [
 			}
 		}
 	},
+	{
+		...solid,
+		rules: {
+			'solid/reactivity': 'off'
+		}
+	},
 	...tseslint.configs.recommended,
 	{
 		rules: {

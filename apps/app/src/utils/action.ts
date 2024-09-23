@@ -24,7 +24,7 @@ function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 	const submissions = useSubmissions(action);
 	let dispatched = false;
 
-	// eslint-disable-next-line solid/reactivity
+	 
 	createEffect(async () => {
 		for (const submission of submissions) {
 			if (!dispatched && !always) return;
@@ -37,7 +37,7 @@ function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 				memoMap.get(submission)!.set(handlers, undefined);
 			}
 			if (submission.pending) {
-				// eslint-disable-next-line solid/reactivity
+				 
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
 					const result = await handlers.onPending?.(submission.input);
@@ -47,7 +47,7 @@ function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 			} else if (submission.error || submission.result instanceof Error) {
 				dispatched = false;
 				resolved.add(submission);
-				// eslint-disable-next-line solid/reactivity
+				 
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
 					const result = await handlers.onError?.(memo, submission.error || submission.result);
@@ -57,7 +57,7 @@ function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 			} else if (submission.result) {
 				dispatched = false;
 				resolved.add(submission);
-				// eslint-disable-next-line solid/reactivity
+				 
 				untrack(async () => {
 					let memo = memoMap.get(submission)!.get(handlers) as TMemo | undefined;
 					const result = await handlers.onSuccess?.(
