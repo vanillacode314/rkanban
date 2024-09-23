@@ -22,9 +22,9 @@ export default createHandler(() => (
 						{assets}
 						{import.meta.env.PROD && (
 							<script
-								data-domain="kanban.raqueeb.com"
+								data-website-id="ab0b6db9-abbf-44a3-ac35-5702df669174"
 								defer
-								src="https://plausible.raqueeb.com/js/script.js"
+								src="https://umami.raqueeb.com/script.js"
 							/>
 						)}
 					</head>
