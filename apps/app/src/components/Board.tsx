@@ -1,9 +1,13 @@
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import {
+	draggable,
 	dropTargetForElements,
 	monitorForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
+import {
+	attachClosestEdge,
+	extractClosestEdge
+} from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
@@ -12,7 +16,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { revalidate, useAction } from '@solidjs/router';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
-import { Component, createSignal, onCleanup, ParentComponent, Show } from 'solid-js';
+import { Component, createSignal, onCleanup, onMount, ParentComponent, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
@@ -47,8 +51,11 @@ export const Board: Component<{
 }> = (props) => {
 	const [, setAppContext] = useApp();
 	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
-	const [isDraggedOver, setIsDraggedOver] = createSignal<boolean>(false);
+	const [dragState, setDragState] = createSignal<'boards-drop' | 'tasks-drop' | null>(null);
+	const [closestEdge, setClosestEdge] = createSignal<'left' | 'right'>('left');
 	const [isDirty, _setIsDirty] = useDirty();
+	let ref!: HTMLDivElement;
+	let dragHandleRef!: HTMLDivElement;
 
 	onSubmission(
 		createTask,
@@ -83,118 +90,114 @@ export const Board: Component<{
 			predicate: (input) => input[0].get('boardId') === props.board.id
 		}
 	);
+	onMount(() => {
+		const cleanup = combine(
+			draggable({
+				dragHandle: dragHandleRef,
+				element: ref,
+				getInitialData: () => ({ boardId: props.board.id, type: 'board' })
+			}),
+			dropTargetForElements({
+				canDrop: ({ source }) => {
+					if (source.data.type !== 'task' && source.data.type !== 'board') return false;
+					if (source.data.boardId === props.board.id) return false;
+					return true;
+				},
+				element: ref,
+				getData: ({ element, input }) => {
+					const data = { boardId: props.board.id, type: 'board' };
+					return attachClosestEdge(data, { allowedEdges: ['right', 'left'], element, input });
+				},
+				getIsSticky: ({ source }) => source.data.type === 'board',
+				onDrag: ({ self }) => {
+					const edge = extractClosestEdge(self.data);
+					invariant((edge && edge === 'right') || edge === 'left');
+					setClosestEdge(edge);
+				},
+				onDragEnter: ({ source }) => {
+					if (source.data.boardId === props.board.id) return;
+					if (source.data.type === 'board') setDragState('boards-drop');
+					if (source.data.type === 'task') setDragState('tasks-drop');
+				},
+				onDragLeave: () => setDragState(null),
+				onDrop: () => {
+					ref.scrollIntoView({ behavior: 'smooth' });
+					setDragState(null);
+				}
+			})
+		);
+		onCleanup(cleanup);
+	});
 
 	return (
-		<Card
-			class={cn(
-				'group/board flex h-full flex-col overflow-hidden transition-colors',
-				isDraggedOver() ? 'border-blue-300' : '',
-				props.class
-			)}
-			ref={(el) => {
-				const cleanup = combine(
-					monitorForElements({
-						canMonitor({ source }) {
-							invariant(
-								source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
-							);
-							if (source.data.boardId !== props.board.id) return false;
-							return true;
-						},
-						onDrop({ location, source }) {
-							const destination = location.current.dropTargets[0];
-							if (!destination) return;
-							const closestEdgeOfTarget = extractClosestEdge(destination.data);
-							const destinationIndex = tasks().findIndex(
-								(task) => task.id === destination.data.taskId
-							);
-							const sourceIndex = tasks().findIndex((task) => task.id === source.data.taskId);
-
-							if (destinationIndex === -1 || sourceIndex === -1) return;
-
-							setTasks(
-								reorderWithEdge({
-									axis: 'vertical',
-									closestEdgeOfTarget,
-									indexOfTarget: destinationIndex,
-									list: tasks(),
-									startIndex: sourceIndex
-								})
-							);
-						}
-					}),
-					dropTargetForElements({
-						canDrop: ({ source }) => {
-							invariant(
-								source.data.taskId && source.data.boardId && typeof source.data.taskId === 'string'
-							);
-							if (source.data.boardId === props.board.id) return false;
-							return true;
-						},
-						element: el,
-						getData: () => ({ boardId: props.board.id }),
-						onDragEnter: ({ source }) => {
-							if (source.data.boardId === props.board.id) return;
-							setIsDraggedOver(true);
-						},
-						onDragLeave: () => setIsDraggedOver(false),
-						onDrop: () => {
-							el.scrollIntoView({ behavior: 'smooth' });
-							setIsDraggedOver(false);
-						}
-					})
-				);
-				onCleanup(cleanup);
-			}}
-		>
-			<CardHeader>
-				<div class="grid grid-cols-[1fr_auto] items-center gap-4">
-					<CardTitle class="flex items-center gap-2">
-						<span
-							class={cn(
-								'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-								props.board.userId === 'pending' ? 'inline-block' : '!hidden'
-							)}
-						/>
-						<Decrypt fallback value={props.board.title}>
-							{(title) => <span>{title()}</span>}
-						</Decrypt>
-					</CardTitle>
-					<div class={cn('flex items-center justify-end gap-2')}>
-						<Button
-							class="flex items-center gap-2"
-							disabled={isDirty(['project', props.board.id])}
-							onClick={() => {
-								setCreateTaskModalOpen(true);
-								setAppContext('currentBoard', props.board);
-							}}
-							size="icon"
-							title="Create Task"
-						>
-							<span class="i-heroicons:plus text-lg" />
-						</Button>
-						<BoardContextMenu
-							board={props.board}
-							disabled={isDirty(['project', props.board.id])}
-							index={props.index}
-						/>
-					</div>
-				</div>
-			</CardHeader>
-			<CardContent class="overflow-hidden">
-				<Show fallback={<p>No tasks in this board</p>} when={tasks().length > 0}>
-					<div class="flex h-full flex-col overflow-y-auto overflow-x-hidden">
-						<AnimatedTaskList>
-							<Key by="id" each={tasks()}>
-								{(task, index) => (
-									<Task boardId={props.board.id} class="origin-top" index={index()} task={task()} />
+		<div class={cn('relative overflow-hidden', props.class)} ref={ref}>
+			<div
+				class={cn(
+					'absolute inset-y-0 w-px bg-blue-300',
+					dragState() === 'boards-drop' ? 'opacity-100' : 'opacity-0',
+					closestEdge() === 'left' ? 'left-0' : 'right-0'
+				)}
+			/>
+			<Card
+				class={cn(
+					'group/board flex h-full flex-col overflow-hidden transition-colors',
+					dragState() === 'tasks-drop' && 'border-blue-300'
+				)}
+			>
+				<CardHeader>
+					<div class="grid grid-cols-[1fr_auto] items-center gap-4">
+						<CardTitle class="flex items-center gap-2">
+							<span
+								class={cn(
+									'i-akar-icons:drag-vertical shrink-0 cursor-move',
+									props.board.userId === 'pending' && 'hidden'
 								)}
-							</Key>
-						</AnimatedTaskList>
+								ref={dragHandleRef}
+							/>
+							<span
+								class={cn(
+									'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
+									props.board.userId !== 'pending' && '!hidden'
+								)}
+							/>
+							<Decrypt fallback value={props.board.title}>
+								{(title) => <span>{title()}</span>}
+							</Decrypt>
+						</CardTitle>
+						<div class={cn('flex items-center justify-end gap-2')}>
+							<Button
+								class="flex items-center gap-2"
+								disabled={isDirty(['project', props.board.id])}
+								onClick={() => {
+									setCreateTaskModalOpen(true);
+									setAppContext('currentBoard', props.board);
+								}}
+								size="icon"
+								title="Create Task"
+							>
+								<span class="i-heroicons:plus text-lg" />
+							</Button>
+							<BoardContextMenu
+								board={props.board}
+								disabled={isDirty(['project', props.board.id])}
+								index={props.index}
+							/>
+						</div>
 					</div>
-				</Show>
-			</CardContent>
-		</Card>
+				</CardHeader>
+				<CardContent class="overflow-hidden">
+					<Show fallback={<p>No tasks in this board</p>} when={tasks().length > 0}>
+						<div class="flex h-full flex-col overflow-y-auto overflow-x-hidden">
+							<AnimatedTaskList>
+								<Key by="id" each={tasks()}>
+									{(task, index) => <Task boardId={props.board.id} index={index()} task={task()} />}
+								</Key>
+							</AnimatedTaskList>
+						</div>
+					</Show>
+				</CardContent>
+			</Card>
+		</div>
 	);
 };
 

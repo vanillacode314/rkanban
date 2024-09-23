@@ -50,17 +50,17 @@ export const Task: Component<{
 			draggable({
 				dragHandle: dragHandleRef,
 				element: ref,
-				getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id }),
+				getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id, type: 'task' }),
 				onDragStart: () => setDragging(true),
 				onDrop: () => setDragging(false)
 			}),
 			dropTargetForElements({
 				canDrop({ source }) {
-					return source.data.taskId !== props.task.id;
+					return source.data.type === 'task';
 				},
 				element: ref,
 				getData: ({ element, input }) => {
-					const data = { boardId: props.boardId, taskId: props.task.id };
+					const data = { boardId: props.boardId, taskId: props.task.id, type: 'task' };
 					return attachClosestEdge(data, { allowedEdges: ['top', 'bottom'], element, input });
 				},
 				getIsSticky: () => true,
@@ -78,27 +78,34 @@ export const Task: Component<{
 	});
 
 	return (
-		<div class="relative shrink-0 overflow-hidden" ref={ref}>
+		<div
+			class={cn(
+				'relative shrink-0 overflow-hidden',
+				dragging() ? 'opacity-30' : 'opacity-100',
+				props.class
+			)}
+			ref={ref}
+		>
 			<div
 				class={cn(
-					'absolute inset-x-0 h-px w-full bg-blue-400',
+					'absolute inset-x-0 h-px w-full bg-blue-300',
 					isBeingDraggedOver() ? 'opacity-100' : 'opacity-0',
 					closestEdge() === 'top' ? 'top-0' : 'bottom-2'
 				)}
 			/>
-			<div
-				class={cn(
-					'relative flex h-10 items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
-					dragging() ? 'opacity-30' : 'opacity-100',
-					props.class
-				)}
-			>
+			<div class="relative flex h-10 items-center border-l-4 pl-4 transition-colors hover:border-blue-300">
 				<span class="flex items-center gap-2 overflow-hidden">
-					<span class="i-akar-icons:drag-vertical shrink-0 cursor-move" ref={dragHandleRef} />
+					<span
+						class={cn(
+							'i-akar-icons:drag-vertical shrink-0 cursor-move',
+							props.task.userId === 'pending' && '!hidden'
+						)}
+						ref={dragHandleRef}
+					/>
 					<span
 						class={cn(
 							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-							props.task.userId === 'pending' ? 'inline-block' : '!hidden'
+							props.task.userId !== 'pending' && '!hidden'
 						)}
 					/>
 					<HoverCard>

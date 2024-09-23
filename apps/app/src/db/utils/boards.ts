@@ -1,5 +1,5 @@
 import { action, cache } from '@solidjs/router';
-import { and, asc, eq, gt, gte, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { boards, tasks, type TBoard, type TTask } from '~/db/schema';
@@ -47,38 +47,36 @@ async function $getBoards(path: null | string) {
 }
 const getBoards = cache($getBoards, 'get-boards');
 
-const moveBoard = async (boardId: TBoard['id'], toIndex: TBoard['index']) => {
+const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) => {
 	'use server';
-
 	const user = (await getUser())!;
 
-	const [board] = await db
-		.select()
-		.from(boards)
-		.where(and(eq(boards.id, boardId), eq(boards.userId, user.id)));
+	if (inputs.length === 0) throw new Error('No boards to move');
+	const ids = inputs.map((input) => input.id);
+	console.log(inputs);
 
-	const fromIndex = board.index;
-	if (fromIndex === toIndex) throw new Error(`Can't move board to same index`);
-	await db.transaction(async (tx) => {
-		if (fromIndex > toIndex) {
-			await tx
-				.update(boards)
-				.set({ index: sql`${boards.index} + 1` })
-				.where(
-					and(eq(boards.userId, user.id), lt(boards.index, fromIndex), gte(boards.index, toIndex))
-				);
-		} else {
-			await tx
-				.update(boards)
-				.set({ index: sql`${boards.index} - 1` })
-				.where(
-					and(eq(boards.userId, user.id), gt(boards.index, fromIndex), lte(boards.index, toIndex))
-				);
-		}
-		await tx
+	await db.transaction(async () => {
+		await db
 			.update(boards)
-			.set({ index: toIndex })
-			.where(and(eq(boards.userId, user.id), eq(boards.id, boardId)));
+			.set({
+				index: sql.join(
+					[
+						sql`(case`,
+						...inputs.map(
+							(input) => sql`when ${boards.id} = ${input.id} then ${input.index + 10000}`
+						),
+						sql`end)`
+					],
+					sql.raw(' ')
+				)
+			})
+			.where(and(inArray(boards.id, ids), eq(boards.userId, user.id)));
+		await db
+			.update(boards)
+			.set({
+				index: sql`${boards.index} - 10000`
+			})
+			.where(and(inArray(boards.id, ids), eq(boards.userId, user.id)));
 	});
 };
 
@@ -203,4 +201,4 @@ const deleteBoard = action(async (formData: FormData) => {
 
 const notify = createNotifier('boards');
 
-export { createBoard, deleteBoard, getBoards, moveBoard, shiftBoard, updateBoard };
+export { createBoard, deleteBoard, getBoards, moveBoards, shiftBoard, updateBoard };

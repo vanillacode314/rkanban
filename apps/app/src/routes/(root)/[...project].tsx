@@ -33,7 +33,7 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
 import { TBoard, TTask } from '~/db/schema';
-import { createBoard, getBoards } from '~/db/utils/boards';
+import { createBoard, getBoards, moveBoards } from '~/db/utils/boards';
 import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
@@ -208,7 +208,7 @@ export default function ProjectPage() {
 		>
 			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
 				<TransitionSlide appear>
-					<Show when={isDirty('project')}>
+					<Show when={boardsDirty()}>
 						<div class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2 rounded-lg border border-border p-2">
 							<Button
 								class="flex items-center gap-2"
@@ -348,13 +348,64 @@ const AnimatedBoardsList: ParentComponent<{
 	});
 
 	const [isBeingDragged, setIsBeingDragged] = createSignal<boolean>(false);
+	const [_isDirty, setIsDirty] = useDirty();
 
-	let el!: HTMLDivElement;
+	let ref!: HTMLDivElement;
 	onMount(() => {
 		const cleanup = combine(
+			// on drop board
 			monitorForElements({
 				canMonitor({ source }) {
-					return 'taskId' in source.data;
+					return source.data.type === 'board';
+				},
+				onDragStart: () => setIsBeingDragged(true),
+				onDrop({ location, source }) {
+					setIsBeingDragged(false);
+					const destination = location.current.dropTargets[0];
+					if (!destination) return;
+					const closestEdgeOfTarget = extractClosestEdge(destination.data);
+
+					const destinationIndex = props.boards.findIndex((b) => b.id === destination.data.boardId);
+					const sourceIndex = props.boards.findIndex((b) => b.id === source.data.boardId);
+					invariant(destinationIndex !== -1 && sourceIndex !== -1);
+
+					props.setBoards((boards) =>
+						reorderWithEdge({
+							axis: 'horizontal',
+							closestEdgeOfTarget,
+							indexOfTarget: destinationIndex,
+							list: boards!,
+							startIndex: sourceIndex
+						})
+					);
+
+					const changedBoards = [] as Parameters<typeof moveBoards>[0];
+
+					for (const [index, board] of props.boards.entries()) {
+						if (index === board.index) continue;
+						changedBoards.push({ id: board.id, index });
+					}
+
+					if (changedBoards.length === 0) return;
+					toast.promise(
+						async () => {
+							setIsDirty('project', true);
+							moveBoards(changedBoards)
+								.then(() => revalidate(getBoards.key))
+								.finally(() => setIsDirty('project', false));
+						},
+						{
+							error: 'Failed to move boards',
+							loading: 'Moving boards...',
+							success: 'Boards moved'
+						}
+					);
+				}
+			}),
+			// on drop task
+			monitorForElements({
+				canMonitor({ source }) {
+					return source.data.type === 'task';
 				},
 				onDragStart: () => setIsBeingDragged(true),
 				onDrop({ location, source }) {
@@ -407,9 +458,9 @@ const AnimatedBoardsList: ParentComponent<{
 			}),
 			autoScrollForElements({
 				canScroll({ source }) {
-					return 'taskId' in source.data;
+					return source.data.type === 'task' || source.data.type === 'board';
 				},
-				element: el
+				element: ref
 			})
 		);
 		onCleanup(cleanup);
@@ -420,7 +471,7 @@ const AnimatedBoardsList: ParentComponent<{
 				'flex h-full gap-[var(--gap)] overflow-auto [--cols:1] [--gap:theme(spacing.4)] sm:[--cols:2] lg:[--cols:3] xl:[--cols:4]',
 				isBeingDragged() ? '' : 'snap-x snap-mandatory'
 			)}
-			ref={el}
+			ref={ref}
 		>
 			{transition()}
 		</div>
