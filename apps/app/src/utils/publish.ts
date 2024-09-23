@@ -7,6 +7,7 @@ function createNotifier(table: string) {
 		item: Omit<T, 'table'>,
 		id?: string
 	) => {
+		return;
 		const body = JSON.stringify({
 			id,
 			item: { ...item, table },

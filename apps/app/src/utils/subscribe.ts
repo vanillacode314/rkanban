@@ -15,6 +15,7 @@ function createSubscription(
 		>
 	>
 ) {
+	return;
 	if (isServer) return;
 	const ws = createWS(env.PUBLIC_SOCKET_URL);
 	const [appContext] = useApp();
