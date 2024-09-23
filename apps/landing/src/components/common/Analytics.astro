@@ -1,14 +1,7 @@
 ---
-import { GoogleAnalytics } from '@astrolib/analytics';
-import { ANALYTICS } from 'astrowind:config';
+//import { GoogleAnalytics } from '@astrolib/analytics';
+//import { ANALYTICS } from 'astrowind:config';
 ---
 
-<script defer data-domain="site.kanban.raqueeb.com" src="https://plausible.raqueeb.com/js/script.js"></script>
-{
-  ANALYTICS?.vendors?.googleAnalytics?.id ? (
-    <GoogleAnalytics
-      id={String(ANALYTICS.vendors.googleAnalytics.id)}
-      partytown={ANALYTICS?.vendors?.googleAnalytics?.partytown}
-    />
-  ) : null
-}
+<script defer src="https://umami.raqueeb.com/script.js" data-website-id="503febc2-2e29-4e18-8f0b-99390890a905"></script>
+<!--{--><!--  ANALYTICS?.vendors?.googleAnalytics?.id ? (--><!--    <GoogleAnalytics--><!--      id={String(ANALYTICS.vendors.googleAnalytics.id)}--><!--      partytown={ANALYTICS?.vendors?.googleAnalytics?.partytown}--><!--    />--><!--  ) : null--><!--}-->
