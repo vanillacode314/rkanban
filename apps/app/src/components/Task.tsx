@@ -8,7 +8,7 @@ import {
 	extractClosestEdge
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { revalidate, useAction } from '@solidjs/router';
-import { Component, createSignal, onCleanup, Show } from 'solid-js';
+import { Component, createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
@@ -42,41 +42,43 @@ export const Task: Component<{
 	const [isBeingDraggedOver, setIsBeingDraggedOver] = createSignal<boolean>(false);
 	const [closestEdge, setClosestEdge] = createSignal<'bottom' | 'top'>('bottom');
 	const [isDirty, _setIsDirty] = useDirty();
+	let ref!: HTMLDivElement;
+	let dragHandleRef!: HTMLDivElement;
+
+	onMount(() => {
+		const cleanup = combine(
+			draggable({
+				dragHandle: dragHandleRef,
+				element: ref,
+				getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id }),
+				onDragStart: () => setDragging(true),
+				onDrop: () => setDragging(false)
+			}),
+			dropTargetForElements({
+				canDrop({ source }) {
+					return source.data.taskId !== props.task.id;
+				},
+				element: ref,
+				getData: ({ element, input }) => {
+					const data = { boardId: props.boardId, taskId: props.task.id };
+					return attachClosestEdge(data, { allowedEdges: ['top', 'bottom'], element, input });
+				},
+				getIsSticky: () => true,
+				onDrag: ({ self }) => {
+					const edge = extractClosestEdge(self.data);
+					invariant((edge && edge === 'top') || edge === 'bottom');
+					setClosestEdge(edge);
+				},
+				onDragEnter: () => setIsBeingDraggedOver(true),
+				onDragLeave: () => setIsBeingDraggedOver(false),
+				onDrop: () => setIsBeingDraggedOver(false)
+			})
+		);
+		onCleanup(cleanup);
+	});
 
 	return (
-		<div
-			class="relative shrink-0 overflow-hidden"
-			ref={(el) => {
-				const cleanup = combine(
-					draggable({
-						element: el,
-						getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id }),
-						onDragStart: () => setDragging(true),
-						onDrop: () => setDragging(false)
-					}),
-					dropTargetForElements({
-						canDrop({ source }) {
-							return source.data.taskId !== props.task.id;
-						},
-						element: el,
-						getData: ({ element, input }) => {
-							const data = { boardId: props.boardId, taskId: props.task.id };
-							return attachClosestEdge(data, { allowedEdges: ['top', 'bottom'], element, input });
-						},
-						getIsSticky: () => true,
-						onDrag: ({ self }) => {
-							const edge = extractClosestEdge(self.data);
-							invariant((edge && edge === 'top') || edge === 'bottom');
-							setClosestEdge(edge);
-						},
-						onDragEnter: () => setIsBeingDraggedOver(true),
-						onDragLeave: () => setIsBeingDraggedOver(false),
-						onDrop: () => setIsBeingDraggedOver(false)
-					})
-				);
-				onCleanup(cleanup);
-			}}
-		>
+		<div class="relative shrink-0 overflow-hidden" ref={ref}>
 			<div
 				class={cn(
 					'absolute inset-x-0 h-px w-full bg-blue-400',
@@ -86,12 +88,13 @@ export const Task: Component<{
 			/>
 			<div
 				class={cn(
-					'relative flex h-10 cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
+					'relative flex h-10 items-center border-l-4 pl-4 transition-colors hover:border-blue-400',
 					dragging() ? 'opacity-30' : 'opacity-100',
 					props.class
 				)}
 			>
 				<span class="flex items-center gap-2 overflow-hidden">
+					<span class="i-akar-icons:drag-vertical shrink-0 cursor-move" ref={dragHandleRef} />
 					<span
 						class={cn(
 							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
