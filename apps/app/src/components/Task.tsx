@@ -43,12 +43,10 @@ export const Task: Component<{
 	const [closestEdge, setClosestEdge] = createSignal<'bottom' | 'top'>('bottom');
 	const [isDirty, _setIsDirty] = useDirty();
 	let ref!: HTMLDivElement;
-	let dragHandleRef!: HTMLDivElement;
 
 	onMount(() => {
 		const cleanup = combine(
 			draggable({
-				dragHandle: dragHandleRef,
 				element: ref,
 				getInitialData: () => ({ boardId: props.boardId, taskId: props.task.id, type: 'task' }),
 				onDragStart: () => setDragging(true),
@@ -93,15 +91,8 @@ export const Task: Component<{
 					closestEdge() === 'top' ? 'top-0' : 'bottom-2'
 				)}
 			/>
-			<div class="relative flex h-10 items-center border-l-4 pl-4 transition-colors hover:border-blue-300">
+			<div class="relative flex h-10 cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-300">
 				<span class="flex items-center gap-2 overflow-hidden">
-					<span
-						class={cn(
-							'i-akar-icons:drag-vertical shrink-0 cursor-move',
-							props.task.userId === 'pending' && '!hidden'
-						)}
-						ref={dragHandleRef}
-					/>
 					<span
 						class={cn(
 							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
