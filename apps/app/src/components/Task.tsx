@@ -239,4 +239,5 @@ function TaskContextMenu(props: {
 		</div>
 	);
 }
+
 export default Task;

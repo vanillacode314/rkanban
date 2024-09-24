@@ -1,11 +1,20 @@
 import { resolveFirst } from '@solid-primitives/refs';
 import { createSwitchTransition } from '@solid-primitives/transition-group';
 import { animate, spring } from 'motion';
-import { createMemo, JSXElement } from 'solid-js';
+import { createMemo, JSXElement, Show } from 'solid-js';
 
-export function TransitionSlide(props: { appear?: boolean; children: JSXElement }): JSXElement {
+export function TransitionSlide(props: {
+	appear?: boolean;
+	children: JSXElement;
+	fallback?: JSXElement;
+	when?: boolean;
+}): JSXElement {
 	const resolved = resolveFirst(
-		() => props.children,
+		() => (
+			<Show fallback={props.fallback} when={props.when ?? true}>
+				{props.children}
+			</Show>
+		),
 		(el) => el instanceof HTMLElement
 	);
 	const transition = createMemo(() =>

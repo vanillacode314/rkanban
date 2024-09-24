@@ -1,7 +1,7 @@
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import {
 	draggable,
-	dropTargetForElements,
+	dropTargetForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import {
 	attachClosestEdge,

@@ -9,12 +9,13 @@ import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { A, createAsync, revalidate, RouteDefinition } from '@solidjs/router';
 import { produce } from 'immer';
-import { animate, spring } from 'motion';
+import { animate, AnimationControls, spring } from 'motion';
 import {
 	createComputed,
 	createEffect,
 	createMemo,
 	createSignal,
+	mergeProps,
 	onCleanup,
 	onMount,
 	ParentComponent,
@@ -27,6 +28,7 @@ import { toast } from 'solid-sonner';
 import Board from '~/components/Board';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
 import PathCrumbs from '~/components/PathCrumbs';
+import ProgressCircle from '~/components/ProgressCircle';
 import { TransitionSlide } from '~/components/transitions/TransitionSlide';
 import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
@@ -207,48 +209,11 @@ export default function ProjectPage() {
 			when={!(boards() instanceof Error)}
 		>
 			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-				<TransitionSlide appear>
-					<Show when={boardsDirty()}>
-						<div class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2 rounded-lg border border-border p-2">
-							<Button
-								class="flex items-center gap-2"
-								onClick={async () => {
-									toast.promise(
-										() =>
-											moveTasks(
-												boards()!.flatMap((board) => {
-													const data = [];
-													for (const [index, task] of board.tasks.entries()) {
-														if (index === task.index && task.boardId === board.id) continue;
-														data.push({ boardId: board.id, id: task.id, index });
-													}
-													return data;
-												})
-											).then(() => revalidate(getBoards.key)),
-										{
-											error: 'Failed to apply changes',
-											loading: 'Applying changes...',
-											success: 'Changes applied'
-										}
-									);
-								}}
-							>
-								<span class="i-heroicons:check-circle-solid shrink-0 text-xl" />
-								<span>Apply Changes</span>
-							</Button>
-							<Button
-								class="flex items-center gap-2"
-								onClick={() => {
-									setBoards(() => $boards.latest);
-								}}
-								variant="secondary"
-							>
-								<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
-								<span>Cancel</span>
-							</Button>
-						</div>
-					</Show>
-				</TransitionSlide>
+				<ApplyChangesPopup
+					boards={boards()}
+					boardsDirty={boardsDirty()}
+					reset={() => setBoards($boards.latest)}
+				/>
 				<Show when={hasBoards()}>
 					<div class="flex justify-end gap-4">
 						<Button
@@ -491,5 +456,80 @@ function SkeletonBoard(props: { class?: string }) {
 			<span class="i-heroicons:plus text-lg" />
 			<span>Create Board</span>
 		</Button>
+	);
+}
+
+function ApplyChangesPopup(props: {
+	boards: Array<{ tasks: TTask[] } & TBoard> | undefined;
+	boardsDirty: boolean;
+	countdownDuration?: number;
+	reset: () => void;
+}) {
+	const [count, setCount] = createSignal(0);
+	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
+	let animation: AnimationControls;
+
+	createEffect(() => {
+		if (!props.boardsDirty) return;
+		untrack(() => {
+			if (count() > 0) return;
+			setCount(mergedProps.countdownDuration);
+			animation = animate(
+				(progress) => {
+					setCount((1 - progress) * mergedProps.countdownDuration);
+				},
+				{ duration: mergedProps.countdownDuration, easing: 'linear' }
+			);
+			animation.finished.then(() => {
+				const changedTasks = props.boards!.flatMap((board) => {
+					const data = [];
+					for (const [index, task] of board.tasks.entries()) {
+						if (index === task.index && task.boardId === board.id) continue;
+						data.push({ boardId: board.id, id: task.id, index });
+					}
+					return data;
+				});
+				if (changedTasks.length === 0) return;
+				toast.promise(() => moveTasks(changedTasks).then(() => revalidate(getBoards.key)), {
+					error: 'Failed to apply changes',
+					loading: 'Applying changes...',
+					success: 'Changes applied'
+				});
+			});
+		});
+	});
+
+	function reset() {
+		animation?.cancel();
+		setCount(0);
+		props.reset();
+	}
+
+	async function apply() {
+		animation?.finish();
+	}
+
+	return (
+		<TransitionSlide appear when={props.boardsDirty}>
+			<div class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2 rounded-lg border border-border p-2">
+				<Button class="flex items-center gap-2" onClick={apply}>
+					<Show
+						fallback={<span class="i-heroicons:check-circle-solid shrink-0 text-xl" />}
+						when={count() > 0}
+					>
+						<ProgressCircle
+							class="text-xl"
+							text={Math.ceil(count()).toString()}
+							value={count() / 5}
+						/>
+					</Show>
+					<span>Apply Changes</span>
+				</Button>
+				<Button class="flex items-center gap-2" onClick={reset} variant="secondary">
+					<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
+					<span>Cancel</span>
+				</Button>
+			</div>
+		</TransitionSlide>
 	);
 }
