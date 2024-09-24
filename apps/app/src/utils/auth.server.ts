@@ -18,7 +18,7 @@ import { resend } from './resend.server';
 const getUser = cache(
 	async ({
 		redirectOnAuthenticated = false,
-		redirectOnUnauthenticated = true,
+		redirectOnUnauthenticated = false,
 		shouldThrow = true
 	}: Partial<{
 		redirectOnAuthenticated: boolean;
