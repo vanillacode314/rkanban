@@ -16,7 +16,7 @@
     "generate-pwa-assets": "pwa-assets-generator"
   },
   "simple-git-hooks": {
-    "pre-push": "npm run format"
+    "pre-push": "npm run format && npm run lint"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.3.1",
