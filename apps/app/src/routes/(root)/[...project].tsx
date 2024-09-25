@@ -520,7 +520,7 @@ function ApplyChangesPopup(props: {
 						<ProgressCircle
 							class="text-xl"
 							text={Math.ceil(count()).toString()}
-							value={count() / 5}
+							value={count() / mergedProps.countdownDuration}
 						/>
 					</Show>
 					<span>Apply Changes</span>
