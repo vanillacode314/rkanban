@@ -12,9 +12,13 @@ export async function POST() {
 
 	const result = await readValidatedBody(
 		z.object({
-			boards: boardsSchema.pick({ id: true, index: true, nodeId: true, title: true }).array(),
-			nodes: nodesSchema.pick({ id: true, isDirectory: true, name: true, parentId: true }).array(),
-			tasks: tasksSchema.pick({ boardId: true, index: true, title: true }).array()
+			boards: boardsSchema
+				.pick({ createdAt: true, id: true, index: true, nodeId: true, title: true })
+				.array(),
+			nodes: nodesSchema
+				.pick({ createdAt: true, id: true, isDirectory: true, name: true, parentId: true })
+				.array(),
+			tasks: tasksSchema.pick({ boardId: true, createdAt: true, index: true, title: true }).array()
 		}).safeParse
 	);
 	if (!result.success) {
@@ -30,6 +34,10 @@ export async function POST() {
 	}
 
 	const data = result.data;
+
+	data.nodes.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+	data.boards.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+	data.tasks.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
 	await db.transaction(async () => {
 		if (data.nodes.length > 0) {

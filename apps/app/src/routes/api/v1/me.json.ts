@@ -12,6 +12,7 @@ export async function GET() {
 	const [$nodes, $boards, $tasks] = await Promise.all([
 		db
 			.select({
+				createdAt: nodes.createdAt,
 				id: nodes.id,
 				isDirectory: nodes.isDirectory,
 				name: nodes.name,
@@ -19,10 +20,10 @@ export async function GET() {
 				updatedAt: nodes.updatedAt
 			})
 			.from(nodes)
-			.where(eq(nodes.userId, user.id))
-			.orderBy(nodes.createdAt),
+			.where(eq(nodes.userId, user.id)),
 		db
 			.select({
+				createdAt: boards.createdAt,
 				id: boards.id,
 				index: boards.index,
 				nodeId: boards.nodeId,
@@ -30,11 +31,11 @@ export async function GET() {
 				updatedAt: boards.updatedAt
 			})
 			.from(boards)
-			.where(eq(boards.userId, user.id))
-			.orderBy(nodes.createdAt),
+			.where(eq(boards.userId, user.id)),
 		db
 			.select({
 				boardId: tasks.boardId,
+				createdAt: tasks.createdAt,
 				id: tasks.id,
 				index: tasks.index,
 				title: tasks.title,
@@ -42,7 +43,6 @@ export async function GET() {
 			})
 			.from(tasks)
 			.where(eq(tasks.userId, user.id))
-			.orderBy(nodes.createdAt)
 	]);
 
 	return json({ boards: $boards, nodes: $nodes, tasks: $tasks });

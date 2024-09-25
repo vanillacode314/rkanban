@@ -134,19 +134,6 @@ export default function SettingsPage() {
 			toast.error('Invalid backup file');
 			return;
 		}
-		// if (encryptionEnabled()) {
-		// 	toastId = toast.loading('Encrypting Data...');
-		// 	await Promise.all(
-		// 		itertools.chain(
-		// 			data.boards.map(async (board) => {
-		// 				board.title = await encryptWithUserKeys(board.title);
-		// 			}),
-		// 			data.tasks.map(async (task) => {
-		// 				task.title = await encryptWithUserKeys(task.title);
-		// 			})
-		// 		)
-		// 	);
-		// }
 		const toastId = toast.loading('Downloading current data...');
 		let response = await fetch('/api/v1/me.json');
 		if (!response.ok) {
@@ -168,19 +155,27 @@ export default function SettingsPage() {
 			);
 		}
 		const newNodes = diffNodes(backupData.nodes, currentData.nodes);
+		for (const node of newNodes.nodes) {
+			if (node.parentId === null) continue;
+			if (newNodes.changedIdsMap.has(node.parentId)) {
+				node.parentId = newNodes.changedIdsMap.get(node.parentId)!;
+			}
+		}
+
 		const newBoards = diffBoards(backupData.boards, currentData.boards);
-		newBoards.boards.forEach((board) => {
+		for (const board of newBoards.boards) {
 			if (newNodes.changedIdsMap.has(board.nodeId)) {
 				board.nodeId = newNodes.changedIdsMap.get(board.nodeId)!;
 			}
-		});
+		}
 
-		const newTasks = backupData.tasks.map((task) => {
+		const newTasks = backupData.tasks;
+		for (const task of newTasks) {
 			if (newBoards.changedIdsMap.has(task.boardId)) {
 				task.boardId = newBoards.changedIdsMap.get(task.boardId)!;
 			}
-			return task;
-		});
+		}
+
 		if (encryptionEnabled()) {
 			toast.loading('Encrypting Data...', { id: toastId });
 			await Promise.all(
@@ -276,7 +271,10 @@ export default function SettingsPage() {
 					<Button onClick={() => onBackup()} variant="secondary">
 						Download Backup
 					</Button>
-					<Button onClick={() => onRestore()} variant="secondary">
+					<Button
+						onClick={() => onRestore().catch(() => toast.error('Restore failed'))}
+						variant="secondary"
+					>
 						Restore Backup
 					</Button>
 					<Button
