@@ -211,10 +211,10 @@ export default function SettingsPage() {
 	async function onDeleteUser() {
 		toast.promise(
 			async () => {
-				const password = prompt('Please enter your password to disable encryption');
+				const password = prompt('Please enter your password to delete user');
 				if (!password) {
-					alert('Cannot disable encryption without password');
-					throw new Error('Cannot disable encryption without password');
+					alert('Cannot delete user without password');
+					throw new Error('Cannot delete user without password');
 				}
 				const isPasswordCorrect = await verifyPassword(password);
 				if (!isPasswordCorrect) {
