@@ -7,6 +7,8 @@ export const route: RouteDefinition = {
 	preload: () => getUser({ redirectOnAuthenticated: true })
 };
 export default function AuthLayout(props: { children: JSXElement }): JSXElement {
-	createAsync(() => getUser({ redirectOnAuthenticated: true }), { deferStream: true });
+	createAsync(() => getUser({ redirectOnAuthenticated: true, shouldThrow: false }), {
+		deferStream: true
+	});
 	return <>{props.children}</>;
 }

@@ -1,8 +1,8 @@
-import { A, action, useAction, useNavigate, useSubmission } from '@solidjs/router';
+import { A, action, revalidate, useAction, useNavigate } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
-import { createEffect, createSignal, Show, untrack } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { setCookie } from 'vinxi/http';
@@ -23,6 +23,8 @@ import { Toggle } from '~/components/ui/toggle';
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts/index';
 import { db } from '~/db';
 import { refreshTokens, users } from '~/db/schema';
+import { onSubmission } from '~/utils/action';
+import { getUser } from '~/utils/auth.server';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
 import env from '~/utils/env/server';
 import { localforage } from '~/utils/localforage';
@@ -86,44 +88,42 @@ const signIn = action(async (formData: FormData) => {
 
 export default function SignInPage() {
 	const [passwordVisible, setPasswordVisible] = createSignal<boolean>(false);
-	const submission = useSubmission(signIn);
 	const $signIn = useAction(signIn);
 	const [email, setEmail] = createSignal('');
 	const navigate = useNavigate();
 	const [formErrors, setFormErrors] = createStore<string[]>([]);
 
-	let toastId: number | string | undefined;
-	createEffect(() => {
-		const { pending, result } = submission;
-
-		untrack(() => {
-			if (pending) {
-				if (toastId) toast.dismiss(toastId);
-				toastId = toast.loading('Logging in...', { duration: Number.POSITIVE_INFINITY });
-				return;
-			}
-			if (!result) return;
-			if (result instanceof Error) {
-				switch (result.cause) {
-					case 'VALIDATION_ERROR': {
-						const validationMap = new Map<string, string[]>();
-						for (const message of result.message.split(';;;')) {
-							const [path, error] = message.split(';;');
-							validationMap.set(path, [...(validationMap.get(path) ?? []), error]);
+	onSubmission(
+		signIn,
+		{
+			onError(toastId: number | string | undefined, error) {
+				if (error instanceof Error) {
+					switch (error.cause) {
+						case 'VALIDATION_ERROR': {
+							const validationMap = new Map<string, string[]>();
+							for (const message of error.message.split(';;;')) {
+								const [path, error] = message.split(';;');
+								validationMap.set(path, [...(validationMap.get(path) ?? []), error]);
+							}
+							setFormErrors(validationMap.get('form') ?? []);
+							toast.error('Invalid Data', { duration: 3000, id: toastId });
+							break;
 						}
-						setFormErrors(validationMap.get('form') ?? []);
-						toast.error('Invalid Data', { duration: 3000, id: toastId });
-						break;
+						default:
+							console.error(error);
 					}
-					default:
-						console.error(result);
 				}
-			} else {
+			},
+			onPending() {
+				return toast.loading('Logging in...', { duration: Number.POSITIVE_INFINITY });
+			},
+			onSuccess(_, toastId) {
+				setFormErrors([]);
 				toast.success('Login successful', { duration: 3000, id: toastId });
 			}
-			toastId = undefined;
-		});
-	});
+		},
+		{ always: true }
+	);
 
 	return (
 		<form
@@ -135,19 +135,18 @@ export default function SignInPage() {
 				const result = await $signIn(formData);
 				if (result instanceof Error) return;
 				const { encryptedPrivateKey, publicKey, salt } = result;
-				if (encryptedPrivateKey === null || salt === null || publicKey === null) {
-					navigate('/');
-					return;
+				if (!(encryptedPrivateKey === null || salt === null || publicKey === null)) {
+					const parsedSalt = new Uint8Array(atob(salt).split(',').map(Number));
+					const derivationKey = await getPasswordKey(formData.get('password') as string);
+					const privateKey = await deriveKey(derivationKey, parsedSalt, ['decrypt']);
+					const decryptedPrivateKey = await decryptDataWithKey(encryptedPrivateKey, privateKey);
+					await localforage.setMany({
+						privateKey: decryptedPrivateKey,
+						publicKey: atob(publicKey),
+						salt: parsedSalt
+					});
 				}
-				const parsedSalt = new Uint8Array(atob(salt).split(',').map(Number));
-				const derivationKey = await getPasswordKey(formData.get('password') as string);
-				const privateKey = await deriveKey(derivationKey, parsedSalt, ['decrypt']);
-				const decryptedPrivateKey = await decryptDataWithKey(encryptedPrivateKey, privateKey);
-				await localforage.setMany({
-					privateKey: decryptedPrivateKey,
-					publicKey: atob(publicKey),
-					salt: parsedSalt
-				});
+				await revalidate(getUser.key);
 			}}
 		>
 			<Card class="w-full max-w-sm">
@@ -180,7 +179,7 @@ export default function SignInPage() {
 										const $email = z.string().email().parse(email());
 										navigate('/auth/forgot-password?email=' + $email);
 									} catch {
-										toast.error('Invalid email', { duration: 3000, id: toastId });
+										toast.error('Invalid email', { duration: 3000 });
 									}
 								}}
 								variant="link"

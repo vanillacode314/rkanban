@@ -1,9 +1,9 @@
-import { A, action, redirect, useSubmission } from '@solidjs/router';
+import { A, action, redirect } from '@solidjs/router';
 import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
-import { createEffect, createSignal, Show, untrack } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { getRequestEvent } from 'solid-js/web';
 import { toast } from 'solid-sonner';
@@ -26,6 +26,7 @@ import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, REFRESH_TOKEN_EXPIRES_IN_SECONDS } fro
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
 import { nodes, refreshTokens, users, verificationTokens } from '~/db/schema';
+import { onSubmission } from '~/utils/action';
 import env from '~/utils/env/server';
 import { resend } from '~/utils/resend.server';
 
@@ -126,31 +127,20 @@ If you did not sign up, please ignore this email.`,
 }, 'signup');
 
 export default function SignUpPage() {
-	const submission = useSubmission(signUp);
-
 	const [passwordVisible, setPasswordVisible] = createSignal<boolean>(false);
 	const [emailErrors, setEmailErrors] = createStore<string[]>([]);
 	const [passwordErrors, setPasswordErrors] = createStore<string[]>([]);
 	const [formErrors, setFormErrors] = createStore<string[]>([]);
 
-	let toastId: number | string | undefined;
-	createEffect(() => {
-		const { pending, result } = submission;
-		return untrack(() => {
-			setEmailErrors([]);
-			setPasswordErrors([]);
-			setFormErrors([]);
-			if (pending) {
-				if (toastId) toast.dismiss(toastId);
-				toastId = toast.loading('Creating account...', { duration: Number.POSITIVE_INFINITY });
-				return toastId;
-			}
-			if (!result) return;
-			if (result instanceof Error) {
-				switch (result.cause) {
+	onSubmission(
+		signUp,
+		{
+			onError(toastId: number | string | undefined, error) {
+				if (!(error instanceof Error)) return;
+				switch (error.cause) {
 					case 'VALIDATION_ERROR': {
 						const validationMap = new Map<string, string[]>();
-						for (const message of result.message.split(';;;')) {
+						for (const message of error.message.split(';;;')) {
 							const [path, error] = message.split(';;');
 							validationMap.set(path, [...(validationMap.get(path) ?? []), error]);
 						}
@@ -161,27 +151,21 @@ export default function SignUpPage() {
 						break;
 					}
 					default:
-						console.error(result);
+						console.error(error);
 				}
-			} else {
+			},
+			onPending() {
+				setEmailErrors([]);
+				setPasswordErrors([]);
+				setFormErrors([]);
+				return toast.loading('Signing Up..', { duration: Number.POSITIVE_INFINITY });
+			},
+			onSuccess(_, toastId) {
 				toast.success('Account created', { duration: 3000, id: toastId });
 			}
-			toastId = undefined;
-		});
-	});
-
-	/* onMount(async () => {
-		const seedPhrase = await generateSeedPhrase();
-		const derivationKey = await getPasswordKey(seedPhrase);
-		const salt = window.crypto.getRandomValues(new Uint8Array(16));
-		const privateKey = await deriveKey(derivationKey, salt, ['decrypt']);
-		const publicKey = await deriveKey(derivationKey, salt, ['encrypt']);
-		const password = 'test';
-		const derivationKey2 = await getPasswordKey(password);
-		const publicKey2 = await deriveKey(derivationKey2, salt, ['encrypt']);
-		const privateKey2 = await deriveKey(derivationKey2, salt, ['decrypt']);
-		const encryptedPrivateKey = await encryptKey(privateKey, publicKey2);
-	}); */
+		},
+		{ always: true }
+	);
 
 	return (
 		<form action={signUp} class="grid h-full place-content-center" method="post">
