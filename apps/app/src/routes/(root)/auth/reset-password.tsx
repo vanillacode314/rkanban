@@ -29,7 +29,7 @@ import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-
 import { Toggle } from '~/components/ui/toggle';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
-import { forgotPasswordTokens, users } from '~/db/schema';
+import { forgotPasswordTokens, refreshTokens, users } from '~/db/schema';
 import {
 	deriveKey,
 	encryptDataWithKey,
@@ -91,6 +91,7 @@ const resetPassword = action(async (formData: FormData) => {
 			.where(eq(users.email, email))
 			.returning();
 		await tx.delete(forgotPasswordTokens).where(eq(forgotPasswordTokens.userId, user.id));
+		await tx.delete(refreshTokens).where(eq(refreshTokens.userId, user.id));
 	});
 
 	return redirect('/auth/signin');
