@@ -469,45 +469,45 @@ function ApplyChangesPopup(props: {
 	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
 	let animation: AnimationControls;
 
-	createEffect(() => {
-		if (!props.boardsDirty) return;
-		untrack(() => {
-			if (count() > 0) return;
-			setCount(mergedProps.countdownDuration);
-			animation = animate(
-				(progress) => {
-					setCount((1 - progress) * mergedProps.countdownDuration);
-				},
-				{ duration: mergedProps.countdownDuration, easing: 'linear' }
-			);
-			animation.finished.then(() => {
-				const changedTasks = props.boards!.flatMap((board) => {
-					const data = [];
-					for (const [index, task] of board.tasks.entries()) {
-						if (index === task.index && task.boardId === board.id) continue;
-						data.push({ boardId: board.id, id: task.id, index });
-					}
-					return data;
-				});
-				if (changedTasks.length === 0) return;
-				toast.promise(() => moveTasks(changedTasks).then(() => revalidate(getBoards.key)), {
-					error: 'Failed to apply changes',
-					loading: 'Applying changes...',
-					success: 'Changes applied'
-				});
+	function startCountdown() {
+		animation?.cancel();
+		setCount(mergedProps.countdownDuration);
+		animation = animate(
+			(progress) => {
+				setCount((1 - progress) * mergedProps.countdownDuration);
+			},
+			{ duration: mergedProps.countdownDuration, easing: 'linear' }
+		);
+		animation.finished.then(() => {
+			const changedTasks = props.boards!.flatMap((board) => {
+				const data = [];
+				for (const [index, task] of board.tasks.entries()) {
+					if (index === task.index && task.boardId === board.id) continue;
+					data.push({ boardId: board.id, id: task.id, index });
+				}
+				return data;
+			});
+			if (changedTasks.length === 0) return;
+			toast.promise(() => moveTasks(changedTasks).then(() => revalidate(getBoards.key)), {
+				error: 'Failed to apply changes',
+				loading: 'Applying changes...',
+				success: 'Changes applied'
 			});
 		});
-	});
+	}
 
 	function reset() {
 		animation?.cancel();
-		setCount(0);
 		props.reset();
 	}
 
 	async function apply() {
 		animation?.finish();
 	}
+
+	createEffect(() => {
+		if (props.boardsDirty) startCountdown();
+	});
 
 	return (
 		<TransitionSlide appear when={props.boardsDirty}>
