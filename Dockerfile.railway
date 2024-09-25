@@ -7,7 +7,7 @@ WORKDIR /app
 
 
 FROM base AS prod-deps
-RUN --mount=type=cache,id=s/a214cd7e-89b6-4d02-ac36-59b97c9749cd-/pnpm/store,target=/pnpm/store pnpm install --prod --frozen-lockfile
+RUN --mount=type=cache,id=s/a214cd7e-89b6-4d02-ac36-59b97c9749cd-/pnpm/store,target=/pnpm/store pnpm install --prod --frozen-lockfile --filter app...
 
 FROM base AS build
 ARG PUBLIC_SOCKET_URL
@@ -17,7 +17,7 @@ ARG TURSO_CONNECTION_URL
 ARG AUTH_SECRET
 ARG RESEND_API_KEY
 ARG NOTIFICATIONS_EMAIL_ADDRESS
-RUN --mount=type=cache,id=s/a214cd7e-89b6-4d02-ac36-59b97c9749cd-/pnpm/store,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=s/a214cd7e-89b6-4d02-ac36-59b97c9749cd-/pnpm/store,target=/pnpm/store pnpm install --frozen-lockfile --filter app...
 RUN pnpm turbo build --filter app
 
 FROM base
