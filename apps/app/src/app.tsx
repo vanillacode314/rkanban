@@ -16,10 +16,12 @@ const ErrorPage: Component = () => {
 	const [updateAvailable, setUpdateAvailable] = createSignal<boolean>(false);
 
 	onMount(async () => {
-		const registration = await navigator.serviceWorker.getRegistration();
-		if (!registration) return;
-		await listenForWaitingServiceWorker(registration);
-		setUpdateAvailable(true);
+		if ('serviceWorker' in navigator) {
+			const registration = await navigator.serviceWorker.getRegistration();
+			if (!registration) return;
+			await listenForWaitingServiceWorker(registration);
+			setUpdateAvailable(true);
+		}
 	});
 
 	async function doUpdate() {

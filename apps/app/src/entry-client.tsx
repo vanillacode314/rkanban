@@ -5,13 +5,6 @@ import { toast } from 'solid-sonner';
 
 import { listenForWaitingServiceWorker } from './utils/service-worker';
 
-let refreshing: boolean;
-navigator.serviceWorker.addEventListener('controllerchange', function () {
-	if (refreshing) return;
-	refreshing = true;
-	window.location.reload();
-});
-
 function promptUserToRefresh(registration: ServiceWorkerRegistration) {
 	toast('New version available!', {
 		action: {
@@ -23,6 +16,12 @@ function promptUserToRefresh(registration: ServiceWorkerRegistration) {
 }
 
 if ('serviceWorker' in navigator) {
+	let refreshing: boolean;
+	navigator.serviceWorker.addEventListener('controllerchange', function () {
+		if (refreshing) return;
+		refreshing = true;
+		window.location.reload();
+	});
 	window.addEventListener('load', () => {
 		navigator.serviceWorker
 			.register('/sw.js', { scope: '/' })
