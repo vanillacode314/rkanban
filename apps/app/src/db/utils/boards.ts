@@ -3,7 +3,7 @@ import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { boards, tasks, type TBoard, type TTask } from '~/db/schema';
-import { getUser } from '~/utils/auth.server';
+import { checkUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
 
 import { db } from './..';
@@ -14,7 +14,7 @@ async function $getBoards(path: string): Promise<Array<{ tasks: TTask[] } & TBoa
 async function $getBoards(path: null | string) {
 	'use server';
 
-	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
+	const user = await checkUser();
 
 	if (path === null) {
 		const $boards = await db.select().from(boards).where(eq(boards.userId, user.id));
@@ -49,7 +49,7 @@ const getBoards = cache($getBoards, 'get-boards');
 
 const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) => {
 	'use server';
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	if (inputs.length === 0) throw new Error('No boards to move');
 	const ids = inputs.map((input) => input.id);
@@ -83,7 +83,7 @@ const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) =>
 const shiftBoard = async (boardId: TBoard['id'], direction: -1 | 1) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const [board] = await db
 		.select({ index: boards.index })
@@ -118,7 +118,7 @@ const shiftBoard = async (boardId: TBoard['id'], direction: -1 | 1) => {
 const createBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const title = String(formData.get('title')).trim();
 	const id = String(formData.get('id') ?? nanoid()).trim();
@@ -152,7 +152,7 @@ const createBoard = action(async (formData: FormData) => {
 const updateBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
@@ -172,7 +172,7 @@ const updateBoard = action(async (formData: FormData) => {
 const deleteBoard = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const boardId = String(formData.get('id')).trim();
 	const publisherId =

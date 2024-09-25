@@ -3,7 +3,7 @@ import { and, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { tasks, type TBoard, type TTask } from '~/db/schema';
-import { getUser } from '~/utils/auth.server';
+import { checkUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
 
 import { db } from './..';
@@ -11,7 +11,7 @@ import { db } from './..';
 const getTasks = cache(async function () {
 	'use server';
 
-	const user = (await getUser({ redirectOnUnauthenticated: true }))!;
+	const user = await checkUser();
 
 	const $tasks = await db.select().from(tasks).where(eq(tasks.userId, user.id));
 	return $tasks;
@@ -21,7 +21,7 @@ const moveTasks = async (
 	inputs: Array<{ boardId: TBoard['id']; id: TTask['id']; index: number }>
 ) => {
 	'use server';
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	if (inputs.length === 0) throw new Error('No tasks to move');
 	const ids = inputs.map((input) => input.id);
@@ -62,7 +62,7 @@ const moveTasks = async (
 const shiftTask = async (taskId: TTask['id'], direction: -1 | 1) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const [task] = await db
 		.select()
@@ -99,7 +99,7 @@ const shiftTask = async (taskId: TTask['id'], direction: -1 | 1) => {
 const createTask = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const title = String(formData.get('title')).trim();
 	const boardId = String(formData.get('boardId')).trim();
@@ -128,7 +128,7 @@ const createTask = action(async (formData: FormData) => {
 const updateTask = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
@@ -147,7 +147,7 @@ const updateTask = action(async (formData: FormData) => {
 const deleteTask = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const taskId = String(formData.get('id')).trim();
 	const publisherId =

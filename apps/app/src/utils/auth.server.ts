@@ -15,6 +15,13 @@ import env from './env/server';
 import { localforage } from './localforage';
 import { resend } from './resend.server';
 
+// NOTE: only need till the upstream solid-start bug is fixed https://github.com/solidjs/solid-start/issues/1624
+async function checkUser() {
+	const user = await getUser({ shouldThrow: false });
+	if (!user) throw redirect('/auth/signin');
+	return user;
+}
+
 const getUser = cache(
 	async ({
 		redirectOnAuthenticated = false,
@@ -254,6 +261,7 @@ async function decryptObjectKeys<T extends Record<string, unknown>>(
 }
 
 export {
+	checkUser,
 	decryptObjectKeys,
 	decryptWithUserKeys,
 	encryptWithUserKeys,

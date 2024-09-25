@@ -5,7 +5,7 @@ import { nanoid } from 'nanoid';
 import { RESERVED_PATHS } from '~/consts';
 import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
 import { uniqBy } from '~/utils/array';
-import { getUser } from '~/utils/auth.server';
+import { checkUser } from '~/utils/auth.server';
 import * as path from '~/utils/path';
 import { createNotifier } from '~/utils/publish';
 
@@ -15,7 +15,7 @@ const getNodes = cache(
 	async (path: string, { includeChildren = false }: Partial<{ includeChildren: boolean }> = {}) => {
 		'use server';
 
-		const user = (await getUser({ redirectOnUnauthenticated: true }))!;
+		const user = await checkUser();
 		const query = GET_NODES_BY_PATH_QUERY(path, user.id, { includeChildren, orderBy: 'name' });
 		const $nodes = (await db.all(sql.raw(query))) as TNode[];
 		if ($nodes.length === 0) return new Error(`Not Found`, { cause: 'NOT_FOUND' });
@@ -28,7 +28,7 @@ const getNodes = cache(
 const createNode = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const name = String(formData.get('name')).trim();
 	if (!name) throw new Error('name is required');
@@ -68,7 +68,7 @@ const createNode = action(async (formData: FormData) => {
 const updateNode = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
@@ -98,7 +98,7 @@ const updateNode = action(async (formData: FormData) => {
 const deleteNode = action(async (formData: FormData) => {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const nodeId = String(formData.get('id')).trim();
 
@@ -113,7 +113,7 @@ const deleteNode = action(async (formData: FormData) => {
 async function $copyNode(formData: FormData) {
 	'use server';
 
-	const user = (await getUser())!;
+	const user = await checkUser();
 
 	const id = String(formData.get('id')).trim();
 	const parentId = String(formData.get('parentId')).trim();
