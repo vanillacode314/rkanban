@@ -1,5 +1,5 @@
 import { action, cache } from '@solidjs/router';
-import { and, eq, isNull, like, or, sql } from 'drizzle-orm';
+import { and, eq, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { RESERVED_PATHS } from '~/consts';
@@ -80,17 +80,6 @@ const updateNode = action(async (formData: FormData) => {
 	if (RESERVED_PATHS.includes(fullPath)) {
 		throw new Error(`custom:/${name} is reserved`);
 	}
-
-	const [[rootNode], [currentNode]] = await Promise.all([
-		db
-			.select({ id: nodes.id })
-			.from(nodes)
-			.where(and(isNull(nodes.parentId), eq(nodes.userId, user.id))),
-		db
-			.select({ name: nodes.name, parentId: nodes.parentId })
-			.from(nodes)
-			.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
-	]);
 
 	const [$node] = await db
 		.update(nodes)
