@@ -6,6 +6,7 @@ import { RESERVED_PATHS } from '~/consts';
 import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
 import { uniqBy } from '~/utils/array';
 import { getUser } from '~/utils/auth.server';
+import * as path from '~/utils/path';
 import { createNotifier } from '~/utils/publish';
 
 import { db } from './..';
@@ -37,9 +38,13 @@ const createNode = action(async (formData: FormData) => {
 	const id = String(formData.get('id') ?? nanoid()).trim();
 	const isDirectory = String(formData.get('isDirectory') ?? 'false') === 'true';
 
-	if (parentPath === '/' && RESERVED_PATHS.includes(parentPath + name)) {
+	const fullPath = path.join(parentPath, name);
+	if (RESERVED_PATHS.includes(fullPath)) {
 		throw new Error(`custom:/${name} is reserved`);
 	}
+
+	const rows = await db.all(sql.raw(GET_NODES_BY_PATH_QUERY(fullPath, user.id)));
+	if (rows.length > 0) throw new Error(`custom:${fullPath} already exists`);
 
 	const [parentNode] = (await db.all(
 		sql.raw(GET_NODES_BY_PATH_QUERY(parentPath, user.id))
@@ -68,6 +73,13 @@ const updateNode = action(async (formData: FormData) => {
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
 	const parentId = String(formData.get('parentId')).trim();
+	let { path: fullPath } = await db.get<{ path: string }>(
+		sql.raw(GET_PATH_BY_NODE_ID_QUERY(id, user.id))
+	);
+	fullPath = path.join(fullPath, '..', name);
+	if (RESERVED_PATHS.includes(fullPath)) {
+		throw new Error(`custom:/${name} is reserved`);
+	}
 
 	const [[rootNode], [currentNode]] = await Promise.all([
 		db
@@ -79,10 +91,6 @@ const updateNode = action(async (formData: FormData) => {
 			.from(nodes)
 			.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 	]);
-
-	if (currentNode.parentId === rootNode.id && RESERVED_PATHS.includes(`/${name}`)) {
-		throw new Error(`custom:/${name} is reserved`);
-	}
 
 	const [$node] = await db
 		.update(nodes)
@@ -223,6 +231,42 @@ function isFolder(node: TNode): boolean {
 	return !node.isDirectory;
 }
 
+const GET_PATH_BY_NODE_ID_QUERY = (id: string, userId: string): string => {
+	return `WITH RECURSIVE
+        CTE AS (
+          SELECT
+            1 AS n,
+            name,
+            parentId,
+            name AS path
+          FROM
+            nodes
+          WHERE
+            id = __id
+            AND userId = __userid
+          UNION ALL
+          SELECT
+            CTE.n + 1,
+            n.name,
+            n.parentId,
+            n.name || '/' || CTE.path AS path
+          FROM
+            nodes n
+            JOIN CTE ON n.id = CTE.parentId
+          WHERE
+            n.parentId IS NOT NULL
+        )
+      SELECT
+        '/' || path AS path
+      FROM CTE
+      ORDER BY
+        n DESC
+      LIMIT
+        1;`
+		.replace(/__id/g, `'${id}'`)
+		.replace(/__userid/g, `'${userId}'`);
+};
+
 const GET_NODES_BY_PATH_QUERY = (
 	path: string,
 	userId: string,
@@ -232,7 +276,7 @@ const GET_NODES_BY_PATH_QUERY = (
 	}: Partial<{ includeChildren: boolean; orderBy: string }> = {}
 ) => {
 	const query = `
-	WITH RECURSIVE
+  WITH RECURSIVE
 	  CTE AS (
 	    SELECT
 	      id,
