@@ -43,7 +43,9 @@ const forgotPasswordTokens = sqliteTable('forgotPasswordTokens', {
 });
 
 const users = sqliteTable('users', {
-	createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
+	createdAt: integer('createdAt', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch('now'))`),
 	email: text('email').notNull().unique(),
 	emailVerified: integer('emailVerified', { mode: 'boolean' }).default(false),
 	encryptedPrivateKey: text('encryptedPrivateKey'),
@@ -62,7 +64,9 @@ const users = sqliteTable('users', {
 const boards = sqliteTable(
 	'boards',
 	{
-		createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
+		createdAt: integer('createdAt', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch('now'))`),
 		id: text('id')
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
@@ -92,7 +96,9 @@ const tasks = sqliteTable(
 		boardId: text('boardId')
 			.references(() => boards.id, { onDelete: 'cascade' })
 			.notNull(),
-		createdAt: integer('createdAt', { mode: 'timestamp' }).default(sql`(unixepoch('now'))`),
+		createdAt: integer('createdAt', { mode: 'timestamp' })
+			.notNull()
+			.default(sql`(unixepoch('now'))`),
 		id: text('id')
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
