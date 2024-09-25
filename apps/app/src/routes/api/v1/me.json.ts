@@ -19,7 +19,8 @@ export async function GET() {
 				updatedAt: nodes.updatedAt
 			})
 			.from(nodes)
-			.where(eq(nodes.userId, user.id)),
+			.where(eq(nodes.userId, user.id))
+			.orderBy(nodes.createdAt),
 		db
 			.select({
 				id: boards.id,
@@ -29,7 +30,8 @@ export async function GET() {
 				updatedAt: boards.updatedAt
 			})
 			.from(boards)
-			.where(eq(boards.userId, user.id)),
+			.where(eq(boards.userId, user.id))
+			.orderBy(nodes.createdAt),
 		db
 			.select({
 				boardId: tasks.boardId,
@@ -40,6 +42,7 @@ export async function GET() {
 			})
 			.from(tasks)
 			.where(eq(tasks.userId, user.id))
+			.orderBy(nodes.createdAt)
 	]);
 
 	return json({ boards: $boards, nodes: $nodes, tasks: $tasks });
