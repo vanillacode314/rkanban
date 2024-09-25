@@ -73,7 +73,7 @@ const disableEncryption = action(async (decryptedBoards: TBoard[], decryptedTask
 }, 'disable-encryption');
 
 export const route: RouteDefinition = {
-	preload: () => getUser()
+	preload: () => getUser({ redirectOnUnauthenticated: true })
 };
 
 type TBackup = {
@@ -83,7 +83,9 @@ type TBackup = {
 };
 
 export default function SettingsPage() {
-	const user = createAsync(() => getUser(), { deferStream: true });
+	const user = createAsync(() => getUser({ redirectOnUnauthenticated: true }), {
+		deferStream: true
+	});
 	const encryptionEnabled = () =>
 		user()?.encryptedPrivateKey !== null && user()?.publicKey !== null && user()?.salt !== null;
 	const confirmModal = useConfirmModal();
