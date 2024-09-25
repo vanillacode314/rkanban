@@ -73,7 +73,7 @@ function VerificationEmailAlert(props: {
 
 	return (
 		<Show when={props.user && !props.user.emailVerified}>
-			<Alert class="mt-4 flex justify-between gap-4">
+			<Alert class="mt-4 flex flex-col justify-between gap-4 md:flex-row">
 				<div>
 					<AlertTitle>Email not verified</AlertTitle>
 					<AlertDescription>
@@ -81,7 +81,7 @@ function VerificationEmailAlert(props: {
 						from creation.
 					</AlertDescription>
 				</div>
-				<div class="flex gap-4">
+				<div class="flex shrink-0 gap-4">
 					<Button onClick={() => refreshAccessToken()} variant="secondary">
 						Check Again
 					</Button>
