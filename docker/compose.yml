@@ -7,6 +7,10 @@ services:
       - "PORT=3001"
       - "TURSO_CONNECTION_URL=http://database:8080"
       - "AUTH_SECRET=secret"
+      - "RESEND_API_KEY=secret"
+      - "PUBLIC_SOCKET_URL="
+      - "PUBLIC_PUBLISH_URL="
+      - "NOTIFICATIONS_EMAIL_ADDRESS="
     ports:
       - "3001:3001"
     depends_on:
