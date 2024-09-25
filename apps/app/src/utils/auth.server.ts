@@ -177,7 +177,7 @@ async function resendVerificationEmail() {
 				value: 'confirm_email'
 			}
 		],
-		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/public/confirm-email?token=${verificationToken}`,
+		text: `Goto this link to confirm your email: ${new URL(event.request.url).origin}/api/v1/public/confirm-email?token=${verificationToken}`,
 		to: [user.email]
 	});
 }
