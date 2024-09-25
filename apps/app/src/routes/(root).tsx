@@ -42,7 +42,7 @@ const RootLayout = (props: { children: JSXElement }) => {
 			<AppProvider path={path()}>
 				<DirtyProvider>
 					<Title>RKanban</Title>
-					<Toaster closeButton duration={5000} />
+					<Toaster closeButton duration={5000} position="top-center" />
 					<div class="flex h-full flex-col overflow-hidden">
 						<Nav class="full-width content-grid" />
 						<div class="content-grid h-full overflow-hidden">{props.children}</div>
