@@ -6,3 +6,6 @@ node_modules
 docker/*
 !docker/compose.yml
 !docker/Dockerfile
+
+# Local Netlify folder
+.netlify
