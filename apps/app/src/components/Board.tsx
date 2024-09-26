@@ -184,7 +184,7 @@ export const Board: Component<{
 					</div>
 				</CardHeader>
 				<CardContent class="overflow-hidden">
-					<Show fallback={<p>No tasks in this board</p>} when={tasks().length > 0}>
+					<Show fallback={<p class="text-sm">No tasks in this board</p>} when={tasks().length > 0}>
 						<div class="flex h-full flex-col overflow-y-auto overflow-x-hidden">
 							<AnimatedTaskList>
 								<Key by="id" each={tasks()}>
