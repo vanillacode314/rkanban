@@ -1,26 +1,26 @@
 {
-  "name": "socket",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "nitro build",
-    "dev": "PORT=3002 nitro dev",
-    "prepare": "nitro prepare",
-    "start": "node .output/server/index.mjs",
-    "lint": "eslint --fix",
-    "format": "prettier --write ."
-  },
-  "devDependencies": {
-    "@dword-design/eslint-plugin-import-alias": "^5.1.1",
-    "@eslint/compat": "^1.1.1",
-    "eslint-plugin-perfectionist": "^3.7.0",
-    "globals": "^15.9.0",
-    "nitropack": "latest"
-  },
-  "dependencies": {
-    "@t3-oss/env-core": "^0.11.1",
-    "jsonwebtoken": "^9.0.2",
-    "schema": "workspace:*",
-    "zod": "^3.23.8"
-  }
+	"name": "socket",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "nitro build",
+		"dev": "PORT=3002 nitro dev",
+		"prepare": "nitro prepare",
+		"start": "node .output/server/index.mjs",
+		"lint": "eslint --fix",
+		"format": "prettier --write ."
+	},
+	"devDependencies": {
+		"@dword-design/eslint-plugin-import-alias": "^5.1.1",
+		"@eslint/compat": "^1.1.1",
+		"eslint-plugin-perfectionist": "^3.7.0",
+		"globals": "^15.9.0",
+		"nitropack": "latest"
+	},
+	"dependencies": {
+		"@t3-oss/env-core": "^0.11.1",
+		"jsonwebtoken": "^9.0.2",
+		"schema": "workspace:*",
+		"zod": "^3.23.8"
+	}
 }
