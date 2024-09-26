@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "netlify functions:serve",
-    "lint": "eslint --fix",
-    "format": "prettier --write ."
+    "lint": "eslint --fix src netlify",
+    "format": "prettier --write src netlify"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

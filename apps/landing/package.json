@@ -13,8 +13,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "format": "prettier -w .",
-    "lint:eslint": "eslint ."
+    "format": "prettier -w src",
+    "lint": "eslint --fix src"
   },
   "dependencies": {
     "@astrojs/rss": "^4.0.7",
