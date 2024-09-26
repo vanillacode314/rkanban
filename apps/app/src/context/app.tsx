@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import { createComputed, createContext, JSXElement, untrack, useContext } from 'solid-js';
 import { createStore, SetStoreFunction } from 'solid-js/store';
 
-import { TBoard, TNode, TTask } from '~/db/schema';
+import { TBoard, TNode, TTask } from 'db/schema';
 
 type TClipboardItem = {
 	data: string;

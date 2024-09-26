@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { deleteCookie, getQuery } from 'vinxi/http';
 
 import { db } from '~/db';
-import { users, verificationTokens } from '~/db/schema';
+import { users, verificationTokens } from 'db/schema';
 import { getUser } from '~/utils/auth.server';
 
 export const GET = async () => {

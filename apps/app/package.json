@@ -59,6 +59,7 @@
     "remeda": "^2.14.0",
     "resend": "^4.0.0",
     "schema": "workspace:*",
+    "db": "workspace:*",
     "solid-js": "^1.9.1",
     "solid-sonner": "^0.2.8",
     "tailwind-merge": "^2.5.2",

@@ -3,7 +3,7 @@ import { readValidatedBody } from 'vinxi/http';
 import { z } from 'zod';
 
 import { db } from '~/db';
-import { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema } from '~/db/schema';
+import { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema } from 'db/schema';
 import { getUser } from '~/utils/auth.server';
 
 export async function POST() {

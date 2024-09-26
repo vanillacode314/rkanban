@@ -2,7 +2,7 @@ import { action, cache } from '@solidjs/router';
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-import { boards, tasks, type TBoard, type TTask } from '~/db/schema';
+import { boards, tasks, type TBoard, type TTask } from 'db/schema';
 import { checkUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
 

@@ -3,7 +3,7 @@ import { and, eq, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 import { RESERVED_PATHS } from '~/consts';
-import { boards, nodes, tasks, TBoard, TNode, TTask } from '~/db/schema';
+import { boards, nodes, tasks, TBoard, TNode, TTask } from 'db/schema';
 import { uniqBy } from '~/utils/array';
 import { checkUser } from '~/utils/auth.server';
 import * as path from '~/utils/path';

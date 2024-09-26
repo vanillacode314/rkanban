@@ -2,7 +2,7 @@ import { json } from '@solidjs/router';
 import { eq } from 'drizzle-orm';
 
 import { db } from '~/db';
-import { boards, nodes, tasks } from '~/db/schema';
+import { boards, nodes, tasks } from 'db/schema';
 import { getUser } from '~/utils/auth.server';
 
 export async function GET() {

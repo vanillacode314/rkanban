@@ -20,7 +20,7 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
-import { TNode } from '~/db/schema';
+import { TNode } from 'db/schema';
 import { copyNode, createNode, deleteNode, getNodes, updateNode } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
 import * as path from '~/utils/path';

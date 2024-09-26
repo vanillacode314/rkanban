@@ -22,7 +22,7 @@ import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-
 import { Toggle } from '~/components/ui/toggle';
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts/index';
 import { db } from '~/db';
-import { refreshTokens, users } from '~/db/schema';
+import { refreshTokens, users } from 'db/schema';
 import { onSubmission } from '~/utils/action';
 import { getUser } from '~/utils/auth.server';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';

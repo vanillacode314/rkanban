@@ -19,7 +19,7 @@ import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { TBoard, TTask } from '~/db/schema';
+import { TBoard, TTask } from 'db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';

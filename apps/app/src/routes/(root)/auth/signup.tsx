@@ -25,7 +25,7 @@ import { Toggle } from '~/components/ui/toggle';
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, REFRESH_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
-import { nodes, refreshTokens, users, verificationTokens } from '~/db/schema';
+import { nodes, refreshTokens, users, verificationTokens } from 'db/schema';
 import { onSubmission } from '~/utils/action';
 import env from '~/utils/env/server';
 import { resend } from '~/utils/resend.server';

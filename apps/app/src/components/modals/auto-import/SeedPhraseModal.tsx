@@ -8,7 +8,7 @@ import { deleteCookie } from 'vinxi/http';
 import { default as BaseModal } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
-import { boards, tasks, users } from '~/db/schema';
+import { boards, tasks, users } from 'db/schema';
 import { getUser, verifyPassword } from '~/utils/auth.server';
 import {
 	deriveKey,

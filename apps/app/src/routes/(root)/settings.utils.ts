@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 
-import { TBoard, TNode, TTask } from '~/db/schema';
+import { TBoard, TNode, TTask } from 'db/schema';
 
 type TStrippedNode = Omit<TNode, 'createdAt' | 'userId'>;
 type TStrippedBoard = Omit<TBoard, 'createdAt' | 'userId'>;

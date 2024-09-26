@@ -8,7 +8,7 @@ import { deleteCookie, getCookie, setCookie } from 'vinxi/http';
 
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { db } from '~/db';
-import { refreshTokens, TUser, users, verificationTokens } from '~/db/schema';
+import { refreshTokens, TUser, users, verificationTokens } from 'db/schema';
 
 import { decryptDataWithKey, encryptDataWithKey, importKey } from './crypto';
 import env from './env/server';

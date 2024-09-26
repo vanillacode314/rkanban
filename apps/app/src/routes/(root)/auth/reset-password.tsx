@@ -29,7 +29,7 @@ import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-
 import { Toggle } from '~/components/ui/toggle';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
-import { forgotPasswordTokens, refreshTokens, users } from '~/db/schema';
+import { forgotPasswordTokens, refreshTokens, users } from 'db/schema';
 import {
 	deriveKey,
 	encryptDataWithKey,

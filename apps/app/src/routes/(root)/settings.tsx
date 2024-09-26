@@ -8,7 +8,7 @@ import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
-import { boards, tasks, TBoard, TTask, users } from '~/db/schema';
+import { boards, tasks, TBoard, TTask, users } from 'db/schema';
 import { getBoards } from '~/db/utils/boards';
 import { getTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';

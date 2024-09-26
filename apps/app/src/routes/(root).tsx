@@ -13,7 +13,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/componen
 import { Toaster } from '~/components/ui/sonner';
 import { AppProvider, useApp } from '~/context/app';
 import { DirtyProvider } from '~/context/dirty';
-import { TNode } from '~/db/schema';
+import { TNode } from 'db/schema';
 import { cn } from '~/lib/utils';
 import { getUser } from '~/utils/auth.server';
 import { localforage } from '~/utils/localforage';

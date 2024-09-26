@@ -34,7 +34,7 @@ import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { TBoard, TTask } from '~/db/schema';
+import { TBoard, TTask } from 'db/schema';
 import { createBoard, getBoards, moveBoards } from '~/db/utils/boards';
 import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
