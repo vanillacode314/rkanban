@@ -26,8 +26,6 @@ const moveTasks = async (
 	if (inputs.length === 0) throw new Error('No tasks to move');
 	const ids = inputs.map((input) => input.id);
 
-	await db.transaction(async () => {
-		await db
 			.update(tasks)
 			.set({
 				boardId: sql.join(
@@ -50,7 +48,7 @@ const moveTasks = async (
 				)
 			})
 			.where(and(inArray(tasks.id, ids), eq(tasks.userId, user.id)));
-		await db
+		await tx
 			.update(tasks)
 			.set({
 				index: sql`${tasks.index} - 10000`

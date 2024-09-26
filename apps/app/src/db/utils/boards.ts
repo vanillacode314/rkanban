@@ -1,8 +1,8 @@
 import { action, cache } from '@solidjs/router';
+import { boards, tasks, type TBoard, type TTask } from 'db/schema';
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-import { boards, tasks, type TBoard, type TTask } from 'db/schema';
 import { checkUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
 
@@ -55,8 +55,8 @@ const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) =>
 	const ids = inputs.map((input) => input.id);
 	console.log(inputs);
 
-	await db.transaction(async () => {
-		await db
+	await db.transaction(async (tx) => {
+		await tx
 			.update(boards)
 			.set({
 				index: sql.join(
@@ -71,7 +71,7 @@ const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) =>
 				)
 			})
 			.where(and(inArray(boards.id, ids), eq(boards.userId, user.id)));
-		await db
+		await tx
 			.update(boards)
 			.set({
 				index: sql`${boards.index} - 10000`
