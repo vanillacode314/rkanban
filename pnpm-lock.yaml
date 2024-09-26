@@ -10,7 +10,7 @@ importers:
     devDependencies:
       concurrently:
         specifier: ^8.2.2
-        version: 8.2.2
+        version: 9.0.1
       turbo:
         specifier: ^2.0.12
         version: 2.1.2
@@ -233,7 +233,7 @@ importers:
         version: 0.62.4(postcss@8.4.47)(rollup@2.79.1)(vite@5.4.8(@types/node@22.7.2)(lightningcss@1.27.0)(terser@5.33.0))
       vite-bundle-analyzer:
         specifier: ^0.11.1
-        version: 0.11.1
+        version: 0.12.0
       vite-plugin-pwa:
         specifier: ^0.20.5
         version: 0.20.5(@vite-pwa/assets-generator@0.2.6)(vite@5.4.8(@types/node@22.7.2)(lightningcss@1.27.0)(terser@5.33.0))(workbox-build@7.1.1(@types/babel__core@7.20.5))(workbox-window@7.1.0)
@@ -247,30 +247,23 @@ importers:
   apps/cron:
     dependencies:
       '@libsql/client':
-        specifier: ^0.9.0
-        version: 0.9.0
+        specifier: ^0.14.0
+        version: 0.14.0
       '@netlify/functions':
         specifier: ^2.8.1
         version: 2.8.1
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
+      db:
+        specifier: workspace:*
+        version: link:../../packages/db
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1)
+        version: 0.33.0(@libsql/client@0.14.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1)
       drizzle-valibot:
         specifier: ^0.2.0
-        version: 0.2.0(drizzle-orm@0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1))(valibot@0.42.1(typescript@5.6.2))
+        version: 0.2.0(drizzle-orm@0.33.0(@libsql/client@0.14.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1))(valibot@0.42.1(typescript@5.6.2))
       typescript:
         specifier: ^5.0.0
         version: 5.6.2
-    devDependencies:
-      '@types/bun':
-        specifier: latest
-        version: 1.1.10
-      drizzle-kit:
-        specifier: ^0.24.0
-        version: 0.24.2
 
   apps/landing:
     dependencies:
@@ -316,7 +309,7 @@ importers:
         version: 2.1.2
       '@astrojs/tailwind':
         specifier: 5.1.0
-        version: 5.1.0(astro@4.15.9(@types/node@22.7.2)(lightningcss@1.27.0)(rollup@4.22.4)(terser@5.33.0)(typescript@5.6.2))(tailwindcss@3.4.13)
+        version: 5.1.1(astro@4.15.9(@types/node@22.7.2)(lightningcss@1.27.0)(rollup@4.22.4)(terser@5.33.0)(typescript@5.6.2))(tailwindcss@3.4.13)
       '@eslint/js':
         specifier: ^9.9.1
         version: 9.11.1
@@ -538,10 +531,10 @@ packages:
   '@astrojs/sitemap@3.1.6':
     resolution: {integrity: sha512-1Qp2NvAzVImqA6y+LubKi1DVhve/hXXgFvB0szxiipzh7BvtuKe4oJJ9dXSqaubaTkt4nMa6dv6RCCAYeB6xaQ==}
 
-  '@astrojs/tailwind@5.1.0':
-    resolution: {integrity: sha512-BJoCDKuWhU9FT2qYg+fr6Nfb3qP4ShtyjXGHKA/4mHN94z7BGcmauQK23iy+YH5qWvTnhqkd6mQPQ1yTZTe9Ig==}
+  '@astrojs/tailwind@5.1.1':
+    resolution: {integrity: sha512-LwurA10uIKcGRxQP2R81RvAnBT0WPKzBntXZBF4hrAefDgM5Uumn0nsGr6tdIjSARgYz4X+Cq/Vh78t3bql3yw==}
     peerDependencies:
-      astro: ^3.0.0 || ^4.0.0
+      astro: ^3.0.0 || ^4.0.0 || ^5.0.0-beta.0
       tailwindcss: ^3.0.24
 
   '@astrojs/telemetry@3.1.0':
@@ -2256,14 +2249,8 @@ packages:
   '@libsql/client@0.14.0':
     resolution: {integrity: sha512-/9HEKfn6fwXB5aTEEoMeFh4CtG0ZzbncBb1e++OCdVpgKZ/xyMsIVYXm0w7Pv4RUel803vE6LwniB3PqD72R0Q==}
 
-  '@libsql/client@0.9.0':
-    resolution: {integrity: sha512-mT+91wtb8pxK9SWd566D5W2VUCemksUMqICRBtf0WXiS7XzNcQhWyrwYOnVrVmTSze/SCCsNNEKIkCRwk/pr2Q==}
-
   '@libsql/core@0.14.0':
     resolution: {integrity: sha512-nhbuXf7GP3PSZgdCY2Ecj8vz187ptHlZQ0VRc751oB2C1W8jQUXKKklvt7t1LJiUTQBVJuadF628eUk+3cRi4Q==}
-
-  '@libsql/core@0.9.0':
-    resolution: {integrity: sha512-rCsS/EC32K8ARjDQJGqauGZmkR6orOOY4I7898PyQ/mmltAkMwRgz5kjEmYRZ42o7mP0ayJfbw28qgv7SRFEgg==}
 
   '@libsql/darwin-arm64@0.4.5':
     resolution: {integrity: sha512-xLdnn0NrgSk6OMi716FFs/27Hs33jtSd2fkKi/72Ey/qBtPWcB1BMurDQekzi0yAcfQTjGqIz7tpOibyjiEPyQ==}
@@ -2275,15 +2262,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@libsql/hrana-client@0.6.2':
-    resolution: {integrity: sha512-MWxgD7mXLNf9FXXiM0bc90wCjZSpErWKr5mGza7ERy2FJNNMXd7JIOv+DepBA1FQTIfI8TFO4/QDYgaQC0goNw==}
-
   '@libsql/hrana-client@0.7.0':
     resolution: {integrity: sha512-OF8fFQSkbL7vJY9rfuegK1R7sPgQ6kFMkDamiEccNUvieQ+3urzfDFI616oPl8V7T9zRmnTkSjMOImYCAVRVuw==}
-
-  '@libsql/isomorphic-fetch@0.2.5':
-    resolution: {integrity: sha512-8s/B2TClEHms2yb+JGpsVRTPBfy1ih/Pq6h6gvyaNcYnMVJvgQRY7wAa8U2nD0dppbCuDU5evTNMEhrQ17ZKKg==}
-    engines: {node: '>=18.0.0'}
 
   '@libsql/isomorphic-fetch@0.3.1':
     resolution: {integrity: sha512-6kK3SUK5Uu56zPq/Las620n5aS9xJq+jMBcNSOmjhNf/MUvdyji4vrMTqD7ptY7/4/CAVEAYDeotUz60LNQHtw==}
@@ -3097,9 +3077,6 @@ packages:
 
   '@types/braces@3.0.4':
     resolution: {integrity: sha512-0WR3b8eaISjEW7RpZnclONaLFDf7buaowRHdqLp4vLj54AsSAYWfh3DRbfiYJY9XDxMgx1B4sE1Afw2PGpuHOA==}
-
-  '@types/bun@1.1.10':
-    resolution: {integrity: sha512-76KYVSwrHwr9zsnk6oLXOGs9KvyBg3U066GLO4rk6JZk1ypEPGCUDZ5yOiESyIHWs9cx9iC8r01utYN32XdmgA==}
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
@@ -4005,9 +3982,9 @@ packages:
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
-  concurrently@8.2.2:
-    resolution: {integrity: sha512-1dP4gpXFhei8IOtlXRE/T/4H88ElHgTiUzh71YUmtjTEHMSRS2Z/fgOxHSxxusGHogsRfxNq1vyAwxSC+EVyDg==}
-    engines: {node: ^14.13.0 || >=16.0.0}
+  concurrently@9.0.1:
+    resolution: {integrity: sha512-wYKvCd/f54sTXJMSfV6Ln/B8UrfLBKOYa+lzc6CHay3Qek+LorVSBdMVfyewFhRbH0Rbabsk4D+3PL/VjQ5gzg==}
+    engines: {node: '>=18'}
     hasBin: true
 
   confbox@0.1.7:
@@ -4124,10 +4101,6 @@ packages:
   data-view-byte-offset@1.0.0:
     resolution: {integrity: sha512-t/Ygsytq+R995EJ5PZlD4Cu56sWa8InXySaViRzw9apusqsOO2bQP+SbYzAhR0pFKoB+43lYy8rWban9JSuXnA==}
     engines: {node: '>= 0.4'}
-
-  date-fns@2.30.0:
-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
-    engines: {node: '>=0.11'}
 
   dax-sh@0.39.2:
     resolution: {integrity: sha512-gpuGEkBQM+5y6p4cWaw9+ePy5TNon+fdwFVtTI8leU3UhwhsBfPewRxMXGuQNC+M2b/MDGMlfgpqynkcd0C3FQ==}
@@ -5622,6 +5595,7 @@ packages:
 
   libsql@0.4.5:
     resolution: {integrity: sha512-sorTJV6PNt94Wap27Sai5gtVLIea4Otb2LUiAUyr3p6BPOScGMKGt5F1b5X/XgkNtcsDKeX5qfeBDj+PdShclQ==}
+    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   lie@3.1.1:
@@ -7259,9 +7233,6 @@ packages:
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
 
-  spawn-command@0.0.2:
-    resolution: {integrity: sha512-zC8zGoGkmc8J9ndvml8Xksr1Amk9qBujgbF0JAIWO7kXr43w0h/0GJNM/Vustixu+YE8N/MTrQ7N31FvHUACxQ==}
-
   speakingurl@14.0.1:
     resolution: {integrity: sha512-1POYv7uv2gXoyGFpBCmpDVSNV74IfsWlDW216UPjbWufNf+bSU6GdbDsxdcxtfwb4xlI3yxzOTKClUosxARYrQ==}
     engines: {node: '>=0.10.0'}
@@ -8025,8 +7996,8 @@ packages:
     resolution: {integrity: sha512-RgJz7RWftML5h/qfPsp3QKVc2FSlvV4+HevpE0yEY2j+PS/I2ULjoSsZDXaR8Ks2WYuFFDzQr8yrox7v8aqkng==}
     hasBin: true
 
-  vite-bundle-analyzer@0.11.1:
-    resolution: {integrity: sha512-0GptL3zHh36t5Gp+W1PAU3CiRU7tA0NS0XJhS2YFX6RtIs7oltdMDqLBKjSXCUJRWa3zki+oASfbE6ssAsf1PA==}
+  vite-bundle-analyzer@0.12.0:
+    resolution: {integrity: sha512-y9pnBUHdZkQlggwiaPj2+zctUoew/h1coSptassubHkQRssrUkxoxltO2haOgCgYtcYNy9Vn+5mV8qMsUVxyIQ==}
 
   vite-node@2.1.1:
     resolution: {integrity: sha512-N/mGckI1suG/5wQI35XeR9rsMsPqKXzq1CdUndzVstBj/HvyxxGctwnK6WX43NGt5L3Z5tcRf83g4TITKJhPrA==}
@@ -8516,7 +8487,7 @@ snapshots:
       stream-replace-string: 2.0.0
       zod: 3.23.8
 
-  '@astrojs/tailwind@5.1.0(astro@4.15.9(@types/node@22.7.2)(lightningcss@1.27.0)(rollup@4.22.4)(terser@5.33.0)(typescript@5.6.2))(tailwindcss@3.4.13)':
+  '@astrojs/tailwind@5.1.1(astro@4.15.9(@types/node@22.7.2)(lightningcss@1.27.0)(rollup@4.22.4)(terser@5.33.0)(typescript@5.6.2))(tailwindcss@3.4.13)':
     dependencies:
       astro: 4.15.9(@types/node@22.7.2)(lightningcss@1.27.0)(rollup@4.22.4)(terser@5.33.0)(typescript@5.6.2)
       autoprefixer: 10.4.20(postcss@8.4.47)
@@ -10104,22 +10075,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@libsql/client@0.9.0':
-    dependencies:
-      '@libsql/core': 0.9.0
-      '@libsql/hrana-client': 0.6.2
-      js-base64: 3.7.7
-      libsql: 0.4.5
-      promise-limit: 2.7.0
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   '@libsql/core@0.14.0':
-    dependencies:
-      js-base64: 3.7.7
-
-  '@libsql/core@0.9.0':
     dependencies:
       js-base64: 3.7.7
 
@@ -10128,16 +10084,6 @@ snapshots:
 
   '@libsql/darwin-x64@0.4.5':
     optional: true
-
-  '@libsql/hrana-client@0.6.2':
-    dependencies:
-      '@libsql/isomorphic-fetch': 0.2.5
-      '@libsql/isomorphic-ws': 0.1.5
-      js-base64: 3.7.7
-      node-fetch: 3.3.2
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
 
   '@libsql/hrana-client@0.7.0':
     dependencies:
@@ -10148,8 +10094,6 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
-
-  '@libsql/isomorphic-fetch@0.2.5': {}
 
   '@libsql/isomorphic-fetch@0.3.1': {}
 
@@ -10972,10 +10916,6 @@ snapshots:
 
   '@types/braces@3.0.4': {}
 
-  '@types/bun@1.1.10':
-    dependencies:
-      bun-types: 1.1.29
-
   '@types/cookie@0.6.0': {}
 
   '@types/css-tree@2.3.8': {}
@@ -11056,6 +10996,7 @@ snapshots:
   '@types/node@20.12.14':
     dependencies:
       undici-types: 5.26.5
+    optional: true
 
   '@types/node@20.14.12':
     dependencies:
@@ -11084,7 +11025,7 @@ snapshots:
 
   '@types/ws@8.5.12':
     dependencies:
-      '@types/node': 20.12.14
+      '@types/node': 22.7.2
 
   '@types/yauzl@2.10.3':
     dependencies:
@@ -12088,6 +12029,7 @@ snapshots:
     dependencies:
       '@types/node': 20.12.14
       '@types/ws': 8.5.12
+    optional: true
 
   bundle-name@3.0.0:
     dependencies:
@@ -12310,14 +12252,12 @@ snapshots:
 
   concat-map@0.0.1: {}
 
-  concurrently@8.2.2:
+  concurrently@9.0.1:
     dependencies:
       chalk: 4.1.2
-      date-fns: 2.30.0
       lodash: 4.17.21
       rxjs: 7.8.1
       shell-quote: 1.8.1
-      spawn-command: 0.0.2
       supports-color: 8.1.1
       tree-kill: 1.2.2
       yargs: 17.7.2
@@ -12424,10 +12364,6 @@ snapshots:
       call-bind: 1.0.7
       es-errors: 1.3.0
       is-data-view: 1.0.1
-
-  date-fns@2.30.0:
-    dependencies:
-      '@babel/runtime': 7.25.6
 
   dax-sh@0.39.2:
     dependencies:
@@ -12603,17 +12539,9 @@ snapshots:
       bun-types: 1.1.29
       react: 18.3.1
 
-  drizzle-orm@0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1):
-    optionalDependencies:
-      '@libsql/client': 0.9.0
-      '@types/better-sqlite3': 7.6.11
-      better-sqlite3: 11.3.0
-      bun-types: 1.1.29
-      react: 18.3.1
-
-  drizzle-valibot@0.2.0(drizzle-orm@0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1))(valibot@0.42.1(typescript@5.6.2)):
+  drizzle-valibot@0.2.0(drizzle-orm@0.33.0(@libsql/client@0.14.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1))(valibot@0.42.1(typescript@5.6.2)):
     dependencies:
-      drizzle-orm: 0.33.0(@libsql/client@0.9.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1)
+      drizzle-orm: 0.33.0(@libsql/client@0.14.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1)
       valibot: 0.42.1(typescript@5.6.2)
 
   drizzle-zod@0.5.1(drizzle-orm@0.33.0(@libsql/client@0.14.0)(@types/better-sqlite3@7.6.11)(better-sqlite3@11.3.0)(bun-types@1.1.29)(react@18.3.1))(zod@3.23.8):
@@ -16291,8 +16219,6 @@ snapshots:
 
   space-separated-tokens@2.0.2: {}
 
-  spawn-command@0.0.2: {}
-
   speakingurl@14.0.1: {}
 
   sprintf-js@1.0.3: {}
@@ -17204,7 +17130,7 @@ snapshots:
       - webpack-sources
       - xml2js
 
-  vite-bundle-analyzer@0.11.1: {}
+  vite-bundle-analyzer@0.12.0: {}
 
   vite-node@2.1.1(@types/node@22.7.2)(lightningcss@1.27.0)(terser@5.33.0):
     dependencies:
