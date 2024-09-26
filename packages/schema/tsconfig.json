@@ -20,6 +20,5 @@
 		"declarationMap": true,
 		"declaration": true,
 		"emitDeclarationOnly": true
-	},
-	"include": ["./src/**/*.ts"]
+	}
 }

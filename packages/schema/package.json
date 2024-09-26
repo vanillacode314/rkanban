@@ -1,29 +1,34 @@
 {
-  "name": "schema",
-  "version": "1.0.0",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
-    },
-    "./*": {
-      "types": "./dist/*.d.ts",
-      "import": "./dist/*.mjs"
-    }
-  },
-  "scripts": {
-    "build": "tsup"
-  },
-  "author": "",
-  "description": "",
-  "devDependencies": {
-    "@types/node": "^22.5.4",
-    "prettier": "^3.3.3",
-    "prettier-plugin-organize-imports": "^4.0.0",
-    "tsup": "^8.2.4",
-    "typescript": "^5.5.4"
-  },
-  "dependencies": {
-    "zod": "^3.23.8"
-  }
+	"name": "schema",
+	"version": "1.0.0",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.mjs"
+		},
+		"./*": {
+			"types": "./dist/*.d.ts",
+			"import": "./dist/*.mjs"
+		}
+	},
+	"scripts": {
+		"build": "tsup",
+		"lint": "eslint --fix",
+		"format": "prettier --write ."
+	},
+	"author": "",
+	"description": "",
+	"devDependencies": {
+		"@types/node": "^22.5.4",
+		"@dword-design/eslint-plugin-import-alias": "^5.1.1",
+		"@eslint/compat": "^1.1.1",
+		"eslint-plugin-perfectionist": "^3.7.0",
+		"globals": "^15.9.0",
+		"prettier": "^3.3.3",
+		"tsup": "^8.2.4",
+		"typescript": "^5.5.4"
+	},
+	"dependencies": {
+		"zod": "^3.23.8"
+	}
 }

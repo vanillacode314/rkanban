@@ -1,19 +1,21 @@
 import type { Config } from "@netlify/functions";
-import { db } from "~/db";
+
 import {
   forgotPasswordTokens,
   refreshTokens,
   users,
   verificationTokens,
 } from "db/schema";
-import { lt, and, eq, inArray, count } from "drizzle-orm";
+import { and, eq, inArray, lt } from "drizzle-orm";
+
+import { db } from "~/db";
 import { ms } from "~/utils/ms";
 
 const UNVERIFIED_ALLOWED_DURATION = ms("30 days");
 
 async function deleteUnverifiedUsers() {
   const $users = await db
-    .select({ id: users.id, email: users.email })
+    .select({ email: users.email, id: users.id })
     .from(users)
     .where(
       and(

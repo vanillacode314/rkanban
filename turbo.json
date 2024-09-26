@@ -35,6 +35,7 @@
         "PUBLIC_PUBLISH_URL"
       ]
     },
-    "format": {}
+    "format": {},
+    "lint": {}
   }
 }
