@@ -5,9 +5,9 @@ export default defineEventHandler(async (event) => {
 	const result = await readValidatedBody(event, messageSchema.options[0].safeParse);
 
 	if (!result.success) {
-		return { success: false, error: result.error.errors };
+		return { error: result.error.errors, success: false };
 	}
 
 	dbUpdatesChannel.postMessage(result.data);
-	return { success: true, message: 'Successfully published' };
+	return { message: 'Successfully published', success: true };
 });

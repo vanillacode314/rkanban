@@ -1,14 +1,20 @@
 {
 	"name": "realtime-socket",
 	"private": true,
+	"type": "module",
 	"scripts": {
 		"build": "nitro build",
 		"dev": "nitro dev",
 		"prepare": "nitro prepare",
 		"start": "node .output/server/index.mjs",
+		"lint": "eslint --fix",
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
+		"@dword-design/eslint-plugin-import-alias": "^5.1.1",
+		"@eslint/compat": "^1.1.1",
+		"eslint-plugin-perfectionist": "^3.7.0",
+		"globals": "^15.9.0",
 		"nitropack": "latest"
 	},
 	"dependencies": {
