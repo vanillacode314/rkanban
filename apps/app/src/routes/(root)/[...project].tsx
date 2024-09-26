@@ -356,7 +356,7 @@ const AnimatedBoardsList: ParentComponent<{
 					toast.promise(
 						async () => {
 							setIsDirty('project', true);
-							moveBoards(changedBoards)
+							await moveBoards(changedBoards)
 								.then(() => revalidate(getBoards.key))
 								.finally(() => setIsDirty('project', false));
 						},
