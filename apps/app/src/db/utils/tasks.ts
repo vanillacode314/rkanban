@@ -224,7 +224,13 @@ const deleteTask = action(async (formData: FormData) => {
 		if (!task) return;
 		await tx
 			.update(tasks)
-			.set({ index: sql`${tasks.index} - 1` })
+			.set({ index: sql`${tasks.index} + 10000 - 1` })
+			.where(
+				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
+			);
+		await tx
+			.update(tasks)
+			.set({ index: sql`${tasks.index} - 10000` })
 			.where(
 				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
 			);
