@@ -8,43 +8,42 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateBoard } from '~/db/utils/boards';
+import { onSubmission } from '~/utils/action';
 import { encryptWithUserKeys } from '~/utils/auth.server';
 
 export const [updateBoardModalOpen, setUpdateBoardModalOpen] = createSignal<boolean>(false);
 
 export default function UpdateBoardModal() {
 	const [appContext, _setAppContext] = useApp();
-	const submission = useSubmission(updateBoard);
 
 	const board = () => appContext.currentBoard;
 	const $updateBoard = useAction(updateBoard);
 
-	let toastId: number | string | undefined;
-	createEffect(() => {
-		const { pending, result } = submission;
-		untrack(() => {
-			if (pending) {
-				if (toastId) toast.dismiss(toastId);
-				toastId = toast.loading('Updating Board', {
-					duration: Number.POSITIVE_INFINITY
-				});
-				return;
-			}
-			if (!result) return;
-			if (result instanceof Error) {
-				switch (result.cause) {
+	onSubmission(
+		updateBoard,
+		{
+			onError(toastId: number | string | undefined, error) {
+				if (!(error instanceof Error)) return;
+				switch (error.cause) {
 					case 'INVALID_CREDENTIALS':
-						toast.error(result.message, { duration: 3000, id: toastId });
+						toast.error(error.message, { duration: 3000, id: toastId });
 						break;
 					default:
-						console.error(result);
+						console.error(error);
 				}
-			} else {
+			},
+			onPending() {
+				return toast.loading('Updating Board', {
+					duration: Number.POSITIVE_INFINITY
+				});
+			},
+
+			onSuccess(_, toastId) {
 				toast.success('Updated Board', { duration: 3000, id: toastId });
 			}
-			toastId = undefined;
-		});
-	});
+		},
+		{ always: true }
+	);
 
 	return (
 		<BaseModal open={updateBoardModalOpen()} setOpen={setUpdateBoardModalOpen} title="Update Board">
@@ -61,7 +60,7 @@ export default function UpdateBoardModal() {
 					}}
 				>
 					<input name="id" type="hidden" value={board()?.id} />
-					<input name="publisherId" type="hidden" value={appContext.id} />
+					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<Decrypt value={board()?.title}>

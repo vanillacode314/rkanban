@@ -2,11 +2,13 @@ import { action, cache } from '@solidjs/router';
 import { tasks, type TBoard, type TTask } from 'db/schema';
 import { and, count, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { getCookie } from 'vinxi/http';
 
 import { checkUser } from '~/utils/auth.server';
-import { createNotifier } from '~/utils/publish';
+import { createNotifier } from '~/utils/publish.server';
 
 import { db } from './..';
+import { getBoards } from './boards';
 
 const getTasks = cache(async function () {
 	'use server';
@@ -18,6 +20,7 @@ const getTasks = cache(async function () {
 }, 'get-tasks');
 
 const moveTasks = async (
+	appId: string,
 	inputs: Array<{ boardId: TBoard['id']; id: TTask['id']; index: number }>
 ) => {
 	'use server';
@@ -57,6 +60,12 @@ const moveTasks = async (
 			})
 			.where(and(inArray(tasks.id, ids), eq(tasks.userId, user.id)));
 	});
+
+	void notify({
+		appId,
+		message: `Another client moved tasks`,
+		token: getCookie('websocketToken')!
+	});
 };
 
 const changeBoard = action(async (formData: FormData) => {
@@ -66,8 +75,7 @@ const changeBoard = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const boardId = String(formData.get('boardId')).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
 	const [task] = await db
 		.select()
@@ -119,10 +127,14 @@ const changeBoard = action(async (formData: FormData) => {
 			);
 	});
 
-	void notify({ id, type: 'update' }, publisherId);
+	void notify({
+		appId,
+		message: `Another client moved task encrypted:${task.title}`,
+		token: getCookie('websocketToken')!
+	});
 }, 'change-board');
 
-const shiftTask = async (taskId: TTask['id'], direction: -1 | 1) => {
+const shiftTask = async (appId: string, taskId: TTask['id'], direction: -1 | 1) => {
 	'use server';
 
 	const user = await checkUser();
@@ -153,7 +165,7 @@ const shiftTask = async (taskId: TTask['id'], direction: -1 | 1) => {
 			)
 		);
 
-	await moveTasks([
+	await moveTasks(appId, [
 		{ boardId: task.boardId, id: task.id, index: task.index + direction },
 		{ boardId: siblingTask.boardId, id: siblingTask.id, index: task.index }
 	]);
@@ -167,8 +179,7 @@ const createTask = action(async (formData: FormData) => {
 	const title = String(formData.get('title')).trim();
 	const boardId = String(formData.get('boardId')).trim();
 	const id = String(formData.get('id') ?? nanoid()).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
 	let index;
 	{
@@ -184,7 +195,11 @@ const createTask = action(async (formData: FormData) => {
 		.values({ boardId, id, index, title, userId: user.id })
 		.returning();
 
-	void notify({ data: task, id: task.id, type: 'create' }, publisherId);
+	void notify({
+		appId,
+		message: `Another client created task encrypted:${title}`,
+		token: getCookie('websocketToken')!
+	});
 	return task;
 }, 'create-task');
 
@@ -195,15 +210,19 @@ const updateTask = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
 	const [$task] = await db
 		.update(tasks)
 		.set({ title })
 		.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
 		.returning();
-	void notify({ data: $task, id: $task.id, type: 'update' }, publisherId);
+
+	void notify({
+		appId,
+		message: `Another client updated task encrypted:${title}`,
+		token: getCookie('websocketToken')!
+	});
 	return $task;
 }, 'update-task');
 
@@ -213,10 +232,9 @@ const deleteTask = action(async (formData: FormData) => {
 	const user = await checkUser();
 
 	const taskId = String(formData.get('id')).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
-	await db.transaction(async (tx) => {
+	const task = await db.transaction(async (tx) => {
 		const [task] = await tx
 			.delete(tasks)
 			.where(and(eq(tasks.id, taskId), eq(tasks.userId, user.id)))
@@ -234,11 +252,18 @@ const deleteTask = action(async (formData: FormData) => {
 			.where(
 				and(eq(tasks.boardId, task.boardId), eq(tasks.userId, user.id), gt(tasks.index, task.index))
 			);
+		return task;
 	});
-	void notify({ id: taskId, type: 'delete' }, publisherId);
-	return;
+
+	if (task)
+		void notify({
+			appId,
+			message: `Another client deleted task encrypted:${task.title}`,
+			token: getCookie('websocketToken')!
+		});
+	return task;
 }, 'delete-task');
 
-const notify = createNotifier('tasks');
+const notify = createNotifier(getBoards.key);
 
 export { changeBoard, createTask, deleteTask, getTasks, moveTasks, shiftTask, updateTask };

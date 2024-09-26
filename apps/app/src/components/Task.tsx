@@ -175,7 +175,7 @@ function TaskContextMenu(props: {
 								onYes: async () => {
 									const formData = new FormData();
 									formData.set('id', props.task.id);
-									formData.set('publisherId', appContext.id);
+									formData.set('appId', appContext.id);
 									toast.promise(() => $deleteTask(formData), {
 										error: 'Error',
 										loading: 'Deleting Task',
@@ -206,6 +206,7 @@ function TaskContextMenu(props: {
 												const formData = new FormData();
 												formData.set('id', props.task.id);
 												formData.set('boardId', board.id);
+												formData.set('appId', appContext.id);
 												toast.promise(() => $changeBoard(formData), {
 													error: 'Error',
 													loading: 'Moving Task',
@@ -229,7 +230,7 @@ function TaskContextMenu(props: {
 							onClick={() => {
 								toast.promise(
 									async () => {
-										await shiftTask(props.task.id, 1);
+										await shiftTask(appContext.id, props.task.id, 1);
 										await revalidate(getBoards.key);
 									},
 									{
@@ -253,7 +254,7 @@ function TaskContextMenu(props: {
 							onClick={() => {
 								toast.promise(
 									async () => {
-										await shiftTask(props.task.id, -1);
+										await shiftTask(appContext.id, props.task.id, -1);
 										await revalidate(getBoards.key);
 									},
 									{

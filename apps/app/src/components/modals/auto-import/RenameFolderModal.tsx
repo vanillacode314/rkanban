@@ -53,7 +53,7 @@ export default function RenameFolderModal() {
 						value={appContext.currentNode?.parentId ?? undefined}
 					/>
 					<input name="id" type="hidden" value={appContext.currentNode?.id} />
-					<input name="publisherId" type="hidden" value={appContext.id} />
+					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>
 						<TextFieldInput

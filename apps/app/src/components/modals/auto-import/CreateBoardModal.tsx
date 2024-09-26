@@ -32,7 +32,7 @@ export default function CreateBoardModal() {
 				>
 					<input name="id" type="hidden" value={nanoid()} />
 					<input name="path" type="hidden" value={appContext.path} />
-					<input name="publisherId" type="hidden" value={appContext.id} />
+					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<TextFieldInput

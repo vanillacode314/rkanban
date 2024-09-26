@@ -1,5 +1,12 @@
 import { Key } from '@solid-primitives/keyed';
-import { A, createAsync, RouteDefinition, useAction, useSubmissions } from '@solidjs/router';
+import {
+	A,
+	createAsync,
+	revalidate,
+	RouteDefinition,
+	useAction,
+	useSubmissions
+} from '@solidjs/router';
 import { TNode } from 'db/schema';
 import { Show } from 'solid-js';
 import { produce, unwrap } from 'solid-js/store';
@@ -23,7 +30,9 @@ import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { copyNode, createNode, deleteNode, getNodes, updateNode } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
+import { decryptWithUserKeys } from '~/utils/auth.server';
 import * as path from '~/utils/path';
+import { createSubscription } from '~/utils/subscribe';
 import { assertNotError } from '~/utils/types';
 
 export const route: RouteDefinition = {
@@ -63,6 +72,35 @@ export default function FolderPage() {
 	const files = () => nodes()?.filter((node) => !node.isDirectory) ?? [];
 	const nodesInClipboard = () => appContext.clipboard.filter((item) => item.type === 'id/node');
 
+	const VALID_KEYS = [getNodes.key];
+	void createSubscription(async ({ invalidate, message }) => {
+		const keys = invalidate.filter((key) => VALID_KEYS.includes(key));
+		if (keys.length === 0) return;
+		const promises = [] as Promise<void>[];
+		for (const key of keys) {
+			promises.push(revalidate(key));
+		}
+		await Promise.all(promises);
+		const re = new RegExp(String.raw`encrypted:[^\s]+`);
+		const matches = message.match(re);
+		let decryptedString: string;
+		if (!matches) {
+			decryptedString = message;
+		} else {
+			const decryptedValues = await Promise.all(
+				matches.map(async (match) => {
+					const data = match.slice('encrypted:'.length);
+					return [match, await decryptWithUserKeys(data)];
+				})
+			);
+			decryptedString = message;
+			for (const [match, decrypted] of decryptedValues) {
+				decryptedString = decryptedString.replace(match, decrypted);
+			}
+		}
+		toast.info(decryptedString);
+	});
+
 	return (
 		<Show
 			fallback={
@@ -101,6 +139,7 @@ export default function FolderPage() {
 													formData.set('id', item.data);
 													const { node } = item.meta as { node: TNode; path: string };
 													formData.set('parentId', currentNode().id);
+													formData.set('appId', appContext.id);
 													if (item.mode === 'move') formData.set('name', node.name);
 													return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
 												})
@@ -326,6 +365,7 @@ function FolderDropdownMenu(props: { node: TNode }) {
 							onYes() {
 								const formData = new FormData();
 								formData.set('id', props.node.id);
+								formData.set('appId', appContext.id);
 								toast.promise(() => $deleteNode(formData), {
 									error: 'Error',
 									loading: 'Deleting Folder',
@@ -421,6 +461,7 @@ function FileDropdownMenu(props: { node: TNode }) {
 							onYes: () => {
 								const formData = new FormData();
 								formData.set('id', props.node.id);
+								formData.set('appId', appContext.id);
 								toast.promise(() => $deleteNode(formData), {
 									error: 'Error',
 									loading: 'Deleting File',

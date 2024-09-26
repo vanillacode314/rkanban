@@ -1,33 +1,22 @@
 import { createWS } from '@solid-primitives/websocket';
-import { messageSchema, type TMessage } from 'schema';
+import { publishSchema, type TPublish, TSubscribe } from 'schema';
 import { isServer } from 'solid-js/web';
 
 import { useApp } from '~/context/app';
 
 import env from './env/client';
 
-function createSubscription(
-	handlers: Record<
-		string,
-		Record<
-			({ type: 'publish' } & TMessage)['item']['type'],
-			(item: { data?: unknown; id: string }) => void
-		>
-	>
-) {
-	return;
+async function createSubscription(handler: (item: TPublish['item']) => void) {
 	if (isServer) return;
+	const [appContext, _setAppContext] = useApp();
 	const ws = createWS(env.PUBLIC_SOCKET_URL);
-	const [appContext] = useApp();
-	ws.send(JSON.stringify({ id: appContext.id, type: 'subscribe' }));
+	const token = await fetch('/api/v1/me/websocket-token').then((res) => res.text());
 
-	ws.addEventListener('message', (event) => {
-		const result = messageSchema.options[0].shape.item.safeParse(JSON.parse(event.data));
+	ws.send(JSON.stringify({ appId: appContext.id, token, type: 'subscribe' } satisfies TSubscribe));
+	ws.addEventListener('message', async (event) => {
+		const result = publishSchema.shape.item.safeParse(JSON.parse(event.data));
 		if (!result.success) return;
-		const { table, type } = result.data;
-		if (table in handlers && type in handlers[table]) {
-			handlers[table][type]({ data: result.data.data, id: result.data.id });
-		}
+		handler(result.data);
 	});
 }
 

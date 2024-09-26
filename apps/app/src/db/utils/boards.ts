@@ -2,9 +2,10 @@ import { action, cache } from '@solidjs/router';
 import { boards, tasks, type TBoard, type TTask } from 'db/schema';
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { getCookie } from 'vinxi/http';
 
 import { checkUser } from '~/utils/auth.server';
-import { createNotifier } from '~/utils/publish';
+import { createNotifier } from '~/utils/publish.server';
 
 import { db } from './..';
 import { getNodes } from './nodes';
@@ -47,13 +48,12 @@ async function $getBoards(path: null | string) {
 }
 const getBoards = cache($getBoards, 'get-boards');
 
-const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) => {
+const moveBoards = async (appId: string, inputs: Array<{ id: TBoard['id']; index: number }>) => {
 	'use server';
 	const user = await checkUser();
 
 	if (inputs.length === 0) throw new Error('No boards to move');
 	const ids = inputs.map((input) => input.id);
-	console.log(inputs);
 
 	await db.transaction(async (tx) => {
 		await tx
@@ -78,9 +78,14 @@ const moveBoards = async (inputs: Array<{ id: TBoard['id']; index: number }>) =>
 			})
 			.where(and(inArray(boards.id, ids), eq(boards.userId, user.id)));
 	});
+	void notify({
+		appId,
+		message: `Another client moved boards`,
+		token: getCookie('websocketToken')!
+	});
 };
 
-const shiftBoard = async (boardId: TBoard['id'], direction: -1 | 1) => {
+const shiftBoard = async (appId: string, boardId: TBoard['id'], direction: -1 | 1) => {
 	'use server';
 
 	const user = await checkUser();
@@ -99,19 +104,15 @@ const shiftBoard = async (boardId: TBoard['id'], direction: -1 | 1) => {
 	} else if (0 === board.index) {
 		throw new Error('Can not shift first board');
 	}
-	await db.batch([
-		db
-			.update(boards)
-			.set({ index: board.index + direction + 10000 })
-			.where(and(eq(boards.id, boardId), eq(boards.userId, user.id))),
-		db
-			.update(boards)
-			.set({ index: board.index })
-			.where(and(eq(boards.index, board.index + direction), eq(boards.userId, user.id))),
-		db
-			.update(boards)
-			.set({ index: board.index + direction })
-			.where(and(eq(boards.id, boardId), eq(boards.userId, user.id)))
+
+	const [siblingBoard] = await db
+		.select()
+		.from(boards)
+		.where(and(eq(boards.index, board.index + direction), eq(boards.userId, user.id)));
+
+	await moveBoards(appId, [
+		{ id: boardId, index: siblingBoard.index },
+		{ id: siblingBoard.id, index: board.index }
 	]);
 };
 
@@ -123,8 +124,7 @@ const createBoard = action(async (formData: FormData) => {
 	const title = String(formData.get('title')).trim();
 	const id = String(formData.get('id') ?? nanoid()).trim();
 	const path = String(formData.get('path')).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
 	const result = await getNodes(path);
 	if (result instanceof Error) throw result;
@@ -145,7 +145,11 @@ const createBoard = action(async (formData: FormData) => {
 		.values({ id, index, nodeId: node.id, title: title, userId: user.id })
 		.returning();
 
-	void notify({ data: $board, id: $board.id, type: 'create' }, publisherId);
+	void notify({
+		appId,
+		message: `Another client created board encrypted:${$board.title}`,
+		token: getCookie('websocketToken')!
+	});
 	return $board;
 }, 'create-board');
 
@@ -156,8 +160,7 @@ const updateBoard = action(async (formData: FormData) => {
 
 	const id = String(formData.get('id')).trim();
 	const title = String(formData.get('title')).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
 	const [$board] = await db
 		.update(boards)
@@ -165,7 +168,11 @@ const updateBoard = action(async (formData: FormData) => {
 		.where(and(eq(boards.id, id), eq(boards.userId, user.id)))
 		.returning();
 
-	void notify({ data: $board, id: $board.id, type: 'update' }, publisherId);
+	void notify({
+		appId,
+		message: `Another client updated board encrypted:${$board.title}`,
+		token: getCookie('websocketToken')!
+	});
 	return $board;
 }, 'update-board');
 
@@ -175,10 +182,9 @@ const deleteBoard = action(async (formData: FormData) => {
 	const user = await checkUser();
 
 	const boardId = String(formData.get('id')).trim();
-	const publisherId =
-		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+	const appId = String(formData.get('appId'));
 
-	await db.transaction(async (tx) => {
+	const board = await db.transaction(async (tx) => {
 		const [board] = await tx
 			.delete(boards)
 			.where(and(eq(boards.id, boardId), eq(boards.userId, user.id)))
@@ -194,11 +200,17 @@ const deleteBoard = action(async (formData: FormData) => {
 					eq(boards.nodeId, board.nodeId)
 				)
 			);
+		return board;
 	});
 
-	void notify({ id: boardId, type: 'delete' }, publisherId);
+	if (!board) return;
+	void notify({
+		appId,
+		message: `Another client deleted board encrypted:${board.title}`,
+		token: getCookie('websocketToken')!
+	});
 }, 'delete-board');
 
-const notify = createNotifier('boards');
+const notify = createNotifier(getBoards.key);
 
 export { createBoard, deleteBoard, getBoards, moveBoards, shiftBoard, updateBoard };

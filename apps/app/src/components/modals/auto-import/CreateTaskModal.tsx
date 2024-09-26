@@ -33,7 +33,7 @@ export default function CreateTaskModal() {
 				>
 					<input name="boardId" type="hidden" value={board()?.id} />
 					<input name="id" type="hidden" value={nanoid()} />
-					<input name="publisherId" type="hidden" value={appContext.id} />
+					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<TextFieldInput

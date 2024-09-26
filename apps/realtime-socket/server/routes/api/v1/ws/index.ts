@@ -1,69 +1,98 @@
-import { messageSchema } from 'schema';
+import { type Peer } from 'crossws';
+import jwt from 'jsonwebtoken';
+import { messageSchema, publishSchema, TPublish, TSubscribe } from 'schema';
 
-const subscribers = new Map<string, (event: MessageEvent) => void>();
+import env from '~/utils/env/server';
+import { safeParseJson } from '~/utils/json';
+
 const dbUpdatesChannel = new BroadcastChannel('db-updates');
 
+type PeerId = string;
+const subscribers = new Map<PeerId, (event: MessageEvent) => void>();
+
+function addSubscriber(peerId: string, callback: (event: MessageEvent) => void): void {
+	subscribers.set(peerId, callback);
+	dbUpdatesChannel.addEventListener('message', callback);
+}
+
+function removeSubscriber(peerId: string): void {
+	const callback = subscribers.get(peerId);
+	if (!callback) return;
+	dbUpdatesChannel.removeEventListener('message', callback);
+	subscribers.delete(peerId);
+}
+
+const handlers = {
+	publish: function onPublish(peer: Peer, message: TPublish) {
+		dbUpdatesChannel.postMessage(message);
+		peer.send({
+			message: 'Successfully published',
+			success: true
+		});
+	},
+	subscribe: function onSubscribe(peer: Peer, message: TSubscribe) {
+		const { appId, token } = message;
+		let user: { id: string };
+		try {
+			user = jwt.verify(token, env.AUTH_SECRET) as { id: string };
+		} catch {
+			peer.send({ error: ['Invalid token'], success: false });
+			return;
+		}
+
+		const callback = (event: MessageEvent) => {
+			let messageUser: { id: string };
+			try {
+				messageUser = jwt.verify(event.data.token, env.AUTH_SECRET) as { id: string };
+			} catch {
+				peer.send({ error: ['Invalid token'], success: false });
+				return;
+			}
+			if (messageUser.id !== user.id) return;
+			const result = publishSchema.safeParse(event.data);
+
+			if (!result.success) {
+				peer.send({ error: result.error.errors, success: false });
+				return;
+			}
+			if (result.data.appId === undefined) return;
+			if (result.data.appId === appId) return;
+			peer.send(result.data.item);
+		};
+
+		addSubscriber(peer.id, callback);
+		peer.send({
+			message: 'Successfully subscribed',
+			success: true
+		});
+	}
+};
+
 export default defineWebSocketHandler({
-	close(peer, event) {
-		const callback = subscribers.get(peer.id);
-		dbUpdatesChannel.removeEventListener('message', callback);
-		subscribers.delete(peer.id);
-		console.log('[ws] close', peer, event);
+	close(peer) {
+		removeSubscriber(peer.id);
+		console.log('[ws] close');
 	},
 
 	error(peer, error) {
-		const callback = subscribers.get(peer.id);
-		dbUpdatesChannel.removeEventListener('message', callback);
-		subscribers.delete(peer.id);
-		console.log('[ws] error', peer, error);
+		removeSubscriber(peer.id);
+		console.error('[ws] error', error);
 	},
 
 	message(peer, message) {
-		return;
 		const result = messageSchema.safeParse(safeParseJson(message.text()));
 		if (!result.success) {
 			peer.send({ error: result.error.errors, success: false });
 			return;
 		}
-		const { id, type } = result.data;
-		switch (type) {
-			case 'publish':
-				console.log('GOT PUBLISH', result.data.id);
-				dbUpdatesChannel.postMessage(result.data);
-				peer.send({
-					message: 'Successfully published',
-					success: true
-				});
-				break;
-			case 'subscribe': {
-				console.log('GOT SUBSCRIBE', result.data.id);
-				const callback = (event: MessageEvent) => {
-					if (event.data.id === undefined || event.data.id !== id) {
-						peer.send(event.data.item);
-					}
-				};
-				subscribers.set(peer.id, callback);
-				dbUpdatesChannel.addEventListener('message', callback);
-				peer.send({
-					message: 'Successfully subscribed',
-					success: true
-				});
-				break;
-			}
+		if (!(result.data.type in handlers)) {
+			peer.send({ error: ['Invalid message type'], success: false });
 		}
+		// @ts-expect-error: typescript doesn't understand that we know that result.data will have the correct type
+		handlers[result.data.type](peer, result.data);
 	},
 
-	open(peer) {
-		console.log('[ws] open', peer);
+	open() {
+		console.log('[ws] open');
 	}
 });
-
-function safeParseJson(value: unknown) {
-	if (typeof value !== 'string') return null;
-
-	try {
-		return JSON.parse(value);
-	} catch {
-		return null;
-	}
-}

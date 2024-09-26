@@ -1,5 +1,5 @@
-import { useAction, useSubmission } from '@solidjs/router';
-import { createEffect, createSignal, untrack } from 'solid-js';
+import { useAction } from '@solidjs/router';
+import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import Decrypt from '~/components/Decrypt';
@@ -8,43 +8,41 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateTask } from '~/db/utils/tasks';
+import { onSubmission } from '~/utils/action';
 import { encryptWithUserKeys } from '~/utils/auth.server';
 
 export const [updateTaskModalOpen, setUpdateTaskModalOpen] = createSignal<boolean>(false);
 
 export default function UpdateTaskModal() {
 	const [appContext, _setAppContext] = useApp();
-	const submission = useSubmission(updateTask);
 
 	const task = () => appContext.currentTask;
 	const $updateTask = useAction(updateTask);
 
-	let toastId: number | string | undefined;
-	createEffect(() => {
-		const { pending, result } = submission;
-		untrack(() => {
-			if (pending) {
-				if (toastId) toast.dismiss(toastId);
-				toastId = toast.loading('Updating Task', {
-					duration: Number.POSITIVE_INFINITY
-				});
-				return;
-			}
-			if (!result) return;
-			if (result instanceof Error) {
-				switch (result.cause) {
+	onSubmission(
+		updateTask,
+		{
+			onError(toastId: number | string | undefined, error) {
+				if (!(error instanceof Error)) return;
+				switch (error.cause) {
 					case 'INVALID_CREDENTIALS':
-						toast.error(result.message, { duration: 3000, id: toastId });
+						toast.error(error.message, { duration: 3000, id: toastId });
 						break;
 					default:
-						console.error(result);
+						console.error(error);
 				}
-			} else {
+			},
+			onPending() {
+				return toast.loading('Updating Task', {
+					duration: Number.POSITIVE_INFINITY
+				});
+			},
+			onSuccess(_, toastId) {
 				toast.success('Updated Task', { duration: 3000, id: toastId });
 			}
-			toastId = undefined;
-		});
-	});
+		},
+		{ always: true }
+	);
 
 	return (
 		<BaseModal open={updateTaskModalOpen()} setOpen={setUpdateTaskModalOpen} title="Update Task">
@@ -60,7 +58,7 @@ export default function UpdateTaskModal() {
 					}}
 				>
 					<input name="id" type="hidden" value={task()?.id} />
-					<input name="publisherId" type="hidden" value={appContext.id} />
+					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
 						<Decrypt value={task()?.title}>
