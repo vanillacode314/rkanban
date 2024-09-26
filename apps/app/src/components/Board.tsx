@@ -287,7 +287,7 @@ function BoardContextMenu(props: {
 								onYes: async () => {
 									const formData = new FormData();
 									formData.set('id', props.board.id.toString());
-									formData.set('publisherId', appContext.id);
+									formData.set('appId', appContext.id);
 									toast.promise(() => $deleteBoard(formData), {
 										error: 'Error',
 										loading: 'Deleting Board',
@@ -310,7 +310,7 @@ function BoardContextMenu(props: {
 							onClick={() => {
 								toast.promise(
 									async () => {
-										await shiftBoard(props.board.id, 1);
+										await shiftBoard(appContext.id, props.board.id, 1);
 										await revalidate(getBoards.key);
 									},
 									{
@@ -334,7 +334,7 @@ function BoardContextMenu(props: {
 							onClick={() => {
 								toast.promise(
 									async () => {
-										await shiftBoard(props.board.id, -1);
+										await shiftBoard(appContext.id, props.board.id, -1);
 										await revalidate(getBoards.key);
 									},
 									{

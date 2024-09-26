@@ -2,15 +2,15 @@ import { action, cache } from '@solidjs/router';
 import { boards, nodes, tasks, TBoard, TNode, TTask } from 'db/schema';
 import { and, eq, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { getCookie } from 'vinxi/http';
 
 import { RESERVED_PATHS } from '~/consts';
 import { uniqBy } from '~/utils/array';
 import { checkUser } from '~/utils/auth.server';
 import * as path from '~/utils/path';
-import { createNotifier } from '~/utils/publish';
+import { createNotifier } from '~/utils/publish.server';
 
 import { db } from './..';
-
 const getNodes = cache(
 	async (path: string, { includeChildren = false }: Partial<{ includeChildren: boolean }> = {}) => {
 		'use server';
@@ -37,6 +37,7 @@ const createNode = action(async (formData: FormData) => {
 	if (!parentPath.startsWith('/')) throw new Error('parentPath must start with /');
 	const id = String(formData.get('id') ?? nanoid()).trim();
 	const isDirectory = String(formData.get('isDirectory') ?? 'false') === 'true';
+	const appId = String(formData.get('appId'));
 
 	const fullPath = path.join(parentPath, name);
 	if (RESERVED_PATHS.includes(fullPath)) {
@@ -60,8 +61,11 @@ const createNode = action(async (formData: FormData) => {
 		})
 		.returning();
 
-	void notify({ data: $node, id: $node.id, type: 'create' });
-
+	void notify({
+		appId,
+		message: `Another client created ${isDirectory ? 'folder' : 'file'} encrypted:${$node.name}`,
+		token: getCookie('websocketToken')!
+	});
 	return $node;
 }, 'create-node');
 
@@ -73,6 +77,7 @@ const updateNode = action(async (formData: FormData) => {
 	const id = String(formData.get('id')).trim();
 	const name = String(formData.get('name')).trim();
 	const parentId = String(formData.get('parentId')).trim();
+	const appId = String(formData.get('appId'));
 	let { path: fullPath } = await db.get<{ path: string }>(
 		sql.raw(GET_PATH_BY_NODE_ID_QUERY(id, user.id))
 	);
@@ -90,8 +95,11 @@ const updateNode = action(async (formData: FormData) => {
 		.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 		.returning();
 
-	void notify({ data: $node, id: $node.id, type: 'update' });
-
+	void notify({
+		appId,
+		message: `Another client updated ${$node.isDirectory ? 'folder' : 'file'} encrypted:${$node.name}`,
+		token: getCookie('websocketToken')!
+	});
 	return $node;
 }, 'update-node');
 
@@ -102,12 +110,17 @@ const deleteNode = action(async (formData: FormData) => {
 
 	const nodeId = String(formData.get('id')).trim();
 
-	await db
+	const [node] = await db
 		.delete(nodes)
 		.where(and(eq(nodes.id, nodeId), eq(nodes.userId, user.id)))
 		.returning();
 
-	void notify({ id: nodeId, type: 'delete' });
+	void notify({
+		appId: String(formData.get('appId')),
+		message: `Another client deleted ${node.isDirectory ? 'folder' : 'file'} encrypted:${node.name}`,
+		token: getCookie('websocketToken')!
+	});
+	return node;
 }, 'delete-node');
 
 async function $copyNode(formData: FormData) {
@@ -117,6 +130,7 @@ async function $copyNode(formData: FormData) {
 
 	const id = String(formData.get('id')).trim();
 	const parentId = String(formData.get('parentId')).trim();
+	const appId = String(formData.get('appId'));
 
 	const [rows, children] = await Promise.all([
 		db
@@ -158,8 +172,8 @@ async function $copyNode(formData: FormData) {
 		);
 	const duplicateCount = $nodes.length;
 	const newNodeId = nanoid();
-	const $newNode = await db.transaction(async (tx) => {
-		const [$newNode] = await tx
+	await db.transaction(async (tx) => {
+		await tx
 			.insert(nodes)
 			.values({
 				id: newNodeId,
@@ -200,10 +214,7 @@ async function $copyNode(formData: FormData) {
 				})
 			);
 		}
-		return $newNode;
 	});
-
-	void notify({ data: $newNode, id: $newNode.id, type: 'create' });
 
 	await Promise.all(
 		children.map((node) => {
@@ -213,6 +224,11 @@ async function $copyNode(formData: FormData) {
 			return $copyNode(formData);
 		})
 	);
+	void notify({
+		appId,
+		message: `Another client copied ${$node.name}`,
+		token: getCookie('websocketToken')!
+	});
 }
 const copyNode = action($copyNode, 'copy-node');
 
@@ -326,6 +342,6 @@ const GET_NODES_BY_PATH_QUERY = (
 		);
 };
 
-const notify = createNotifier('nodes');
+const notify = createNotifier(getNodes.key);
 
 export { copyNode, createNode, deleteNode, getNodes, isFolder, updateNode };

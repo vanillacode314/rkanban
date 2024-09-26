@@ -110,91 +110,33 @@ export default function ProjectPage() {
 		});
 	});
 
-	createSubscription({
-		boards: {
-			create: ({ data }) => {
-				const board = { ...(data as TBoard), tasks: [] };
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						boards.push(board);
-					})
-				);
-				decryptWithUserKeys(board.title).then((title) =>
-					toast.info(`Another client created board: ${title}`)
-				);
-			},
-			delete: ({ id }) => {
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const index = boards.findIndex((board) => board.id === id);
-						if (-1 === index) return boards;
-						boards.splice(index, 1);
-					})
-				);
-				toast.info('Another client deleted board');
-			},
-			update: ({ data }) => {
-				const board = data as TBoard;
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const index = boards.findIndex((b) => b.id === board.id);
-						if (-1 === index) return boards;
-						boards[index] = { ...boards[index], ...board };
-					})
-				);
-				decryptWithUserKeys(board.title).then((title) =>
-					toast.info(`Another client updated board: ${title}`)
-				);
-			}
-		},
-		tasks: {
-			create: ({ data }) => {
-				const task = data as TTask;
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const board = boards.find((board) => board.id === task.boardId);
-						if (!board) return boards;
-						board.tasks.push(task);
-					})
-				);
-				decryptWithUserKeys(task.title).then((title) =>
-					toast.info(`Another client created task: ${title}`)
-				);
-			},
-			delete: ({ id }) => {
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const board = boards.find((board) => board.tasks.some((task) => task.id === id));
-						if (!board) return boards;
-						const taskIndex = board.tasks.findIndex((task) => task.id === id);
-						if (-1 === taskIndex) return boards;
-						board.tasks.splice(taskIndex, 1);
-					})
-				);
-				toast.info('Another client deleted a task');
-			},
-			update: ({ data }) => {
-				const task = data as TTask;
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						if (!boards) return boards;
-						const board = boards.find((board) => board.id === task.boardId);
-						if (!board) return boards;
-						const index = board.tasks.findIndex((t) => t.id === task.id);
-						if (-1 === index) return boards;
-						board.tasks[index] = task;
-					})
-				);
-				decryptWithUserKeys(task.title).then((title) =>
-					toast.info(`Another client update task: ${title}`)
-				);
+	const VALID_KEYS = [getBoards.key];
+	void createSubscription(async ({ invalidate, message }) => {
+		const keys = invalidate.filter((key) => VALID_KEYS.includes(key));
+		if (keys.length === 0) return;
+		const promises = [] as Promise<void>[];
+		for (const key of keys) {
+			promises.push(revalidate(key));
+		}
+		await Promise.all(promises);
+		const re = new RegExp(String.raw`encrypted:[^\s]+`);
+		const matches = message.match(re);
+		let decryptedString: string;
+		if (!matches) {
+			decryptedString = message;
+		} else {
+			const decryptedValues = await Promise.all(
+				matches.map(async (match) => {
+					const data = match.slice('encrypted:'.length);
+					return [match, await decryptWithUserKeys(data)];
+				})
+			);
+			decryptedString = message;
+			for (const [match, decrypted] of decryptedValues) {
+				decryptedString = decryptedString.replace(match, decrypted);
 			}
 		}
+		toast.info(decryptedString);
 	});
 
 	return (
@@ -271,6 +213,7 @@ const AnimatedBoardsList: ParentComponent<{
 	boards: Array<{ tasks: TTask[] } & TBoard>;
 	setBoards: Setter<Array<{ tasks: TTask[] } & TBoard> | undefined>;
 }> = (props) => {
+	const [appContext, _setAppContext] = useApp();
 	const resolved = resolveElements(
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
@@ -345,7 +288,7 @@ const AnimatedBoardsList: ParentComponent<{
 						})
 					);
 
-					const changedBoards = [] as Parameters<typeof moveBoards>[0];
+					const changedBoards = [] as Parameters<typeof moveBoards>[1];
 
 					for (const [index, board] of props.boards.entries()) {
 						if (index === board.index) continue;
@@ -356,7 +299,7 @@ const AnimatedBoardsList: ParentComponent<{
 					toast.promise(
 						async () => {
 							setIsDirty('project', true);
-							await moveBoards(changedBoards)
+							await moveBoards(appContext.id, changedBoards)
 								.then(() => revalidate(getBoards.key))
 								.finally(() => setIsDirty('project', false));
 						},
@@ -466,6 +409,7 @@ function ApplyChangesPopup(props: {
 	countdownDuration?: number;
 	reset: () => void;
 }) {
+	const [appContext, _setAppContext] = useApp();
 	const [count, setCount] = createSignal(0);
 	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
 	let animation: AnimationControls;
@@ -489,11 +433,14 @@ function ApplyChangesPopup(props: {
 				return data;
 			});
 			if (changedTasks.length === 0) return;
-			toast.promise(() => moveTasks(changedTasks).then(() => revalidate(getBoards.key)), {
-				error: 'Failed to apply changes',
-				loading: 'Applying changes...',
-				success: 'Changes applied'
-			});
+			toast.promise(
+				() => moveTasks(appContext.id, changedTasks).then(() => revalidate(getBoards.key)),
+				{
+					error: 'Failed to apply changes',
+					loading: 'Applying changes...',
+					success: 'Changes applied'
+				}
+			);
 		});
 	}
 

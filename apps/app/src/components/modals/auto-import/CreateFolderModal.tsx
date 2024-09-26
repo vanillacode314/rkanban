@@ -49,7 +49,7 @@ export default function CreateFolderModal() {
 				>
 					<input name="parentPath" type="hidden" value={appContext.path} />
 					<input name="id" type="hidden" value={nanoid()} />
-					<input name="publisherId" type="hidden" value={appContext.id} />
+					<input name="appId" type="hidden" value={appContext.id} />
 					<input name="isDirectory" type="hidden" value="true" />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vinxi dev",
+    "dev": "PORT=3001 vinxi dev",
     "build": "npm run test:once && npm run build:nocheck",
     "build:nocheck": "npm run build:solid && npm run build:sw",
     "build:solid": "TURSO_BUILDING=1 vinxi build",
