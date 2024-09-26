@@ -15,10 +15,11 @@
 		"rootDir": "./src",
 		"outDir": "./dist",
 		"paths": {
-			"~schema/*": ["./src/*"]
+			"~/*": ["./src/*"]
 		},
 		"declarationMap": true,
 		"declaration": true,
 		"emitDeclarationOnly": true
-	}
+	},
+  "include": ["src/**/*"]
 }
