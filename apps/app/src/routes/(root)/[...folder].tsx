@@ -1,5 +1,6 @@
 import { Key } from '@solid-primitives/keyed';
 import { A, createAsync, RouteDefinition, useAction, useSubmissions } from '@solidjs/router';
+import { TNode } from 'db/schema';
 import { Show } from 'solid-js';
 import { produce, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
@@ -20,7 +21,6 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
-import { TNode } from 'db/schema';
 import { copyNode, createNode, deleteNode, getNodes, updateNode } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
 import * as path from '~/utils/path';

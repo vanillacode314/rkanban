@@ -1,4 +1,5 @@
 import { action, useAction } from '@solidjs/router';
+import { boards, tasks, users } from 'db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
@@ -8,7 +9,6 @@ import { deleteCookie } from 'vinxi/http';
 import { default as BaseModal } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
-import { boards, tasks, users } from 'db/schema';
 import { getUser, verifyPassword } from '~/utils/auth.server';
 import {
 	deriveKey,

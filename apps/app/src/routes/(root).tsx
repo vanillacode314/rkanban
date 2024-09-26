@@ -2,6 +2,7 @@ import { ColorModeProvider, cookieStorageManagerSSR } from '@kobalte/core/color-
 import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
 import { createAsync, useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
+import { TNode } from 'db/schema';
 import { createEffect, For, JSXElement, Match, Show, Switch, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
@@ -13,7 +14,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/componen
 import { Toaster } from '~/components/ui/sonner';
 import { AppProvider, useApp } from '~/context/app';
 import { DirtyProvider } from '~/context/dirty';
-import { TNode } from 'db/schema';
 import { cn } from '~/lib/utils';
 import { getUser } from '~/utils/auth.server';
 import { localforage } from '~/utils/localforage';

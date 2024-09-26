@@ -8,6 +8,7 @@ import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { A, createAsync, revalidate, RouteDefinition } from '@solidjs/router';
+import { TBoard, TTask } from 'db/schema';
 import { produce } from 'immer';
 import { animate, AnimationControls, spring } from 'motion';
 import {
@@ -34,7 +35,6 @@ import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { TBoard, TTask } from 'db/schema';
 import { createBoard, getBoards, moveBoards } from '~/db/utils/boards';
 import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
@@ -58,6 +58,7 @@ export default function ProjectPage() {
 	const $boards = createAsync(() => getBoards(appContext.path));
 	const [boards, setBoards] = createWritableMemo(() => $boards.latest);
 	const hasBoards = () => boards() && boards()!.length > 0;
+
 	const boardsDirty = createMemo(() => {
 		const $boards = boards();
 		if ($boards === undefined) return false;
@@ -507,6 +508,7 @@ function ApplyChangesPopup(props: {
 
 	createEffect(() => {
 		if (props.boardsDirty) startCountdown();
+		else animation?.cancel();
 	});
 
 	return (

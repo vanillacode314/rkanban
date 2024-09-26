@@ -1,8 +1,8 @@
 import { action, cache } from '@solidjs/router';
-import { and, eq, gt, inArray, sql } from 'drizzle-orm';
+import { tasks, type TBoard, type TTask } from 'db/schema';
+import { and, count, eq, gt, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
-import { tasks, type TBoard, type TTask } from 'db/schema';
 import { checkUser } from '~/utils/auth.server';
 import { createNotifier } from '~/utils/publish';
 
@@ -26,6 +26,8 @@ const moveTasks = async (
 	if (inputs.length === 0) throw new Error('No tasks to move');
 	const ids = inputs.map((input) => input.id);
 
+	await db.transaction(async (tx) => {
+		await tx
 			.update(tasks)
 			.set({
 				boardId: sql.join(
@@ -56,6 +58,69 @@ const moveTasks = async (
 			.where(and(inArray(tasks.id, ids), eq(tasks.userId, user.id)));
 	});
 };
+
+const changeBoard = action(async (formData: FormData) => {
+	'use server';
+
+	const user = await checkUser();
+
+	const id = String(formData.get('id')).trim();
+	const boardId = String(formData.get('boardId')).trim();
+	const publisherId =
+		formData.has('publisherId') ? String(formData.get('publisherId')).trim() : undefined;
+
+	const [task] = await db
+		.select()
+		.from(tasks)
+		.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
+
+	const [newIndex, tasksToUpdate] = await Promise.all([
+		db
+			.select({ count: count() })
+			.from(tasks)
+			.where(and(eq(tasks.userId, user.id), eq(tasks.boardId, boardId)))
+			.then((results) => results[0].count),
+		db
+			.select({ id: tasks.id, title: tasks.title })
+			.from(tasks)
+			.where(
+				and(eq(tasks.userId, user.id), gt(tasks.index, task.index), eq(tasks.boardId, task.boardId))
+			)
+	]);
+
+	await db.transaction(async (tx) => {
+		await tx
+			.update(tasks)
+			.set({ boardId, index: newIndex })
+			.where(and(eq(tasks.id, id), eq(tasks.userId, user.id)));
+		await tx
+			.update(tasks)
+			.set({ index: sql`${tasks.index} + 10000 - 1` })
+			.where(
+				and(
+					inArray(
+						tasks.id,
+						tasksToUpdate.map((t) => t.id)
+					),
+					eq(tasks.userId, user.id)
+				)
+			);
+		await tx
+			.update(tasks)
+			.set({ index: sql`${tasks.index} - 10000` })
+			.where(
+				and(
+					inArray(
+						tasks.id,
+						tasksToUpdate.map((t) => t.id)
+					),
+					eq(tasks.userId, user.id)
+				)
+			);
+	});
+
+	void notify({ id, type: 'update' }, publisherId);
+}, 'change-board');
 
 const shiftTask = async (taskId: TTask['id'], direction: -1 | 1) => {
 	'use server';
@@ -170,4 +235,4 @@ const deleteTask = action(async (formData: FormData) => {
 
 const notify = createNotifier('tasks');
 
-export { createTask, deleteTask, getTasks, moveTasks, shiftTask, updateTask };
+export { changeBoard, createTask, deleteTask, getTasks, moveTasks, shiftTask, updateTask };

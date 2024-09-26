@@ -8,14 +8,14 @@ import {
 	extractClosestEdge
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { revalidate, useAction } from '@solidjs/router';
-import { Component, createSignal, onCleanup, onMount, Show } from 'solid-js';
+import { TBoard, TTask } from 'db/schema';
+import { Component, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { TBoard, TTask } from 'db/schema';
 import { getBoards } from '~/db/utils/boards';
-import { deleteTask, shiftTask } from '~/db/utils/tasks';
+import { changeBoard, deleteTask, shiftTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import invariant from '~/utils/tiny-invariant';
 
@@ -27,7 +27,11 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuPortal,
 	DropdownMenuShortcut,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
@@ -135,6 +139,7 @@ function TaskContextMenu(props: {
 	const allTasks = () => appContext.boards.find((board) => board.id === props.task.boardId)!.tasks;
 	const confirmModal = useConfirmModal();
 	const $deleteTask = useAction(deleteTask);
+	const $changeBoard = useAction(changeBoard);
 
 	return (
 		<div class={cn('flex-col', props.class)}>
@@ -186,6 +191,37 @@ function TaskContextMenu(props: {
 							<span class="i-heroicons:trash" />
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
+					<DropdownMenuSub overlap>
+						<DropdownMenuSubTrigger>
+							<span>Move to</span>
+						</DropdownMenuSubTrigger>
+						<DropdownMenuPortal>
+							<DropdownMenuSubContent>
+								<For each={appContext.boards.filter((board) => board.id !== props.task.boardId)}>
+									{(board) => (
+										<DropdownMenuItem
+											as="button"
+											class="w-full"
+											onClick={() => {
+												const formData = new FormData();
+												formData.set('id', props.task.id);
+												formData.set('boardId', board.id);
+												toast.promise(() => $changeBoard(formData), {
+													error: 'Error',
+													loading: 'Moving Task',
+													success: 'Moved Task'
+												});
+											}}
+										>
+											<Decrypt fallback value={board.title}>
+												{(title) => <>{title()}</>}
+											</Decrypt>
+										</DropdownMenuItem>
+									)}
+								</For>
+							</DropdownMenuSubContent>
+						</DropdownMenuPortal>
+					</DropdownMenuSub>
 					<Show when={props.index < allTasks().length - 1}>
 						<DropdownMenuItem
 							as="button"

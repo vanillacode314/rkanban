@@ -12,6 +12,7 @@ import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { revalidate, useAction } from '@solidjs/router';
+import { TBoard, TTask } from 'db/schema';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import { Component, createSignal, onCleanup, onMount, ParentComponent, Show } from 'solid-js';
@@ -19,7 +20,6 @@ import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { TBoard, TTask } from 'db/schema';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
 import { createTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';

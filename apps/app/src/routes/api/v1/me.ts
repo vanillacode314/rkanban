@@ -1,9 +1,9 @@
 import { json } from '@solidjs/router';
+import { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema } from 'db/schema';
 import { readValidatedBody } from 'vinxi/http';
 import { z } from 'zod';
 
 import { db } from '~/db';
-import { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema } from 'db/schema';
 import { getUser } from '~/utils/auth.server';
 
 export async function POST() {

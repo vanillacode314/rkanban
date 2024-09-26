@@ -8,6 +8,7 @@ import {
 	useSubmission
 } from '@solidjs/router';
 import bcrypt from 'bcrypt';
+import { forgotPasswordTokens, refreshTokens, users } from 'db/schema';
 import { eq } from 'drizzle-orm';
 import { createEffect, createSignal, Show, untrack } from 'solid-js';
 import { createStore } from 'solid-js/store';
@@ -29,7 +30,6 @@ import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-
 import { Toggle } from '~/components/ui/toggle';
 import { passwordSchema } from '~/consts/zod';
 import { db } from '~/db';
-import { forgotPasswordTokens, refreshTokens, users } from 'db/schema';
 import {
 	deriveKey,
 	encryptDataWithKey,

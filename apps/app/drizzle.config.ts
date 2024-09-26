@@ -1,16 +1,16 @@
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
-	schema: 'src/db/schema.ts',
+	dbCredentials: {
+		authToken: process.env.TURSO_AUTH_TOKEN!,
+		url: process.env.TURSO_CONNECTION_URL!
+	},
 	dialect: 'sqlite',
+	driver: 'turso',
 	migrations: {
 		prefix: 'supabase'
 	},
-	driver: 'turso',
-	dbCredentials: {
-		url: process.env.TURSO_CONNECTION_URL!,
-		authToken: process.env.TURSO_AUTH_TOKEN!
-	},
-	verbose: true,
-	strict: true
+	schema: '../../packages/db/src/lib/schema.ts',
+	strict: true,
+	verbose: true
 });

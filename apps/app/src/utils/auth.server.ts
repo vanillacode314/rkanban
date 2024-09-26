@@ -1,5 +1,6 @@
 import { action, cache, redirect, reload } from '@solidjs/router';
 import bcrypt from 'bcrypt';
+import { refreshTokens, TUser, users, verificationTokens } from 'db/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 import { nanoid } from 'nanoid';
@@ -8,7 +9,6 @@ import { deleteCookie, getCookie, setCookie } from 'vinxi/http';
 
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS } from '~/consts';
 import { db } from '~/db';
-import { refreshTokens, TUser, users, verificationTokens } from 'db/schema';
 
 import { decryptDataWithKey, encryptDataWithKey, importKey } from './crypto';
 import env from './env/server';

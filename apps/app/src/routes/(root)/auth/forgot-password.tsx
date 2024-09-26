@@ -1,11 +1,11 @@
 import { createAsync, Navigate, useSearchParams } from '@solidjs/router';
+import { forgotPasswordTokens, users } from 'db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getRequestEvent } from 'solid-js/web';
 import { z } from 'zod';
 
 import { db } from '~/db';
-import { forgotPasswordTokens, users } from 'db/schema';
 import env from '~/utils/env/server';
 import { resend } from '~/utils/resend.server';
 
