@@ -19,7 +19,9 @@ const ErrorPage: Component = () => {
 		if ('serviceWorker' in navigator) {
 			const registration = await navigator.serviceWorker.getRegistration();
 			if (!registration) return;
-			await listenForWaitingServiceWorker(registration);
+			await listenForWaitingServiceWorker(registration).catch(() =>
+				console.log('Service Worker first install')
+			);
 			setUpdateAvailable(true);
 		}
 	});

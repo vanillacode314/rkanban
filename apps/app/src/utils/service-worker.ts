@@ -1,8 +1,9 @@
 function listenForWaitingServiceWorker(registration: ServiceWorkerRegistration): Promise<void> {
-	return new Promise<void>((resolve) => {
+	return new Promise<void>((resolve, reject) => {
 		function awaitStateChange() {
 			registration.installing?.addEventListener('statechange', function () {
-				if (this.state === 'installed') resolve();
+				if (registration.waiting && navigator.serviceWorker.controller) resolve();
+				else reject();
 			});
 		}
 		if (registration.waiting) return resolve();
