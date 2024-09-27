@@ -48,6 +48,8 @@ const handlers = {
 				peer.send({ error: ['Invalid token'], success: false });
 				return;
 			}
+			if (messageUser === undefined) return;
+			if (user === undefined) return;
 			if (messageUser.id !== user.id) return;
 			const result = publishSchema.safeParse(event.data);
 

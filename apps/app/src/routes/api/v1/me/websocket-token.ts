@@ -8,7 +8,7 @@ import { ms } from '~/utils/ms';
 export async function GET() {
 	const user = await checkUser();
 
-	const token = jwt.sign({ userId: user.id }, env.AUTH_SECRET, {
+	const token = jwt.sign({ id: user.id }, env.AUTH_SECRET, {
 		expiresIn: ms('1 day') / 1000
 	});
 
