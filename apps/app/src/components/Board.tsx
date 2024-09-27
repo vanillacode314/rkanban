@@ -323,8 +323,6 @@ function BoardContextMenu(props: {
 					</Show>
 					<Show when={props.index > 0}>
 						<DropdownMenuItem
-							as="button"
-							class="w-full"
 							onSelect={() => {
 								toast.promise(
 									async () => {
