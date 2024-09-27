@@ -16,28 +16,26 @@ function promptUserToRefresh(registration: ServiceWorkerRegistration) {
 }
 
 if ('serviceWorker' in navigator) {
-	let refreshing: boolean;
-	navigator.serviceWorker.addEventListener('controllerchange', function () {
-		if (refreshing) return;
-		refreshing = true;
-		window.location.reload();
-	});
-	window.addEventListener('load', () => {
-		navigator.serviceWorker
-			.register('/sw.js', { scope: '/' })
-			.then(async (registration) => {
-				console.log('SW registered: ', registration);
-				if (!registration.active) {
-					await listenForWaitingServiceWorker(registration);
-					registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-					return;
-				}
-				await listenForWaitingServiceWorker(registration);
-				promptUserToRefresh(registration);
-			})
-			.catch((registrationError) => {
-				console.log('SW registration failed: ', registrationError);
-			});
+	window.addEventListener('load', async () => {
+		try {
+			const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+			console.log('SW registered: ', registration);
+			await listenForWaitingServiceWorker(registration).then(
+				() => {
+					promptUserToRefresh(registration);
+
+					let refreshing: boolean;
+					navigator.serviceWorker.addEventListener('controllerchange', function () {
+						if (refreshing) return;
+						refreshing = true;
+						window.location.reload();
+					});
+				},
+				() => console.log('Service Worker first install')
+			);
+		} catch (error) {
+			console.log('SW registration failed: ', error);
+		}
 	});
 }
 

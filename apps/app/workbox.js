@@ -2,6 +2,8 @@ import { generateSW } from 'workbox-build';
 
 const BASE = process.env.NETLIFY ? 'dist' : '.output/public';
 generateSW({
+	cacheId: 'rkanban',
+	cleanupOutdatedCaches: true,
 	clientsClaim: true,
 	globDirectory: BASE,
 	globIgnores: ['_server/**'],
