@@ -334,7 +334,7 @@ function FolderNode(props: { node: TNode }) {
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							setAppContext('currentNode', props.node);
 							setRenameFolderModalOpen(true);
 						}}
@@ -345,7 +345,7 @@ function FolderNode(props: { node: TNode }) {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							if (
 								appContext.clipboard.some(
 									(item) => item.type === 'id/node' && item.data === props.node.id
@@ -374,7 +374,7 @@ function FolderNode(props: { node: TNode }) {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							if (
 								appContext.clipboard.some(
 									(item) => item.type === 'id/node' && item.data === props.node.id
@@ -403,7 +403,7 @@ function FolderNode(props: { node: TNode }) {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							confirmModal.open({
 								message: `Are you sure you want to delete ${props.node.name}?`,
 								onYes() {
@@ -471,7 +471,7 @@ function FileNode(props: { node: TNode }) {
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							setAppContext('currentNode', props.node);
 							setRenameFileModalOpen(true);
 						}}
@@ -482,7 +482,7 @@ function FileNode(props: { node: TNode }) {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							setAppContext(
 								'clipboard',
 								produce((clipboard) => {
@@ -505,7 +505,7 @@ function FileNode(props: { node: TNode }) {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							setAppContext(
 								'clipboard',
 								produce((clipboard) => {
@@ -528,7 +528,7 @@ function FileNode(props: { node: TNode }) {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						onClick={() => {
+						onSelect={() => {
 							confirmModal.open({
 								message: `Are you sure you want to delete ${props.node.name}?`,
 								onYes: () => {

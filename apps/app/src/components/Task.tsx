@@ -154,9 +154,7 @@ function TaskContextMenu(props: {
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
-						as="button"
-						class="w-full"
-						onClick={() => {
+						onSelect={() => {
 							setAppContext('currentTask', props.task);
 							setUpdateTaskModalOpen(true);
 						}}
@@ -167,9 +165,7 @@ function TaskContextMenu(props: {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						as="button"
-						class="w-full"
-						onClick={() => {
+						onSelect={() => {
 							confirmModal.open({
 								message: 'Are you sure you want to delete this task?',
 								onYes: async () => {
@@ -200,9 +196,7 @@ function TaskContextMenu(props: {
 								<For each={appContext.boards.filter((board) => board.id !== props.task.boardId)}>
 									{(board) => (
 										<DropdownMenuItem
-											as="button"
-											class="w-full"
-											onClick={() => {
+											onSelect={() => {
 												const formData = new FormData();
 												formData.set('id', props.task.id);
 												formData.set('boardId', board.id);
@@ -225,9 +219,7 @@ function TaskContextMenu(props: {
 					</DropdownMenuSub>
 					<Show when={props.index < allTasks().length - 1}>
 						<DropdownMenuItem
-							as="button"
-							class="w-full"
-							onClick={() => {
+							onSelect={() => {
 								toast.promise(
 									async () => {
 										await shiftTask(appContext.id, props.task.id, 1);
@@ -249,9 +241,7 @@ function TaskContextMenu(props: {
 					</Show>
 					<Show when={props.index > 0}>
 						<DropdownMenuItem
-							as="button"
-							class="w-full"
-							onClick={() => {
+							onSelect={() => {
 								toast.promise(
 									async () => {
 										await shiftTask(appContext.id, props.task.id, -1);
