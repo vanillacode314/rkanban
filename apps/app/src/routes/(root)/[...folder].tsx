@@ -314,7 +314,7 @@ function FolderNode(props: { node: TNode }) {
 			ref={ref}
 		>
 			<div class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
-				<span class="i-heroicons:folder text-lg" />
+				<span class="i-heroicons:folder cursor-move text-lg" />
 				<A
 					class="flex items-center gap-2 overflow-hidden"
 					href={path.join(appContext.path, props.node.name)}
@@ -451,7 +451,7 @@ function FileNode(props: { node: TNode }) {
 			ref={ref}
 		>
 			<div class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 overflow-hidden px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
-				<span class="i-heroicons:document text-lg" />
+				<span class="i-heroicons:document cursor-move text-lg" />
 				<A
 					class="flex items-center gap-2 overflow-hidden"
 					href={path.join(appContext.path, props.node.name)}
