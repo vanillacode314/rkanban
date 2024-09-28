@@ -1,8 +1,9 @@
 import { action, cache } from '@solidjs/router';
-import { boards, nodes, tasks, TBoard, TNode, TTask } from 'db/schema';
+import { boards, nodes, nodesSchema, tasks, TBoard, TNode, TTask } from 'db/schema';
 import { and, eq, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getCookie } from 'vinxi/http';
+import { z } from 'zod';
 
 import { RESERVED_PATHS } from '~/consts';
 import { uniqBy } from '~/utils/array';
@@ -69,29 +70,52 @@ const createNode = action(async (formData: FormData) => {
 	return $node;
 }, 'create-node');
 
+const updateInputSchema = nodesSchema
+	.pick({
+		id: true,
+		name: true,
+		parentId: true
+	})
+	.extend({
+		appId: z.string({ required_error: 'appId is required' }),
+		name: z.string().optional(),
+		parentId: z.string().optional()
+	})
+	.refine(
+		(value) => {
+			if (value.name === undefined && value.parentId === undefined) {
+				return false;
+			}
+			return true;
+		},
+		{
+			message: 'name or parentId is required'
+		}
+	);
 const updateNode = action(async (formData: FormData) => {
 	'use server';
 
 	const user = await checkUser();
 
-	const id = String(formData.get('id')).trim();
-	const name = String(formData.get('name')).trim();
-	const parentId = String(formData.get('parentId')).trim();
-	const appId = String(formData.get('appId'));
-	let { path: fullPath } = await db.get<{ path: string }>(
-		sql.raw(GET_PATH_BY_NODE_ID_QUERY(id, user.id))
-	);
-	fullPath = path.join(fullPath, '..', name);
-	if (RESERVED_PATHS.includes(fullPath)) {
-		throw new Error(`custom:/${name} is reserved`);
+	const result = updateInputSchema.safeParse(Object.fromEntries(formData.entries()));
+	if (!result.success) {
+		throw new Error(result.error.errors[0].message);
+	}
+	const { appId, id, name } = result.data;
+
+	if (name) {
+		let { path: fullPath } = await db.get<{ path: string }>(
+			sql.raw(GET_PATH_BY_NODE_ID_QUERY(id, user.id))
+		);
+		fullPath = path.join(fullPath, '..', name);
+		if (RESERVED_PATHS.includes(fullPath)) {
+			throw new Error(`custom:/${name} is reserved`);
+		}
 	}
 
 	const [$node] = await db
 		.update(nodes)
-		.set({
-			name,
-			parentId
-		})
+		.set(result.data)
 		.where(and(eq(nodes.id, id), eq(nodes.userId, user.id)))
 		.returning();
 

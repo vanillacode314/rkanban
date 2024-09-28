@@ -1,5 +1,5 @@
-import { useAction, useSubmission } from '@solidjs/router';
-import { createEffect, createSignal, untrack } from 'solid-js';
+import { useAction } from '@solidjs/router';
+import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import Decrypt from '~/components/Decrypt';

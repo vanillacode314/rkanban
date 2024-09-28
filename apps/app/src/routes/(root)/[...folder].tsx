@@ -1,3 +1,9 @@
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import {
+	draggable,
+	dropTargetForElements,
+	monitorForElements
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
 import {
 	A,
@@ -8,7 +14,7 @@ import {
 	useSubmissions
 } from '@solidjs/router';
 import { TNode } from 'db/schema';
-import { Show } from 'solid-js';
+import { createSignal, onCleanup, onMount, Show } from 'solid-js';
 import { produce, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
@@ -138,6 +144,35 @@ export default function FolderPage() {
 				}
 			);
 	}
+
+	onMount(() => {
+		const cleanup = combine(
+			monitorForElements({
+				canMonitor({ source }) {
+					return source.data.type === 'node';
+				},
+				onDrop({ location, source }) {
+					const destination = location.current.dropTargets[0];
+					if (!destination) return;
+					if (!(destination.data.type === 'node' && source.data.type === 'node')) return;
+					if (typeof destination.data.id !== 'string') return;
+					if (typeof source.data.id !== 'string') return;
+					const parentId = destination.data.id;
+					const formData = new FormData();
+					formData.set('id', source.data.id);
+					formData.set('parentId', parentId);
+					formData.set('appId', appContext.id);
+					toast.promise(() => $updateNode(formData), {
+						error: 'Error',
+						loading: 'Moving...',
+						success: 'Moved Successfully'
+					});
+				}
+			})
+		);
+		onCleanup(cleanup);
+	});
+
 	return (
 		<Show
 			fallback={
@@ -214,59 +249,23 @@ export default function FolderPage() {
 				>
 					<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 						<Show when={currentNode().parentId !== null}>
-							<Button
-								as={A}
-								class="flex items-center justify-start gap-2"
-								href={path.join(appContext.path, '..')}
-								variant="outline"
-							>
-								<span class="i-heroicons:folder text-lg" />
-								<span>..</span>
-							</Button>
+							<FolderNode
+								node={{
+									createdAt: new Date(),
+									id: currentNode().parentId!,
+									isDirectory: true,
+									name: '..',
+									parentId: '__parent__',
+									updatedAt: new Date(),
+									userId: currentNode().userId
+								}}
+							/>
 						</Show>
 						<Key by="id" each={folders()}>
-							{(node) => (
-								<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
-									<A
-										class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-										href={path.join(appContext.path, node().name)}
-									>
-										<span class="i-heroicons:folder text-lg" />
-										<span class="flex items-center gap-2 overflow-hidden">
-											<span
-												class={cn(
-													'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-													node().userId === 'pending' ? 'inline-block' : '!hidden'
-												)}
-											/>
-											<span class="truncate">{node().name}</span>
-										</span>
-									</A>
-									<FolderDropdownMenu node={node()} />
-								</div>
-							)}
+							{(node) => <FolderNode node={node()} />}
 						</Key>
 						<Key by="id" each={files()}>
-							{(node) => (
-								<div class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input">
-									<A
-										class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 overflow-hidden px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-										href={path.join(appContext.path, node().name)}
-									>
-										<span class="i-heroicons:document text-lg" />
-										<span class="flex items-center gap-2 overflow-hidden">
-											<span
-												class={cn(
-													'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
-													node().userId === 'pending' ? 'inline-block' : '!hidden'
-												)}
-											/>
-											<span class="truncate">{node().name}</span>
-										</span>
-									</A>
-									<FileDropdownMenu node={node()} />
-								</div>
-							)}
+							{(node) => <FileNode node={node()} />}
 						</Key>
 					</div>
 				</Show>
@@ -275,206 +274,284 @@ export default function FolderPage() {
 	);
 }
 
-function FolderDropdownMenu(props: { node: TNode }) {
+function FolderNode(props: { node: TNode }) {
 	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 	const confirmModal = useConfirmModal();
 
+	let ref!: HTMLDivElement;
+
+	const [dragState, setDragState] = createSignal<'dragging-over' | null>(null);
+
+	onMount(() => {
+		const cleanup = combine(
+			draggable({
+				element: ref,
+				getInitialData: () => ({ id: props.node.id, node: props.node, type: 'node' })
+			}),
+			dropTargetForElements({
+				canDrop({ source }) {
+					return source.data.type === 'node' && source.data.id !== props.node.id;
+				},
+				element: ref,
+				getData: () => ({ id: props.node.id, type: 'node' }),
+				onDragEnter: () => setDragState('dragging-over'),
+				onDragLeave: () => setDragState(null),
+				onDrop: () => {
+					setDragState(null);
+				}
+			})
+		);
+		onCleanup(cleanup);
+	});
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger as={Button<'button'>} class="rounded-none" size="icon" variant="ghost">
-				<span class="i-heroicons:ellipsis-vertical text-lg" />
-			</DropdownMenuTrigger>
-			<DropdownMenuContent class="w-48">
-				<DropdownMenuItem
-					onClick={() => {
-						setAppContext('currentNode', props.node);
-						setRenameFolderModalOpen(true);
-					}}
+		<div
+			class={cn(
+				'grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border',
+				dragState() === 'dragging-over' ? 'border-blue-300' : 'border-input'
+			)}
+			ref={ref}
+		>
+			<div class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+				<span class="i-heroicons:folder text-lg" />
+				<A
+					class="flex items-center gap-2 overflow-hidden"
+					href={path.join(appContext.path, props.node.name)}
 				>
-					<span>Rename</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:pencil-solid" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={() => {
-						if (
-							appContext.clipboard.some(
-								(item) => item.type === 'id/node' && item.data === props.node.id
+					<span
+						class={cn(
+							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
+							props.node.userId === 'pending' ? 'inline-block' : '!hidden'
+						)}
+					/>
+					<span class="truncate">{props.node.name}</span>
+				</A>
+			</div>
+			<DropdownMenu>
+				<DropdownMenuTrigger as={Button<'button'>} class="rounded-none" size="icon" variant="ghost">
+					<span class="i-heroicons:ellipsis-vertical text-lg" />
+				</DropdownMenuTrigger>
+				<DropdownMenuContent class="w-48">
+					<DropdownMenuItem
+						onClick={() => {
+							setAppContext('currentNode', props.node);
+							setRenameFolderModalOpen(true);
+						}}
+					>
+						<span>Rename</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:pencil-solid" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							if (
+								appContext.clipboard.some(
+									(item) => item.type === 'id/node' && item.data === props.node.id
+								)
 							)
-						)
-							return;
-						setAppContext(
-							'clipboard',
-							produce((clipboard) => {
-								clipboard.push({
-									data: props.node.id,
-									meta: {
-										node: props.node,
-										path: path.join('/home', appContext.path, props.node.name)
-									},
-									mode: 'copy',
-									type: 'id/node'
-								});
-							})
-						);
-					}}
-				>
-					<span>Copy</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:document-duplicate" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={() => {
-						if (
-							appContext.clipboard.some(
-								(item) => item.type === 'id/node' && item.data === props.node.id
+								return;
+							setAppContext(
+								'clipboard',
+								produce((clipboard) => {
+									clipboard.push({
+										data: props.node.id,
+										meta: {
+											node: props.node,
+											path: path.join('/home', appContext.path, props.node.name)
+										},
+										mode: 'copy',
+										type: 'id/node'
+									});
+								})
+							);
+						}}
+					>
+						<span>Copy</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:document-duplicate" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							if (
+								appContext.clipboard.some(
+									(item) => item.type === 'id/node' && item.data === props.node.id
+								)
 							)
-						)
-							return;
-						setAppContext(
-							'clipboard',
-							produce((clipboard) => {
-								clipboard.push({
-									data: props.node.id,
-									meta: {
-										node: props.node,
-										path: path.join('/home', appContext.path, props.node.name)
-									},
-									mode: 'move',
-									type: 'id/node'
-								});
-							})
-						);
-					}}
-				>
-					<span>Cut</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:scissors" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={() => {
-						confirmModal.open({
-							message: `Are you sure you want to delete ${props.node.name}?`,
-							onYes() {
-								const formData = new FormData();
-								formData.set('id', props.node.id);
-								formData.set('appId', appContext.id);
-								toast.promise(() => $deleteNode(formData), {
-									error: 'Error',
-									loading: 'Deleting Folder',
-									success: 'Deleted Folder'
-								});
-							},
-							title: 'Delete Folder'
-						});
-					}}
-				>
-					<span>Delete</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:trash" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+								return;
+							setAppContext(
+								'clipboard',
+								produce((clipboard) => {
+									clipboard.push({
+										data: props.node.id,
+										meta: {
+											node: props.node,
+											path: path.join('/home', appContext.path, props.node.name)
+										},
+										mode: 'move',
+										type: 'id/node'
+									});
+								})
+							);
+						}}
+					>
+						<span>Cut</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:scissors" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							confirmModal.open({
+								message: `Are you sure you want to delete ${props.node.name}?`,
+								onYes() {
+									const formData = new FormData();
+									formData.set('id', props.node.id);
+									formData.set('appId', appContext.id);
+									toast.promise(() => $deleteNode(formData), {
+										error: 'Error',
+										loading: 'Deleting Folder',
+										success: 'Deleted Folder'
+									});
+								},
+								title: 'Delete Folder'
+							});
+						}}
+					>
+						<span>Delete</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:trash" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
 	);
 }
 
-function FileDropdownMenu(props: { node: TNode }) {
+function FileNode(props: { node: TNode }) {
 	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 	const confirmModal = useConfirmModal();
 
+	let ref!: HTMLDivElement;
+
+	onMount(() => {
+		const cleanup = combine(
+			draggable({ element: ref, getInitialData: () => ({ id: props.node.id, type: 'node' }) })
+		);
+		onCleanup(cleanup);
+	});
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger as={Button<'button'>} class="rounded-none" size="icon" variant="ghost">
-				<span class="i-heroicons:ellipsis-vertical text-lg" />
-			</DropdownMenuTrigger>
-			<DropdownMenuContent class="w-48">
-				<DropdownMenuItem
-					onClick={() => {
-						setAppContext('currentNode', props.node);
-						setRenameFileModalOpen(true);
-					}}
+		<div
+			class="grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border border-input"
+			ref={ref}
+		>
+			<div class="grid h-10 grid-cols-[auto_1fr] items-center justify-start gap-2 overflow-hidden px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+				<span class="i-heroicons:document text-lg" />
+				<A
+					class="flex items-center gap-2 overflow-hidden"
+					href={path.join(appContext.path, props.node.name)}
 				>
-					<span>Rename</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:pencil-solid" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={() => {
-						setAppContext(
-							'clipboard',
-							produce((clipboard) => {
-								clipboard.push({
-									data: props.node.id,
-									meta: {
-										node: props.node,
-										path: path.join('/home', appContext.path, props.node.name)
-									},
-									mode: 'copy',
-									type: 'id/node'
-								});
-							})
-						);
-					}}
-				>
-					<span>Copy</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:document-duplicate" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={() => {
-						setAppContext(
-							'clipboard',
-							produce((clipboard) => {
-								clipboard.push({
-									data: props.node.id,
-									meta: {
-										node: props.node,
-										path: path.join('/home', appContext.path, props.node.name)
-									},
-									mode: 'move',
-									type: 'id/node'
-								});
-							})
-						);
-					}}
-				>
-					<span>Cut</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:scissors" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-				<DropdownMenuItem
-					onClick={() => {
-						confirmModal.open({
-							message: `Are you sure you want to delete ${props.node.name}?`,
-							onYes: () => {
-								const formData = new FormData();
-								formData.set('id', props.node.id);
-								formData.set('appId', appContext.id);
-								toast.promise(() => $deleteNode(formData), {
-									error: 'Error',
-									loading: 'Deleting File',
-									success: 'Deleted File'
-								});
-							},
-							title: 'Delete File'
-						});
-					}}
-				>
-					<span>Delete</span>
-					<DropdownMenuShortcut class="text-base">
-						<span class="i-heroicons:trash" />
-					</DropdownMenuShortcut>
-				</DropdownMenuItem>
-			</DropdownMenuContent>
-		</DropdownMenu>
+					<span
+						class={cn(
+							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
+							props.node.userId === 'pending' ? 'inline-block' : '!hidden'
+						)}
+					/>
+					<span class="truncate">{props.node.name}</span>
+				</A>
+			</div>
+			<DropdownMenu>
+				<DropdownMenuTrigger as={Button<'button'>} class="rounded-none" size="icon" variant="ghost">
+					<span class="i-heroicons:ellipsis-vertical text-lg" />
+				</DropdownMenuTrigger>
+				<DropdownMenuContent class="w-48">
+					<DropdownMenuItem
+						onClick={() => {
+							setAppContext('currentNode', props.node);
+							setRenameFileModalOpen(true);
+						}}
+					>
+						<span>Rename</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:pencil-solid" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							setAppContext(
+								'clipboard',
+								produce((clipboard) => {
+									clipboard.push({
+										data: props.node.id,
+										meta: {
+											node: props.node,
+											path: path.join('/home', appContext.path, props.node.name)
+										},
+										mode: 'copy',
+										type: 'id/node'
+									});
+								})
+							);
+						}}
+					>
+						<span>Copy</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:document-duplicate" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							setAppContext(
+								'clipboard',
+								produce((clipboard) => {
+									clipboard.push({
+										data: props.node.id,
+										meta: {
+											node: props.node,
+											path: path.join('/home', appContext.path, props.node.name)
+										},
+										mode: 'move',
+										type: 'id/node'
+									});
+								})
+							);
+						}}
+					>
+						<span>Cut</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:scissors" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onClick={() => {
+							confirmModal.open({
+								message: `Are you sure you want to delete ${props.node.name}?`,
+								onYes: () => {
+									const formData = new FormData();
+									formData.set('id', props.node.id);
+									formData.set('appId', appContext.id);
+									toast.promise(() => $deleteNode(formData), {
+										error: 'Error',
+										loading: 'Deleting File',
+										success: 'Deleted File'
+									});
+								},
+								title: 'Delete File'
+							});
+						}}
+					>
+						<span>Delete</span>
+						<DropdownMenuShortcut class="text-base">
+							<span class="i-heroicons:trash" />
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
 	);
 }
