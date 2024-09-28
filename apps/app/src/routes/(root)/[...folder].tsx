@@ -101,6 +101,43 @@ export default function FolderPage() {
 		toast.info(decryptedString);
 	});
 
+	function paste() {
+		const items = structuredClone(unwrap(nodesInClipboard()));
+		for (const [index, item] of items.toReversed().entries()) {
+			const { node, path } = item.meta as { node: TNode; path: string };
+			if (node.id === currentNode().id && item.mode === 'move') {
+				toast.info(`Skipping ${path} because it is the current folder`);
+				items.splice(items.length - index - 1, 1);
+			} else if (node.parentId === currentNode().id && item.mode === 'move') {
+				toast.info(`Skipping ${path} because it is already in the current folder`);
+				items.splice(items.length - index - 1, 1);
+			}
+		}
+		if (items.length > 0)
+			toast.promise(
+				async () => {
+					await Promise.all(
+						items.map((item) => {
+							const formData = new FormData();
+							formData.set('id', item.data);
+							const { node } = item.meta as { node: TNode; path: string };
+							formData.set('parentId', currentNode().id);
+							formData.set('appId', appContext.id);
+							if (item.mode === 'move') formData.set('name', node.name);
+							return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
+						})
+					);
+					setAppContext('clipboard', ($items) =>
+						$items.filter(($item) => !items.some((item) => $item.data === item.data))
+					);
+				},
+				{
+					error: 'Paste Failed',
+					loading: 'Pasting...',
+					success: 'Pasted'
+				}
+			);
+	}
 	return (
 		<Show
 			fallback={
@@ -116,47 +153,7 @@ export default function FolderPage() {
 			<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
 				<div class="flex justify-end gap-4 empty:hidden">
 					<Show when={nodesInClipboard().length > 0}>
-						<Button
-							class="flex items-center gap-2"
-							onClick={() => {
-								const items = structuredClone(unwrap(nodesInClipboard()));
-								for (const [index, item] of items.toReversed().entries()) {
-									const { node, path } = item.meta as { node: TNode; path: string };
-									if (node.id === currentNode().id && item.mode === 'move') {
-										toast.info(`Skipping ${path} because it is the current folder`);
-										items.splice(items.length - index - 1, 1);
-									} else if (node.parentId === currentNode().id && item.mode === 'move') {
-										toast.info(`Skipping ${path} because it is already in the current folder`);
-										items.splice(items.length - index - 1, 1);
-									}
-								}
-								if (items.length > 0)
-									toast.promise(
-										async () => {
-											await Promise.all(
-												items.map((item) => {
-													const formData = new FormData();
-													formData.set('id', item.data);
-													const { node } = item.meta as { node: TNode; path: string };
-													formData.set('parentId', currentNode().id);
-													formData.set('appId', appContext.id);
-													if (item.mode === 'move') formData.set('name', node.name);
-													return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
-												})
-											);
-											setAppContext('clipboard', ($items) =>
-												$items.filter(($item) => !items.some((item) => $item.data === item.data))
-											);
-										},
-										{
-											error: 'Paste Failed',
-											loading: 'Pasting...',
-											success: 'Pasted'
-										}
-									);
-							}}
-							variant="secondary"
-						>
+						<Button class="flex items-center gap-2" onClick={paste} variant="secondary">
 							<span class="i-heroicons:clipboard text-lg" />
 							<span>Paste</span>
 						</Button>
