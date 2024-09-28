@@ -201,7 +201,7 @@ export default function ProjectPage() {
 								/>
 							)}
 						</Key>
-						<SkeletonBoard class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start" />
+						<SkeletonBoard class="hidden shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
 					</AnimatedBoardsList>
 				</Show>
 			</div>
