@@ -266,9 +266,7 @@ function BoardContextMenu(props: {
 				</DropdownMenuTrigger>
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
-						as="button"
-						class="w-full"
-						onClick={() => {
+						onSelect={() => {
 							setAppContext('currentBoard', props.board);
 							setUpdateBoardModalOpen(true);
 						}}
@@ -279,9 +277,7 @@ function BoardContextMenu(props: {
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
 					<DropdownMenuItem
-						as="button"
-						class="w-full"
-						onClick={() => {
+						onSelect={() => {
 							confirmModal.open({
 								message: 'Are you sure you want to delete this board and all its tasks?',
 								onYes: async () => {
@@ -305,9 +301,7 @@ function BoardContextMenu(props: {
 					</DropdownMenuItem>
 					<Show when={props.index < appContext.boards.length - 1}>
 						<DropdownMenuItem
-							as="button"
-							class="w-full"
-							onClick={() => {
+							onSelect={() => {
 								toast.promise(
 									async () => {
 										await shiftBoard(appContext.id, props.board.id, 1);
@@ -331,7 +325,7 @@ function BoardContextMenu(props: {
 						<DropdownMenuItem
 							as="button"
 							class="w-full"
-							onClick={() => {
+							onSelect={() => {
 								toast.promise(
 									async () => {
 										await shiftBoard(appContext.id, props.board.id, -1);
