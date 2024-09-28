@@ -209,6 +209,7 @@ const AnimatedTaskList: ParentComponent = (props) => {
 			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
+					el.scrollIntoView({ behavior: 'smooth' });
 					animate(el, { opacity: [0, 1], x: ['-100%', 0] }, { easing: spring() });
 				});
 			}
