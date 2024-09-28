@@ -36,6 +36,10 @@
       ]
     },
     "format": {},
-    "lint": {}
+    "lint": {},
+    "test": {
+      "cache": false,
+      "persistent": true
+    }
   }
 }
