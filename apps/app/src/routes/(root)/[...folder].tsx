@@ -8,7 +8,7 @@ import { Key } from '@solid-primitives/keyed';
 import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, createAsync, RouteDefinition, useAction } from '@solidjs/router';
+import { A, createAsync, RouteDefinition, useAction, useNavigate } from '@solidjs/router';
 import { TNode } from 'db/schema';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
@@ -164,13 +164,14 @@ export default function FolderPage() {
 
 function Node(props: {
 	class?: string;
-	dragHandleRef: HTMLDivElement;
+	dragHandleRef: HTMLButtonElement;
 	dropdownMenu: JSXElement;
 	icon: string;
 	node: TNode;
 	ref: HTMLDivElement;
 }) {
 	const [appContext, _setAppContext] = useApp();
+	const navigate = useNavigate();
 
 	return (
 		<div
@@ -178,9 +179,18 @@ function Node(props: {
 			ref={props.ref}
 		>
 			<div class="grid grid-cols-[auto_1fr] text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
-				<div class="grid cursor-move place-content-center py-2 pl-4 pr-2" ref={props.dragHandleRef}>
+				<button
+					class="grid cursor-move place-content-center py-2 pl-4 pr-2"
+					data-href={path.join(appContext.path, props.node.name)}
+					onClick={(event) => {
+						const target = event.currentTarget;
+						navigate(target.dataset.href!);
+					}}
+					ref={props.dragHandleRef}
+					role="link"
+				>
 					<span class={cn('text-lg', props.icon)} />
-				</div>
+				</button>
 				<A
 					class="flex items-center gap-2 overflow-hidden py-2"
 					href={path.join(appContext.path, props.node.name)}
@@ -205,7 +215,7 @@ function FolderNode(props: { node: TNode }) {
 	const confirmModal = useConfirmModal();
 
 	let ref!: HTMLDivElement;
-	let dragHandleRef!: HTMLDivElement;
+	let dragHandleRef!: HTMLButtonElement;
 
 	const [dragState, setDragState] = createSignal<'dragging-over' | null>(null);
 
@@ -355,7 +365,7 @@ function FileNode(props: { node: TNode }) {
 	const confirmModal = useConfirmModal();
 
 	let ref!: HTMLDivElement;
-	let dragHandleRef!: HTMLDivElement;
+	let dragHandleRef!: HTMLButtonElement;
 
 	onMount(() => {
 		const cleanup = combine(
