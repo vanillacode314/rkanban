@@ -13,22 +13,15 @@ function onSubmission<TInput extends unknown[], TOutput, TMemo>(
 			memo: NoInfer<TMemo> | undefined
 		) => MaybePromise<void>;
 	} = {},
-	{
-		always = false,
-		predicate = () => true
-	}: {
-		always?: boolean;
-		predicate?: (input: NoInfer<TInput>) => boolean;
-	} = {}
+	{ predicate = () => false }: { predicate?: (input: NoInfer<TInput>) => boolean } = {}
 ) {
 	const submissions = useSubmissions(action);
 	let dispatched = false;
 
 	createEffect(async () => {
 		for (const submission of submissions) {
-			if (!dispatched && !always) return;
+			if (!predicate(submission.input!) && !dispatched) return;
 			if (resolved.has(submission)) continue;
-			if (!predicate(submission.input!)) return;
 			if (!memoMap.has(submission)) {
 				memoMap.set(submission, new Map());
 			}

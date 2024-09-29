@@ -164,7 +164,7 @@ export default function SignUpPage() {
 				toast.success('Account created', { duration: 3000, id: toastId });
 			}
 		},
-		{ always: true }
+		{ predicate: () => true }
 	);
 
 	return (
