@@ -91,7 +91,7 @@ const shiftBoard = async (appId: string, boardId: TBoard['id'], direction: -1 | 
 	const user = await checkUser();
 
 	const [board] = await db
-		.select({ index: boards.index })
+		.select({ index: boards.index, nodeId: boards.nodeId })
 		.from(boards)
 		.where(and(eq(boards.id, boardId), eq(boards.userId, user.id)));
 
@@ -99,16 +99,22 @@ const shiftBoard = async (appId: string, boardId: TBoard['id'], direction: -1 | 
 		const [{ maxIndex }] = await db
 			.select({ maxIndex: sql<number>`max(${boards.index})` })
 			.from(boards)
-			.where(eq(boards.userId, user.id));
+			.where(and(eq(boards.userId, user.id), eq(boards.nodeId, board.nodeId)));
 		if (maxIndex === board.index) throw new Error('Can not shift last board');
 	} else if (0 === board.index) {
 		throw new Error('Can not shift first board');
 	}
 
 	const [siblingBoard] = await db
-		.select()
+		.select({ id: boards.id, index: boards.index })
 		.from(boards)
-		.where(and(eq(boards.index, board.index + direction), eq(boards.userId, user.id)));
+		.where(
+			and(
+				eq(boards.index, board.index + direction),
+				eq(boards.userId, user.id),
+				eq(boards.nodeId, board.nodeId)
+			)
+		);
 
 	await moveBoards(appId, [
 		{ id: boardId, index: siblingBoard.index },
