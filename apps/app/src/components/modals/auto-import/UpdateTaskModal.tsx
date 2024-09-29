@@ -41,7 +41,7 @@ export default function UpdateTaskModal() {
 				toast.success('Updated Task', { duration: 3000, id: toastId });
 			}
 		},
-		{ always: true }
+		{ predicate: () => true }
 	);
 
 	return (

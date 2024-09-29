@@ -122,7 +122,7 @@ export default function SignInPage() {
 				toast.success('Login successful', { duration: 3000, id: toastId });
 			}
 		},
-		{ always: true }
+		{ predicate: () => true }
 	);
 
 	return (
