@@ -55,3 +55,4 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 }
 
 export { AppProvider, useApp };
+export type { TClipboardItem };

@@ -40,7 +40,7 @@ import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import { decryptWithUserKeys } from '~/utils/auth.server';
-import { createSubscription } from '~/utils/subscribe';
+import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
 import invariant from '~/utils/tiny-invariant';
 
 export const route: RouteDefinition = {
@@ -100,7 +100,7 @@ export default function ProjectPage() {
 				});
 			}
 		},
-		{ always: true }
+		{ predicate: () => true }
 	);
 
 	createComputed(() => {
@@ -110,34 +110,7 @@ export default function ProjectPage() {
 		});
 	});
 
-	const VALID_KEYS = [getBoards.key];
-	void createSubscription(async ({ invalidate, message }) => {
-		const keys = invalidate.filter((key) => VALID_KEYS.includes(key));
-		if (keys.length === 0) return;
-		const promises = [] as Promise<void>[];
-		for (const key of keys) {
-			promises.push(revalidate(key));
-		}
-		await Promise.all(promises);
-		const re = new RegExp(String.raw`encrypted:[^\s]+`);
-		const matches = message.match(re);
-		let decryptedString: string;
-		if (!matches) {
-			decryptedString = message;
-		} else {
-			const decryptedValues = await Promise.all(
-				matches.map(async (match) => {
-					const data = match.slice('encrypted:'.length);
-					return [match, await decryptWithUserKeys(data)];
-				})
-			);
-			decryptedString = message;
-			for (const [match, decrypted] of decryptedValues) {
-				decryptedString = decryptedString.replace(match, decrypted);
-			}
-		}
-		toast.info(decryptedString);
-	});
+	void createSubscription(makeSubscriptionHandler([getBoards.key]));
 
 	return (
 		<Show

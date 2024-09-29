@@ -42,7 +42,7 @@ export default function UpdateBoardModal() {
 				toast.success('Updated Board', { duration: 3000, id: toastId });
 			}
 		},
-		{ always: true }
+		{ predicate: () => true }
 	);
 
 	return (

@@ -84,7 +84,6 @@ export const Board: Component<{
 			}
 		},
 		{
-			always: true,
 			predicate: (input) => input[0].get('boardId') === props.board.id
 		}
 	);
