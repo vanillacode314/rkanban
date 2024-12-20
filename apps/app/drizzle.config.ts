@@ -5,8 +5,7 @@ export default defineConfig({
 		authToken: process.env.TURSO_AUTH_TOKEN!,
 		url: process.env.TURSO_CONNECTION_URL!
 	},
-	dialect: 'sqlite',
-	driver: 'turso',
+	dialect: 'turso',
 	migrations: {
 		prefix: 'supabase'
 	},
