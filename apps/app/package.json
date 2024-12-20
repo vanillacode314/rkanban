@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.4.0",
-    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^1.4.0",
+    "@atlaskit/pragmatic-drag-and-drop-auto-scroll": "^2.1.0",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
     "@kobalte/core": "^0.13.7",
     "@libsql/client": "^0.14.0",
