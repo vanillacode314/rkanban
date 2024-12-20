@@ -32,7 +32,7 @@ import {
 } from '~/components/ui/dropdown-menu';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
-import { copyNode, createNode, deleteNode, getNodes, updateNode } from '~/db/utils/nodes';
+import { copyNode, createNode, deleteNode, getNodes, updateNode, isFolder } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
 import { onSubmission } from '~/utils/action';
 import * as path from '~/utils/path';
@@ -67,7 +67,6 @@ export default function FolderPage() {
 						nodes?.children.push({
 							createdAt: new Date(),
 							id: String(input[0].get('id')),
-							isDirectory: String(input[0].get('isDirectory')) === 'true',
 							name: String(input[0].get('name')),
 							parentId: nodes.node.id,
 							updatedAt: new Date(),
@@ -83,8 +82,8 @@ export default function FolderPage() {
 
 	const currentNode = () => assertNotError(nodes())!.node;
 	const children = () => ($nodes() ? assertNotError(nodes())!.children : []);
-	const folders = () => children()?.filter((node) => node.isDirectory);
-	const files = () => children()?.filter((node) => !node.isDirectory);
+	const folders = () => children()?.filter((node) => isFolder(node));
+	const files = () => children()?.filter((node) => !isFolder(node));
 
 	void createSubscription(makeSubscriptionHandler([getNodes.key]));
 
@@ -141,7 +140,6 @@ export default function FolderPage() {
 								node={{
 									createdAt: new Date(),
 									id: currentNode().parentId!,
-									isDirectory: true,
 									name: '..',
 									parentId: '__parent__',
 									updatedAt: new Date(),

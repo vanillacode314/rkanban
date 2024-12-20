@@ -14,7 +14,6 @@ export async function GET() {
 			.select({
 				createdAt: nodes.createdAt,
 				id: nodes.id,
-				isDirectory: nodes.isDirectory,
 				name: nodes.name,
 				parentId: nodes.parentId,
 				updatedAt: nodes.updatedAt

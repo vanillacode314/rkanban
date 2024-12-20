@@ -19,7 +19,6 @@ const generateNode = async (
 	id: nanoid(),
 	name: await generateWord(),
 	updatedAt: new Date(),
-	isDirectory: true,
 	...node
 });
 

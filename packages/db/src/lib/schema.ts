@@ -128,7 +128,6 @@ const nodes = sqliteTable(
 		id: text('id')
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
-		isDirectory: integer('isDirectory', { mode: 'boolean' }).notNull(),
 		name: text('name').notNull(),
 		parentId: text('parentId').references((): AnySQLiteColumn => nodes.id, {
 			onDelete: 'cascade'

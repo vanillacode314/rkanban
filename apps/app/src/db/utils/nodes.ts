@@ -37,7 +37,6 @@ const createNode = action(async (formData: FormData) => {
 	if (!parentPath) throw new Error('parentPath is required');
 	if (!parentPath.startsWith('/')) throw new Error('parentPath must start with /');
 	const id = String(formData.get('id') ?? nanoid()).trim();
-	const isDirectory = String(formData.get('isDirectory') ?? 'false') === 'true';
 	const appId = String(formData.get('appId'));
 
 	const fullPath = path.join(parentPath, name);
@@ -55,7 +54,6 @@ const createNode = action(async (formData: FormData) => {
 		.insert(nodes)
 		.values({
 			id,
-			isDirectory,
 			name: name,
 			parentId: parentNode.id,
 			userId: user.id
@@ -64,7 +62,7 @@ const createNode = action(async (formData: FormData) => {
 
 	void notify({
 		appId,
-		message: `Another client created ${isDirectory ? 'folder' : 'file'} encrypted:${$node.name}`,
+		message: `Another client created ${isFolder($node) ? 'folder' : 'file'} encrypted:${$node.name}`,
 		token: getCookie('websocketToken')!
 	});
 	return $node;
@@ -121,7 +119,7 @@ const updateNode = action(async (formData: FormData) => {
 
 	void notify({
 		appId,
-		message: `Another client updated ${$node.isDirectory ? 'folder' : 'file'} encrypted:${$node.name}`,
+		message: `Another client updated ${isFolder($node) ? 'folder' : 'file'} encrypted:${$node.name}`,
 		token: getCookie('websocketToken')!
 	});
 	return $node;
@@ -141,7 +139,7 @@ const deleteNode = action(async (formData: FormData) => {
 
 	void notify({
 		appId: String(formData.get('appId')),
-		message: `Another client deleted ${node.isDirectory ? 'folder' : 'file'} encrypted:${node.name}`,
+		message: `Another client deleted ${isFolder(node) ? 'folder' : 'file'} encrypted:${node.name}`,
 		token: getCookie('websocketToken')!
 	});
 	return node;
@@ -201,7 +199,6 @@ async function $copyNode(formData: FormData) {
 			.insert(nodes)
 			.values({
 				id: newNodeId,
-				isDirectory: $node.isDirectory,
 				name:
 					duplicateCount > 0 ?
 						extension ? `${name} (copy ${duplicateCount}).${extension}`
@@ -257,7 +254,7 @@ async function $copyNode(formData: FormData) {
 const copyNode = action($copyNode, 'copy-node');
 
 function isFolder(node: TNode): boolean {
-	return !node.isDirectory;
+	return !node.name.endsWith('.project');
 }
 
 const GET_PATH_BY_NODE_ID_QUERY = (id: string, userId: string): string => {

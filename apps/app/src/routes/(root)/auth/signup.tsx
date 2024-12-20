@@ -72,9 +72,7 @@ const signUp = action(async (formData: FormData) => {
 			tx.rollback();
 			return [null, null];
 		}
-		await tx
-			.insert(nodes)
-			.values({ isDirectory: true, name: 'root', parentId: null, userId: user.id });
+		await tx.insert(nodes).values({ name: 'root', parentId: null, userId: user.id });
 		return [user, token];
 	});
 

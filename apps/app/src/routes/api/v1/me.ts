@@ -15,9 +15,7 @@ export async function POST() {
 			boards: boardsSchema
 				.pick({ createdAt: true, id: true, index: true, nodeId: true, title: true })
 				.array(),
-			nodes: nodesSchema
-				.pick({ createdAt: true, id: true, isDirectory: true, name: true, parentId: true })
-				.array(),
+			nodes: nodesSchema.pick({ createdAt: true, id: true, name: true, parentId: true }).array(),
 			tasks: tasksSchema.pick({ boardId: true, createdAt: true, index: true, title: true }).array()
 		}).safeParse
 	);
