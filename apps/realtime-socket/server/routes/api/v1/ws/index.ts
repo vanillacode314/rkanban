@@ -25,10 +25,12 @@ function removeSubscriber(peerId: string): void {
 const handlers = {
 	publish: function onPublish(peer: Peer, message: TPublish) {
 		dbUpdatesChannel.postMessage(message);
-		peer.send({
-			message: 'Successfully published',
-			success: true
-		});
+		peer.send(
+			JSON.stringify({
+				message: 'Successfully published',
+				success: true
+			})
+		);
 	},
 	subscribe: function onSubscribe(peer: Peer, message: TSubscribe) {
 		const { appId, token } = message;
@@ -36,7 +38,7 @@ const handlers = {
 		try {
 			user = jwt.verify(token, env.AUTH_SECRET) as { id: string };
 		} catch {
-			peer.send({ error: ['Invalid token'], success: false });
+			peer.send(JSON.stringify({ error: ['Invalid token'], success: false }));
 			return;
 		}
 
@@ -45,7 +47,7 @@ const handlers = {
 			try {
 				messageUser = jwt.verify(event.data.token, env.AUTH_SECRET) as { id: string };
 			} catch {
-				peer.send({ error: ['Invalid token'], success: false });
+				peer.send(JSON.stringify({ error: ['Invalid token'], success: false }));
 				return;
 			}
 			if (messageUser === undefined) return;
@@ -54,19 +56,21 @@ const handlers = {
 			const result = publishSchema.safeParse(event.data);
 
 			if (!result.success) {
-				peer.send({ error: result.error.errors, success: false });
+				peer.send(JSON.stringify({ error: result.error.errors, success: false }));
 				return;
 			}
 			if (result.data.appId === undefined) return;
 			if (result.data.appId === appId) return;
-			peer.send(result.data.item);
+			peer.send(JSON.stringify(result.data.item));
 		};
 
 		addSubscriber(peer.id, callback);
-		peer.send({
-			message: 'Successfully subscribed',
-			success: true
-		});
+		peer.send(
+			JSON.stringify({
+				message: 'Successfully subscribed',
+				success: true
+			})
+		);
 	}
 };
 
@@ -84,11 +88,11 @@ export default defineWebSocketHandler({
 	message(peer, message) {
 		const result = messageSchema.safeParse(safeParseJson(message.text()));
 		if (!result.success) {
-			peer.send({ error: result.error.errors, success: false });
+			peer.send(JSON.stringify({ error: result.error.errors, success: false }));
 			return;
 		}
 		if (!(result.data.type in handlers)) {
-			peer.send({ error: ['Invalid message type'], success: false });
+			peer.send(JSON.stringify({ error: ['Invalid message type'], success: false }));
 		}
 		// @ts-expect-error: typescript doesn't understand that we know that result.data will have the correct type
 		handlers[result.data.type](peer, result.data);
