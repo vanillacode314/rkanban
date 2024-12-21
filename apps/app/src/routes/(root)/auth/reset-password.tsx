@@ -153,16 +153,8 @@ export default function ResetPasswordPage() {
 			if (!result) return;
 			if (result instanceof Error) {
 				switch (result.cause) {
-					case 'VALIDATION_ERROR': {
-						const validationMap = new Map<string, string[]>();
-						for (const message of result.message.split(';;;')) {
-							const [path, error] = message.split(';;');
-							validationMap.set(path, [...(validationMap.get(path) ?? []), error]);
-						}
-						setEmailErrors(validationMap.get('email') ?? []);
-						setPasswordErrors(validationMap.get('password') ?? []);
-						setFormErrors(validationMap.get('form') ?? []);
-						toast.error('Invalid Data', { duration: 3000, id: toastId });
+					case 'INVALID_EMAIL': {
+						toast.error('Invalid Email', { duration: 3000, id: toastId });
 						break;
 					}
 					case 'INVALID_TOKEN': {
@@ -176,8 +168,16 @@ export default function ResetPasswordPage() {
 						});
 						break;
 					}
-					case 'INVALID_EMAIL': {
-						toast.error('Invalid Email', { duration: 3000, id: toastId });
+					case 'VALIDATION_ERROR': {
+						const validationMap = new Map<string, string[]>();
+						for (const message of result.message.split(';;;')) {
+							const [path, error] = message.split(';;');
+							validationMap.set(path, [...(validationMap.get(path) ?? []), error]);
+						}
+						setEmailErrors(validationMap.get('email') ?? []);
+						setPasswordErrors(validationMap.get('password') ?? []);
+						setFormErrors(validationMap.get('form') ?? []);
+						toast.error('Invalid Data', { duration: 3000, id: toastId });
 						break;
 					}
 					default:

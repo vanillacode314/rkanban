@@ -1,7 +1,7 @@
 import { useColorMode } from '@kobalte/core/color-mode';
 import { A, useAction, useLocation } from '@solidjs/router';
-import { RequestEventLocals } from '@solidjs/start/server';
-import { createResource, createSignal, Show, Suspense } from 'solid-js';
+import { createQuery } from '@tanstack/solid-query';
+import { createSignal, Show, Suspense } from 'solid-js';
 
 import { cn } from '~/lib/utils';
 import { getUser, refreshAccessToken, resendVerificationEmail, signOut } from '~/utils/auth.server';
@@ -11,14 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
 
 export default function Nav(props: { class?: string }) {
-	const location = useLocation();
-	const [user, { refetch: refetchUser }] = createResource(
-		() => location.pathname,
-		() => getUser({ shouldThrow: false }),
-		{ deferStream: true, initialValue: null }
-	);
 	const { toggleColorMode } = useColorMode();
-	const $signOut = useAction(signOut);
 
 	return (
 		<nav class={cn('border-offset-background border-b bg-background py-4', props.class)}>
@@ -28,20 +21,7 @@ export default function Nav(props: { class?: string }) {
 				</A>
 				<span class="grow" />
 				<Suspense>
-					<Show when={user()}>
-						<form
-							onClick={async (event) => {
-								event.preventDefault();
-								await $signOut();
-								await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
-							}}
-						>
-							<Button class="flex items-center gap-2" type="submit" variant="outline">
-								<span>Sign Out</span>
-								<span class="i-heroicons:arrow-right-end-on-rectangle text-xl" />
-							</Button>
-						</form>
-					</Show>
+					<UserCard />
 				</Suspense>
 				<Button onClick={() => toggleColorMode()} size="icon" variant="outline">
 					<div class="i-heroicons:sun rotate-0 scale-100 text-xl transition-all dark:-rotate-90 dark:scale-0" />
@@ -49,15 +29,44 @@ export default function Nav(props: { class?: string }) {
 					<span class="sr-only">Toggle theme</span>
 				</Button>
 			</div>
-			<VerificationEmailAlert refetchUser={refetchUser} user={user()} />
+			<Suspense>
+				<VerificationEmailAlert />
+			</Suspense>
 		</nav>
 	);
 }
 
-function VerificationEmailAlert(props: {
-	refetchUser: () => void;
-	user: RequestEventLocals['user'];
-}) {
+function UserCard() {
+	const location = useLocation();
+	const user = createQuery(() => ({
+		queryFn: () => getUser({ shouldThrow: false }),
+		queryKey: ['user', location.pathname]
+	}));
+	const $signOut = useAction(signOut);
+	return (
+		<Show when={user.data}>
+			<form
+				onClick={async (event) => {
+					event.preventDefault();
+					await $signOut();
+					await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
+				}}
+			>
+				<Button class="flex items-center gap-2" type="submit" variant="outline">
+					<span>Sign Out</span>
+					<span class="i-heroicons:arrow-right-end-on-rectangle text-xl" />
+				</Button>
+			</form>
+		</Show>
+	);
+}
+
+function VerificationEmailAlert() {
+	const location = useLocation();
+	const user = createQuery(() => ({
+		queryFn: () => getUser({ shouldThrow: false }),
+		queryKey: ['user', location.pathname]
+	}));
 	const [cooldown, setCooldown] = createSignal<number>(0);
 
 	function countdown() {
@@ -72,7 +81,7 @@ function VerificationEmailAlert(props: {
 	}
 
 	return (
-		<Show when={props.user && !props.user.emailVerified}>
+		<Show when={user.data && !user.data?.emailVerified}>
 			<Alert class="mt-4 flex flex-col justify-between gap-4 md:flex-row">
 				<div>
 					<AlertTitle>Email not verified</AlertTitle>
@@ -90,7 +99,7 @@ function VerificationEmailAlert(props: {
 						onClick={async () => {
 							countdown();
 							await resendVerificationEmail();
-							props.refetchUser();
+							user.refetch();
 						}}
 						variant="outline"
 					>

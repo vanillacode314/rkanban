@@ -3,7 +3,7 @@ import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
 import { createAsync, useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
 import { TNode } from 'db/schema';
-import { createEffect, For, JSXElement, Match, Show, Switch, untrack } from 'solid-js';
+import { createEffect, For, JSXElement, Match, Show, Suspense, Switch, untrack } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { getCookie } from 'vinxi/http';
@@ -18,8 +18,8 @@ import { cn } from '~/lib/utils';
 import { getUser } from '~/utils/auth.server';
 import { localforage } from '~/utils/localforage';
 
-const RootLayout = (props: { children: JSXElement }) => {
-	const user = createAsync(() => getUser({ shouldThrow: false }));
+function CleanUpUser() {
+	const user = createAsync(() => getUser({ shouldThrow: false }), { initialValue: null });
 	createEffect(() => {
 		const $user = user();
 		if (!$user) return;
@@ -29,6 +29,11 @@ const RootLayout = (props: { children: JSXElement }) => {
 			}
 		});
 	});
+
+	return <></>;
+}
+
+const RootLayout = (props: { children: JSXElement }) => {
 	const location = useLocation();
 	const path = () => decodeURIComponent(location.pathname);
 	const storageManager = cookieStorageManagerSSR(isServer ? getServerCookies() : document.cookie);
@@ -38,20 +43,25 @@ const RootLayout = (props: { children: JSXElement }) => {
 	createEffect(() => !isOnline() && navigate('/offline'));
 
 	return (
-		<ColorModeProvider storageManager={storageManager}>
-			<AppProvider path={path()}>
-				<DirtyProvider>
-					<Title>RKanban</Title>
-					<Toaster closeButton duration={3000} position="top-center" />
-					<div class="flex h-full flex-col overflow-hidden">
-						<Nav class="full-width content-grid" />
-						<div class="content-grid h-full overflow-hidden">{props.children}</div>
-					</div>
-					<AutoImportModals />
-					<Clipboard />
-				</DirtyProvider>
-			</AppProvider>
-		</ColorModeProvider>
+		<>
+			<ColorModeProvider storageManager={storageManager}>
+				<AppProvider path={path()}>
+					<DirtyProvider>
+						<Title>RKanban</Title>
+						<Toaster closeButton duration={3000} position="top-center" />
+						<div class="flex h-full flex-col overflow-hidden">
+							<Nav class="full-width content-grid" />
+							<div class="content-grid h-full overflow-hidden">{props.children}</div>
+						</div>
+						<AutoImportModals />
+						<Clipboard />
+					</DirtyProvider>
+				</AppProvider>
+			</ColorModeProvider>
+			<Suspense>
+				<CleanUpUser />
+			</Suspense>
+		</>
 	);
 };
 

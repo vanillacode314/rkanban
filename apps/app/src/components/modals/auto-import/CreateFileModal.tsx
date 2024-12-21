@@ -1,3 +1,7 @@
+import { useAction } from '@solidjs/router';
+import { createMutation, useQueryClient } from '@tanstack/solid-query';
+import { TNode } from 'db/schema';
+import { create } from 'mutative';
 import { nanoid } from 'nanoid';
 import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -7,27 +11,52 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { createNode } from '~/db/utils/nodes';
-import { onSubmission } from '~/utils/action';
 
 export const [createFileModalOpen, setCreateFileModalOpen] = createSignal<boolean>(false);
 
 export default function CreateFileModal() {
 	const [appContext, _setAppContext] = useApp();
+	const $createNode = useAction(createNode);
 
-	const didDispatch = onSubmission(createNode, {
-		async onError(toastId: number | string | undefined, error) {
-			if (error instanceof Error && error.message.startsWith('custom:'))
-				toast.error(`${error.message.slice(7)}`, { id: toastId });
-			else toast.error('Failed to create file', { id: toastId });
+	const queryClient = useQueryClient();
+	const mutation = createMutation(() => ({
+		mutationFn: $createNode,
+		onError: (_, __, context) => {
+			if (!context) return;
+			queryClient.setQueryData(['nodes', context.path], context.previousData);
+			toast.error('Failed to create file', { id: context.toastId });
 		},
-		async onPending(input) {
-			const name = String(input[0].get('name'));
-			return toast.loading(`Creating File: ${name}`);
+		onMutate: async (formData) => {
+			await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
+			const previousData = queryClient.getQueryData<{ children: TNode[]; node: TNode }>([
+				'nodes',
+				appContext.path
+			]);
+			if (!previousData) return;
+			queryClient.setQueryData(
+				['nodes', appContext.path],
+				create(previousData, (draft) => {
+					draft.children.push({
+						createdAt: new Date(),
+						id: String(formData.get('id')),
+						name: String(formData.get('name')),
+						parentId: draft.node.id,
+						updatedAt: new Date(),
+						userId: 'pending'
+					});
+					draft.children.sort((a, b) => a.name.localeCompare(b.name));
+				})
+			);
+			const toastId = toast.loading(`Creating File: ${formData.get('name')}`);
+			return { path: appContext.path, previousData, toastId };
 		},
-		async onSuccess(data, toastId) {
-			toast.success(`Created File: ${data.name}`, { id: toastId });
+		onSettled: (data, __, ___, context) => {
+			if (!context) return;
+			queryClient.invalidateQueries({ queryKey: ['nodes', context.path] });
+			if (!data) return;
+			toast.success(`Created File: ${data.name}`, { id: context.toastId });
 		}
-	});
+	}));
 
 	return (
 		<BaseModal open={createFileModalOpen()} setOpen={setCreateFileModalOpen} title="Create File">
@@ -43,7 +72,7 @@ export default function CreateFileModal() {
 						if (!nameInput.value.endsWith('.project'))
 							nameInput.value = nameInput.value + '.project';
 						idInput.value = nanoid();
-						didDispatch();
+						mutation.mutate(new FormData(form));
 					}}
 				>
 					<input name="parentPath" type="hidden" value={appContext.path} />

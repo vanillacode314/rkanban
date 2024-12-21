@@ -2,6 +2,7 @@ import { MetaProvider } from '@solidjs/meta';
 import { Router } from '@solidjs/router';
 import { FileRoutes } from '@solidjs/start/router';
 import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
+import { SolidQueryDevtools } from '@tanstack/solid-query-devtools';
 import { Component, createSignal, ErrorBoundary, onMount, Show, Suspense } from 'solid-js';
 import 'virtual:uno.css';
 
@@ -67,16 +68,10 @@ export default function App() {
 		<Router
 			root={(props) => (
 				<ErrorBoundary fallback={<ErrorPage />}>
-					<Suspense
-						fallback={
-							<div class="grid h-full place-content-center gap-2">
-								<span class="i-svg-spinners:180-ring-with-bg text-7xl" />
-								<span>Loading...</span>
-							</div>
-						}
-					>
+					<Suspense>
 						<QueryClientProvider client={queryClient}>
 							<MetaProvider>{props.children}</MetaProvider>
+							<SolidQueryDevtools initialIsOpen={false} />
 						</QueryClientProvider>
 					</Suspense>
 				</ErrorBoundary>

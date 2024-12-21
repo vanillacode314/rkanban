@@ -5,14 +5,24 @@ import {
 	monitorForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Key } from '@solid-primitives/keyed';
-import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, createAsync, RouteDefinition, useAction, useNavigate } from '@solidjs/router';
+import { A, RouteDefinition, useAction, useNavigate } from '@solidjs/router';
+import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TNode } from 'db/schema';
 import { produce } from 'immer';
 import { animate, spring } from 'motion';
-import { createSignal, JSXElement, onCleanup, onMount, ParentComponent, Show } from 'solid-js';
+import {
+	createSignal,
+	For,
+	JSXElement,
+	Match,
+	onCleanup,
+	onMount,
+	ParentComponent,
+	Show,
+	Switch
+} from 'solid-js';
 import { unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
@@ -30,11 +40,11 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger
 } from '~/components/ui/dropdown-menu';
+import { Skeleton } from '~/components/ui/skeleton';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
-import { copyNode, createNode, deleteNode, getNodes, updateNode, isFolder } from '~/db/utils/nodes';
+import { copyNode, deleteNode, getNodes, isFolder, updateNode } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
-import { onSubmission } from '~/utils/action';
 import * as path from '~/utils/path';
 import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
 import { assertNotError } from '~/utils/types';
@@ -45,43 +55,27 @@ export const route: RouteDefinition = {
 			!pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
 	},
 	preload: ({ location }) => {
-		getNodes(decodeURIComponent(location.pathname), { includeChildren: true });
+		const queryClient = useQueryClient();
+		queryClient.prefetchQuery({
+			queryFn: ({ queryKey }) => getNodes(queryKey[1], { includeChildren: true }),
+			queryKey: ['nodes', decodeURIComponent(location.pathname)]
+		});
 	}
 };
 
 export default function FolderPage() {
 	const [appContext, _setAppContext] = useApp();
+	const nodesQuery = createQuery(() => ({
+		queryFn: ({ queryKey }) => {
+			return getNodes(queryKey[1], { includeChildren: true });
+		},
+		queryKey: ['nodes', appContext.path]
+	}));
 
-	const $nodes = createAsync(() => getNodes(appContext.path, { includeChildren: true }));
 	const $updateNode = useAction(updateNode);
 
-	const [nodes, setNodes] = createWritableMemo(() => $nodes.latest);
-
-	onSubmission(
-		createNode,
-		{
-			onPending(input) {
-				setNodes((nodes) => {
-					if (nodes instanceof Error) return nodes;
-					return produce(nodes, (nodes) => {
-						nodes?.children.push({
-							createdAt: new Date(),
-							id: String(input[0].get('id')),
-							name: String(input[0].get('name')),
-							parentId: nodes.node.id,
-							updatedAt: new Date(),
-							userId: 'pending'
-						});
-						nodes?.children.sort((a, b) => a.name.localeCompare(b.name));
-					});
-				});
-			}
-		},
-		{ predicate: (input) => String(input[0].get('parentPath')) === appContext.path }
-	);
-
-	const currentNode = () => assertNotError(nodes())!.node;
-	const children = () => ($nodes() ? assertNotError(nodes())!.children : []);
+	const currentNode = () => assertNotError(nodesQuery.data)!.node;
+	const children = () => (nodesQuery.data ? assertNotError(nodesQuery.data)!.children : []);
 	const folders = () => children()?.filter((node) => isFolder(node));
 	const files = () => children()?.filter((node) => !isFolder(node));
 
@@ -116,47 +110,76 @@ export default function FolderPage() {
 	});
 
 	return (
-		<Show fallback={<FolderNotFound />} when={!($nodes() instanceof Error)}>
-			<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-				<Toolbar currentNode={currentNode()} nodes={children()} />
-				<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-					<Show when={appContext.path === '/'}>
-						<Button
-							as={A}
-							class="flex items-center justify-start gap-2"
-							href="/settings"
-							variant="outline"
-						>
-							<span class="i-heroicons:cog text-lg" />
-							<span>Settings</span>
-						</Button>
-					</Show>
-				</div>
-				<PathCrumbs />
-				<Show fallback={<EmptyFolder />} when={children().length > 0}>
-					<AnimatedNodesList>
-						<Show when={currentNode().parentId !== null}>
-							<FolderNode
-								node={{
-									createdAt: new Date(),
-									id: currentNode().parentId!,
-									name: '..',
-									parentId: '__parent__',
-									updatedAt: new Date(),
-									userId: currentNode().userId
-								}}
-							/>
+		<Switch>
+			<Match when={nodesQuery.isPending}>
+				<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
+					<div class="flex justify-end gap-4">
+						<Skeleton height={40} radius={5} width={150} />
+						<Skeleton height={40} radius={5} width={150} />
+					</div>
+					<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+						<Show when={appContext.path === '/'}>
+							<Button
+								as={A}
+								class="flex items-center justify-start gap-2"
+								href="/settings"
+								variant="outline"
+							>
+								<span class="i-heroicons:cog text-lg" />
+								<span>Settings</span>
+							</Button>
 						</Show>
-						<Key by="id" each={folders()}>
-							{(node) => <FolderNode node={node()} />}
-						</Key>
-						<Key by="id" each={files()}>
-							{(node) => <FileNode node={node()} />}
-						</Key>
+					</div>
+					<PathCrumbs />
+					<AnimatedNodesList>
+						<For each={Array.from({ length: 10 })}>{() => <Skeleton height={40} radius={5} />}</For>
 					</AnimatedNodesList>
+				</div>
+			</Match>
+			<Match when={nodesQuery.isSuccess}>
+				<Show fallback={<FolderNotFound />} when={!(nodesQuery.data instanceof Error)}>
+					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
+						<Toolbar currentNode={currentNode()} nodes={children()} />
+						<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+							<Show when={appContext.path === '/'}>
+								<Button
+									as={A}
+									class="flex items-center justify-start gap-2"
+									href="/settings"
+									variant="outline"
+								>
+									<span class="i-heroicons:cog text-lg" />
+									<span>Settings</span>
+								</Button>
+							</Show>
+						</div>
+						<PathCrumbs />
+						<Show fallback={<EmptyFolder />} when={children().length > 0}>
+							<AnimatedNodesList>
+								<Show when={currentNode().parentId !== null}>
+									<FolderNode
+										node={{
+											createdAt: new Date(),
+											id: currentNode().parentId!,
+											name: '..',
+											parentId: '__parent__',
+											updatedAt: new Date(),
+											userId: currentNode().userId
+										}}
+									/>
+								</Show>
+								<Key by="id" each={folders()}>
+									{(node) => <FolderNode node={node()} />}
+								</Key>
+								<Key by="id" each={files()}>
+									{(node) => <FileNode node={node()} />}
+								</Key>
+							</AnimatedNodesList>
+						</Show>
+					</div>
 				</Show>
-			</div>
-		</Show>
+			</Match>
+		</Switch>
 	);
 }
 
@@ -211,6 +234,7 @@ function FolderNode(props: { node: TNode }) {
 	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 	const confirmModal = useConfirmModal();
+	const queryClient = useQueryClient();
 
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLButtonElement;
@@ -332,11 +356,19 @@ function FolderNode(props: { node: TNode }) {
 										const formData = new FormData();
 										formData.set('id', props.node.id);
 										formData.set('appId', appContext.id);
-										toast.promise(() => $deleteNode(formData), {
-											error: 'Error',
-											loading: 'Deleting Folder',
-											success: 'Deleted Folder'
-										});
+										toast.promise(
+											async () => {
+												await $deleteNode(formData);
+												await queryClient.invalidateQueries({
+													queryKey: ['nodes', appContext.path]
+												});
+											},
+											{
+												error: 'Error',
+												loading: 'Deleting Folder',
+												success: 'Deleted Folder'
+											}
+										);
 									},
 									title: 'Delete Folder'
 								});
@@ -361,6 +393,7 @@ function FileNode(props: { node: TNode }) {
 	const [appContext, setAppContext] = useApp();
 	const $deleteNode = useAction(deleteNode);
 	const confirmModal = useConfirmModal();
+	const queryClient = useQueryClient();
 
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLButtonElement;
@@ -455,11 +488,19 @@ function FileNode(props: { node: TNode }) {
 										const formData = new FormData();
 										formData.set('id', props.node.id);
 										formData.set('appId', appContext.id);
-										toast.promise(() => $deleteNode(formData), {
-											error: 'Error',
-											loading: 'Deleting File',
-											success: 'Deleted File'
-										});
+										toast.promise(
+											async () => {
+												await $deleteNode(formData);
+												await queryClient.invalidateQueries({
+													queryKey: ['nodes', appContext.path]
+												});
+											},
+											{
+												error: 'Error',
+												loading: 'Deleting File',
+												success: 'Deleted File'
+											}
+										);
 									},
 									title: 'Delete File'
 								});
@@ -557,11 +598,23 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 				</Button>
 			</Show>
 			<Show when={props.nodes.length > 0}>
-				<Button class="flex items-center gap-2" onClick={() => setCreateFileModalOpen(true)}>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						setAppContext('currentNode', props.currentNode);
+						setCreateFileModalOpen(true);
+					}}
+				>
 					<span class="i-heroicons:document-plus text-lg" />
 					<span>Create Project</span>
 				</Button>
-				<Button class="flex items-center gap-2" onClick={() => setCreateFolderModalOpen(true)}>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						setAppContext('currentNode', props.currentNode);
+						setCreateFolderModalOpen(true);
+					}}
+				>
 					<span class="i-heroicons:folder-plus text-lg" />
 					<span>Create Folder</span>
 				</Button>

@@ -1,3 +1,7 @@
+import { useAction } from '@solidjs/router';
+import { createMutation, useQueryClient } from '@tanstack/solid-query';
+import { TNode } from 'db/schema';
+import { create } from 'mutative';
 import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
 
@@ -6,27 +10,48 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateNode } from '~/db/utils/nodes';
-import { onSubmission } from '~/utils/action';
 
 export const [renameFolderModalOpen, setRenameFolderModalOpen] = createSignal<boolean>(false);
 
 export default function RenameFolderModal() {
 	const [appContext, _setAppContext] = useApp();
 
-	const didDispatch = onSubmission(updateNode, {
-		async onError(toastId: number | string | undefined, error) {
-			if (error instanceof Error && error.message.startsWith('custom:'))
-				toast.error(`${error.message.slice(7)}`, { id: toastId });
-			else toast.error('Failed to rename folder', { id: toastId });
+	const queryClient = useQueryClient();
+	const $updateNode = useAction(updateNode);
+
+	const mutation = createMutation(() => ({
+		mutationFn: $updateNode,
+		onError: (_, __, context) => {
+			if (!context) return;
+			queryClient.setQueryData(['nodes', context.path], context.previousData);
+			toast.error('Failed to rename folder', { id: context.toastId });
 		},
-		async onPending(input) {
-			const name = String(input[0].get('name'));
-			return toast.loading(`Renaming Folder: ${name}`);
+		onMutate: async (formData) => {
+			await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
+			const previousData = queryClient.getQueryData<{ children: TNode[]; node: TNode }>([
+				'nodes',
+				appContext.path
+			]);
+			if (!previousData) return;
+			queryClient.setQueryData(
+				['nodes', appContext.path],
+				create(previousData, (draft) => {
+					const node = draft.children.find((node) => node.id === formData.get('id'));
+					if (!node) return;
+					node.name = String(formData.get('name'));
+					node.userId = 'pending';
+				})
+			);
+			const toastId = toast.loading(`Renaming Folder: ${formData.get('name')}`);
+			return { path: appContext.path, previousData, toastId };
 		},
-		async onSuccess(data, toastId) {
-			toast.dismiss(toastId);
+		onSettled: (data, __, ___, context) => {
+			if (!context) return;
+			queryClient.invalidateQueries({ queryKey: ['nodes', context.path] });
+			if (!data) return;
+			toast.success(`Renamed Folder: ${data.name}`, { id: context.toastId });
 		}
-	});
+	}));
 
 	let el!: HTMLFormElement;
 
@@ -44,7 +69,11 @@ export default function RenameFolderModal() {
 					action={updateNode}
 					class="flex flex-col gap-4"
 					method="post"
-					onSubmit={() => didDispatch()}
+					onSubmit={(event) => {
+						event.preventDefault();
+						const form = event.target as HTMLFormElement;
+						mutation.mutate(new FormData(form));
+					}}
 					ref={el}
 				>
 					<input
