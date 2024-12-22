@@ -6,8 +6,9 @@ import { splitProps } from 'solid-js';
 
 import { cn } from '~/lib/utils';
 
-type SkeletonRootProps<T extends ValidComponent = 'div'> =
-	{ class?: string | undefined } & SkeletonPrimitive.SkeletonRootProps<T>;
+type SkeletonRootProps<T extends ValidComponent = 'div'> = {
+	class?: string | undefined;
+} & SkeletonPrimitive.SkeletonRootProps<T>;
 
 const Skeleton = <T extends ValidComponent = 'div'>(
 	props: PolymorphicProps<T, SkeletonRootProps<T>>

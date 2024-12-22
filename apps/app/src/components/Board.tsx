@@ -10,7 +10,7 @@ import {
 import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { revalidate, useAction } from '@solidjs/router';
+import { useAction } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { animate, spring } from 'motion';
@@ -19,7 +19,7 @@ import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
+import { deleteBoard, shiftBoard } from '~/db/utils/boards';
 import { cn } from '~/lib/utils';
 import invariant from '~/utils/tiny-invariant';
 
@@ -281,7 +281,7 @@ function BoardContextMenu(props: {
 								toast.promise(
 									async () => {
 										await shiftBoard(appContext.id, props.board.id, 1);
-										await revalidate(getBoards.key);
+										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
 									},
 									{
 										error: 'Error',
@@ -303,7 +303,7 @@ function BoardContextMenu(props: {
 								toast.promise(
 									async () => {
 										await shiftBoard(appContext.id, props.board.id, -1);
-										await revalidate(getBoards.key);
+										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
 									},
 									{
 										error: 'Error',

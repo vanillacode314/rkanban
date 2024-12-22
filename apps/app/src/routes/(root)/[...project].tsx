@@ -7,7 +7,7 @@ import { Key } from '@solid-primitives/keyed';
 import { createLazyMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, revalidate, RouteDefinition } from '@solidjs/router';
+import { A, RouteDefinition } from '@solidjs/router';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { produce } from 'immer';
@@ -185,6 +185,7 @@ const AnimatedBoardsList: ParentComponent<{
 	boards: Array<{ tasks: TTask[] } & TBoard>;
 	setBoards: Setter<Array<{ tasks: TTask[] } & TBoard> | undefined>;
 }> = (props) => {
+	const queryClient = useQueryClient();
 	const [appContext, _setAppContext] = useApp();
 	const resolved = resolveElements(
 		() => props.children,
@@ -272,7 +273,9 @@ const AnimatedBoardsList: ParentComponent<{
 						async () => {
 							setIsDirty('project', true);
 							await moveBoards(appContext.id, changedBoards)
-								.then(() => revalidate(getBoards.key))
+								.then(() =>
+									queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
+								)
 								.finally(() => setIsDirty('project', false));
 						},
 						{
@@ -381,6 +384,7 @@ function ApplyChangesPopup(props: {
 	countdownDuration?: number;
 	reset: () => void;
 }) {
+	const queryClient = useQueryClient();
 	const [appContext, _setAppContext] = useApp();
 	const [count, setCount] = createSignal(0);
 	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
@@ -406,7 +410,10 @@ function ApplyChangesPopup(props: {
 			});
 			if (changedTasks.length === 0) return;
 			toast.promise(
-				() => moveTasks(appContext.id, changedTasks).then(() => revalidate(getBoards.key)),
+				() =>
+					moveTasks(appContext.id, changedTasks).then(() =>
+						queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
+					),
 				{
 					error: 'Failed to apply changes',
 					loading: 'Applying changes...',
