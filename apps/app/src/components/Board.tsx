@@ -8,12 +8,11 @@ import {
 	extractClosestEdge
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { Key } from '@solid-primitives/keyed';
-import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { revalidate, useAction } from '@solidjs/router';
+import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
-import { produce } from 'immer';
 import { animate, spring } from 'motion';
 import { Component, createSignal, onCleanup, onMount, ParentComponent, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -21,10 +20,7 @@ import { toast } from 'solid-sonner';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
 import { deleteBoard, getBoards, shiftBoard } from '~/db/utils/boards';
-import { createTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { onSubmission } from '~/utils/action';
-import { decryptWithUserKeys } from '~/utils/auth.server';
 import invariant from '~/utils/tiny-invariant';
 
 import Decrypt from './Decrypt';
@@ -41,7 +37,6 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
-import { useQueryClient } from '@tanstack/solid-query';
 
 export const Board: Component<{
 	board: { tasks: TTask[] } & TBoard;
@@ -49,45 +44,13 @@ export const Board: Component<{
 	index: number;
 }> = (props) => {
 	const [, setAppContext] = useApp();
-	const [tasks, setTasks] = createWritableMemo(() => props.board.tasks);
+	const tasks = () => props.board.tasks;
 	const [dragState, setDragState] = createSignal<'boards-drop' | 'tasks-drop' | null>(null);
 	const [closestEdge, setClosestEdge] = createSignal<'left' | 'right'>('left');
 	const [isDirty, _setIsDirty] = useDirty();
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLDivElement;
 
-	onSubmission(
-		createTask,
-		{
-			onError(toastId: number | string | undefined) {
-				toast.error('Error', { id: toastId });
-			},
-			onPending(input) {
-				setTasks((tasks) =>
-					produce(tasks, (tasks) => {
-						tasks.push({
-							boardId: props.board.id,
-							createdAt: new Date(),
-							id: String(input[0].get('id')),
-							index: props.board.tasks.length + 1,
-							title: String(input[0].get('title')),
-							updatedAt: new Date(),
-							userId: 'pending'
-						});
-					})
-				);
-				return toast.loading('Creating Task');
-			},
-			onSuccess(task, toastId) {
-				decryptWithUserKeys(task.title).then((title) => {
-					toast.success(`Created Task: ${title}`, { id: toastId });
-				});
-			}
-		},
-		{
-			predicate: (input) => input[0].get('boardId') === props.board.id
-		}
-	);
 	onMount(() => {
 		const cleanup = combine(
 			draggable({

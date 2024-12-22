@@ -7,14 +7,14 @@ import {
 	attachClosestEdge,
 	extractClosestEdge
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
-import { revalidate, useAction } from '@solidjs/router';
+import { useAction } from '@solidjs/router';
+import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { Component, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { getBoards } from '~/db/utils/boards';
 import { changeBoard, deleteTask, shiftTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import invariant from '~/utils/tiny-invariant';
@@ -105,9 +105,14 @@ export const Task: Component<{
 					/>
 					<HoverCard>
 						<HoverCardTrigger class="truncate">
-							<Decrypt fallback value={props.task.title}>
-								{(title) => <span class="text-sm">{title()}</span>}
-							</Decrypt>
+							<Show
+								fallback={<span class="text-sm">{props.task.title}</span>}
+								when={props.task.userId !== 'pending'}
+							>
+								<Decrypt fallback value={props.task.title}>
+									{(title) => <span class="text-sm">{title()}</span>}
+								</Decrypt>
+							</Show>
 						</HoverCardTrigger>
 						<HoverCardContent>
 							<Decrypt fallback value={props.task.title}>
@@ -140,6 +145,7 @@ function TaskContextMenu(props: {
 	const confirmModal = useConfirmModal();
 	const $deleteTask = useAction(deleteTask);
 	const $changeBoard = useAction(changeBoard);
+	const queryClient = useQueryClient();
 
 	return (
 		<div class={cn('flex-col', props.class)}>
@@ -172,11 +178,17 @@ function TaskContextMenu(props: {
 									const formData = new FormData();
 									formData.set('id', props.task.id);
 									formData.set('appId', appContext.id);
-									toast.promise(() => $deleteTask(formData), {
-										error: 'Error',
-										loading: 'Deleting Task',
-										success: 'Deleted Task'
-									});
+									toast.promise(
+										() =>
+											$deleteTask(formData).then(() =>
+												queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
+											),
+										{
+											error: 'Error',
+											loading: 'Deleting Task',
+											success: 'Deleted Task'
+										}
+									);
 								},
 								title: 'Delete Task'
 							});
@@ -201,11 +213,19 @@ function TaskContextMenu(props: {
 												formData.set('id', props.task.id);
 												formData.set('boardId', board.id);
 												formData.set('appId', appContext.id);
-												toast.promise(() => $changeBoard(formData), {
-													error: 'Error',
-													loading: 'Moving Task',
-													success: 'Moved Task'
-												});
+												toast.promise(
+													() =>
+														$changeBoard(formData).then(() =>
+															queryClient.invalidateQueries({
+																queryKey: ['boards', appContext.path]
+															})
+														),
+													{
+														error: 'Error',
+														loading: 'Moving Task',
+														success: 'Moved Task'
+													}
+												);
 											}}
 										>
 											<Decrypt fallback value={board.title}>
@@ -223,7 +243,7 @@ function TaskContextMenu(props: {
 								toast.promise(
 									async () => {
 										await shiftTask(appContext.id, props.task.id, 1);
-										await revalidate(getBoards.key);
+										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
 									},
 									{
 										error: 'Error',
@@ -245,7 +265,7 @@ function TaskContextMenu(props: {
 								toast.promise(
 									async () => {
 										await shiftTask(appContext.id, props.task.id, -1);
-										await revalidate(getBoards.key);
+										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
 									},
 									{
 										error: 'Error',

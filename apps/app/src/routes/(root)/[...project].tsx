@@ -4,26 +4,27 @@ import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-sc
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { Key } from '@solid-primitives/keyed';
+import { createLazyMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { A, revalidate, RouteDefinition } from '@solidjs/router';
+import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { produce } from 'immer';
 import { animate, AnimationControls, spring } from 'motion';
 import {
 	createEffect,
-	createMemo,
 	createSignal,
+	For,
 	Match,
-	Switch,
 	mergeProps,
 	onCleanup,
 	onMount,
 	ParentComponent,
 	Setter,
 	Show,
-	untrack,
-	For
+	Switch,
+	untrack
 } from 'solid-js';
 import { toast } from 'solid-sonner';
 
@@ -33,6 +34,7 @@ import PathCrumbs from '~/components/PathCrumbs';
 import ProgressCircle from '~/components/ProgressCircle';
 import { TransitionSlide } from '~/components/transitions/TransitionSlide';
 import { Button } from '~/components/ui/button';
+import { Skeleton } from '~/components/ui/skeleton';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
@@ -41,9 +43,6 @@ import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
 import invariant from '~/utils/tiny-invariant';
-import { createQuery, useQueryClient } from '@tanstack/solid-query';
-import { createLazyMemo } from '@solid-primitives/memo';
-import { Skeleton } from '~/components/ui/skeleton';
 
 export const route: RouteDefinition = {
 	matchFilters: {
@@ -53,8 +52,8 @@ export const route: RouteDefinition = {
 	preload: ({ location }) => {
 		const queryClient = useQueryClient();
 		queryClient.prefetchQuery({
-			queryKey: ['boards', decodeURIComponent(location.pathname)],
-			queryFn: ({ queryKey }) => getBoards(queryKey[1])
+			queryFn: ({ queryKey }) => getBoards(queryKey[1]),
+			queryKey: ['boards', decodeURIComponent(location.pathname)]
 		});
 	}
 };
@@ -63,8 +62,8 @@ export default function ProjectPage() {
 	const [appContext, setAppContext] = useApp();
 
 	const boardsQuery = createQuery(() => ({
-		queryKey: ['boards', appContext.path],
-		queryFn: ({ queryKey }) => getBoards(queryKey[1])
+		queryFn: ({ queryKey }) => getBoards(queryKey[1]),
+		queryKey: ['boards', appContext.path]
 	}));
 	const hasBoards = () => boardsQuery.data && boardsQuery.data.length > 0;
 

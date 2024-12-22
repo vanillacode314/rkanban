@@ -1,7 +1,9 @@
 import { useAction } from '@solidjs/router';
+import { createMutation, useQueryClient } from '@tanstack/solid-query';
+import { TBoard, TTask } from 'db/schema';
+import { create } from 'mutative';
 import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
-import { create } from 'mutative';
 
 import Decrypt from '~/components/Decrypt';
 import BaseModal from '~/components/modals/BaseModal';
@@ -9,9 +11,7 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateBoard } from '~/db/utils/boards';
-import { decryptWithUserKeys, encryptWithUserKeys } from '~/utils/auth.server';
-import { createMutation, useQueryClient } from '@tanstack/solid-query';
-import { TBoard, TTask } from 'db/schema';
+import { encryptWithUserKeys } from '~/utils/auth.server';
 
 export const [updateBoardModalOpen, setUpdateBoardModalOpen] = createSignal<boolean>(false);
 
@@ -34,7 +34,7 @@ export default function UpdateBoardModal() {
 		},
 		onMutate: async (formData) => {
 			await queryClient.cancelQueries({ queryKey: ['boards', appContext.path] });
-			const previousData = queryClient.getQueryData<Array<TBoard & { tasks: TTask[] }>>([
+			const previousData = queryClient.getQueryData<Array<{ tasks: TTask[] } & TBoard>>([
 				'boards',
 				appContext.path
 			]);
@@ -50,7 +50,7 @@ export default function UpdateBoardModal() {
 				})
 			);
 			const toastId = toast.loading(`Creating Board: ${title}`);
-			return { path: appContext.path, previousData, toastId, title };
+			return { path: appContext.path, previousData, title, toastId };
 		},
 		onSettled: (_, __, ___, context) => {
 			if (!context) return;

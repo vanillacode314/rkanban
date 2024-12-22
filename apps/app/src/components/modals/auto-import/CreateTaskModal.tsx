@@ -1,6 +1,10 @@
 import { useAction } from '@solidjs/router';
+import { createMutation, useQueryClient } from '@tanstack/solid-query';
+import { TBoard, TTask } from 'db/schema';
+import { create } from 'mutative';
 import { nanoid } from 'nanoid';
 import { createSignal } from 'solid-js';
+import { toast } from 'solid-sonner';
 
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
@@ -16,6 +20,51 @@ export default function CreateTaskModal() {
 	const board = () => appContext.currentBoard;
 	const $createTask = useAction(createTask);
 
+	const queryClient = useQueryClient();
+	const mutation = createMutation(() => ({
+		mutationFn: async (formData: FormData) => {
+			formData.set('title', await encryptWithUserKeys(String(formData.get('title'))));
+			await $createTask(formData);
+		},
+		onError: (_, __, context) => {
+			if (!context) return;
+			queryClient.setQueryData(['boards', context.path], context.previousData);
+			toast.error('Failed to create task', { id: context.toastId });
+		},
+		onMutate: async (formData) => {
+			await queryClient.cancelQueries({ queryKey: ['boards', appContext.path] });
+			const previousData = queryClient.getQueryData<Array<{ tasks: TTask[] } & TBoard>>([
+				'boards',
+				appContext.path
+			]);
+			if (previousData === undefined) return;
+			const title = String(formData.get('title'));
+			queryClient.setQueryData(
+				['boards', appContext.path],
+				create(previousData, (draft) => {
+					const board = draft.find((board) => board.id === formData.get('boardId'));
+					if (!board) return;
+					board.tasks.push({
+						boardId: board.id,
+						createdAt: new Date(),
+						id: String(formData.get('id')),
+						index: board.tasks.length,
+						title: String(formData.get('title')),
+						updatedAt: new Date(),
+						userId: 'pending'
+					});
+				})
+			);
+			const toastId = toast.loading(`Creating Task: ${title}`);
+			return { path: appContext.path, previousData, title, toastId };
+		},
+		onSettled: (_, __, ___, context) => {
+			if (!context) return;
+			queryClient.invalidateQueries({ queryKey: ['boards', context.path] });
+			toast.success(`Created Task: ${context.title}`, { id: context.toastId });
+		}
+	}));
+
 	return (
 		<BaseModal open={createTaskModalOpen()} setOpen={setCreateTaskModalOpen} title="Create Task">
 			{(close) => (
@@ -26,8 +75,7 @@ export default function CreateTaskModal() {
 						const form = event.target as HTMLFormElement;
 						const formData = new FormData(form);
 						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
-						formData.set('title', await encryptWithUserKeys(String(formData.get('title'))));
-						await $createTask(formData);
+						mutation.mutate(formData);
 						idInput.value = nanoid();
 					}}
 				>
