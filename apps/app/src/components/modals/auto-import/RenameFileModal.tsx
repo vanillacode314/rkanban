@@ -27,7 +27,7 @@ export default function RenameFileModal() {
 			toast.error('Failed to rename file', { id: context.toastId });
 		},
 		onMutate: async (formData) => {
-			await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
+			await queryClient.cancelQueries({ queryKey: ['nodes', appContext.path] });
 			const previousData = queryClient.getQueryData<{ children: TNode[]; node: TNode }>([
 				'nodes',
 				appContext.path

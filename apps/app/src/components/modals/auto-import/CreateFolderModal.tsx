@@ -27,7 +27,7 @@ export default function CreateFolderModal() {
 			toast.error('Failed to create folder', { id: context.toastId });
 		},
 		onMutate: async (formData) => {
-			await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
+			await queryClient.cancelQueries({ queryKey: ['nodes', appContext.path] });
 			const previousData = queryClient.getQueryData<{ children: TNode[]; node: TNode }>([
 				'nodes',
 				appContext.path
