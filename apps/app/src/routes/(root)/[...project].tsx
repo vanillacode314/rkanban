@@ -81,38 +81,6 @@ export default function ProjectPage() {
 
 	createEffect(() => setIsDirty('project', boardsDirty()));
 
-	// onSubmission(
-	// 	createBoard,
-	// 	{
-	// 		onError(toastId: number | string | undefined) {
-	// 			toast.error('Error', { id: toastId });
-	// 		},
-	// 		onPending(input) {
-	// 			setBoards((boards) =>
-	// 				produce(boards, (boards) => {
-	// 					boards?.push({
-	// 						createdAt: new Date(),
-	// 						id: String(input[0].get('id')),
-	// 						index: boards!.length,
-	// 						nodeId: 'pending',
-	// 						tasks: [],
-	// 						title: String(input[0].get('title')),
-	// 						updatedAt: new Date(),
-	// 						userId: 'pending'
-	// 					});
-	// 				})
-	// 			);
-	// 			return toast.loading('Creating Board');
-	// 		},
-	// 		onSuccess(board, toastId) {
-	// 			decryptWithUserKeys(board.title).then((title) => {
-	// 				toast.success(`Created Board: ${title}`, { id: toastId });
-	// 			});
-	// 		}
-	// 	},
-	// 	{ predicate: () => true }
-	// );
-
 	createEffect(() => {
 		const $boards = boardsQuery.data;
 		untrack(() => {
