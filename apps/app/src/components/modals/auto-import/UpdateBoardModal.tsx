@@ -1,6 +1,7 @@
 import { useAction } from '@solidjs/router';
 import { createSignal } from 'solid-js';
 import { toast } from 'solid-sonner';
+import { create } from 'mutative';
 
 import Decrypt from '~/components/Decrypt';
 import BaseModal from '~/components/modals/BaseModal';
@@ -8,8 +9,9 @@ import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { updateBoard } from '~/db/utils/boards';
-import { onSubmission } from '~/utils/action';
-import { encryptWithUserKeys } from '~/utils/auth.server';
+import { decryptWithUserKeys, encryptWithUserKeys } from '~/utils/auth.server';
+import { createMutation, useQueryClient } from '@tanstack/solid-query';
+import { TBoard, TTask } from 'db/schema';
 
 export const [updateBoardModalOpen, setUpdateBoardModalOpen] = createSignal<boolean>(false);
 
@@ -19,31 +21,43 @@ export default function UpdateBoardModal() {
 	const board = () => appContext.currentBoard;
 	const $updateBoard = useAction(updateBoard);
 
-	onSubmission(
-		updateBoard,
-		{
-			onError(toastId: number | string | undefined, error) {
-				if (!(error instanceof Error)) return;
-				switch (error.cause) {
-					case 'INVALID_CREDENTIALS':
-						toast.error(error.message, { duration: 3000, id: toastId });
-						break;
-					default:
-						console.error(error);
-				}
-			},
-			onPending() {
-				return toast.loading('Updating Board', {
-					duration: Number.POSITIVE_INFINITY
-				});
-			},
-
-			onSuccess(_, toastId) {
-				toast.success('Updated Board', { duration: 3000, id: toastId });
-			}
+	const queryClient = useQueryClient();
+	const mutation = createMutation(() => ({
+		mutationFn: async (formData: FormData) => {
+			formData.set('title', await encryptWithUserKeys(String(formData.get('title'))));
+			await $updateBoard(formData);
 		},
-		{ predicate: () => true }
-	);
+		onError: (_, __, context) => {
+			if (!context) return;
+			queryClient.setQueryData(['boards', context.path], context.previousData);
+			toast.error('Failed to update board', { id: context.toastId });
+		},
+		onMutate: async (formData) => {
+			await queryClient.cancelQueries({ queryKey: ['boards', appContext.path] });
+			const previousData = queryClient.getQueryData<Array<TBoard & { tasks: TTask[] }>>([
+				'boards',
+				appContext.path
+			]);
+			if (!previousData) return;
+			const title = String(formData.get('title'));
+			queryClient.setQueryData(
+				['boards', appContext.path],
+				create(previousData, (draft) => {
+					const board = draft.find((board) => board.id === formData.get('id'));
+					if (!board) return;
+					board.title = title;
+					board.userId = 'pending';
+				})
+			);
+			const toastId = toast.loading(`Creating Board: ${title}`);
+			return { path: appContext.path, previousData, toastId, title };
+		},
+		onSettled: (_, __, ___, context) => {
+			if (!context) return;
+			queryClient.invalidateQueries({ queryKey: ['boards', context.path] });
+			toast.success(`Created Board: ${context.title}`, { id: context.toastId });
+		}
+	}));
 
 	return (
 		<BaseModal open={updateBoardModalOpen()} setOpen={setUpdateBoardModalOpen} title="Update Board">
@@ -53,10 +67,7 @@ export default function UpdateBoardModal() {
 					onSubmit={async (event) => {
 						event.preventDefault();
 						const form = event.target as HTMLFormElement;
-						const formData = new FormData(form);
-						const title = String(formData.get('title'));
-						formData.set('title', await encryptWithUserKeys(title));
-						await $updateBoard(formData);
+						mutation.mutate(new FormData(form));
 					}}
 				>
 					<input name="id" type="hidden" value={board()?.id} />

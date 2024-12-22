@@ -4,25 +4,26 @@ import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-sc
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { Key } from '@solid-primitives/keyed';
-import { createWritableMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, createAsync, revalidate, RouteDefinition } from '@solidjs/router';
+import { A, revalidate, RouteDefinition } from '@solidjs/router';
 import { TBoard, TTask } from 'db/schema';
 import { produce } from 'immer';
 import { animate, AnimationControls, spring } from 'motion';
 import {
-	createComputed,
 	createEffect,
 	createMemo,
 	createSignal,
+	Match,
+	Switch,
 	mergeProps,
 	onCleanup,
 	onMount,
 	ParentComponent,
 	Setter,
 	Show,
-	untrack
+	untrack,
+	For
 } from 'solid-js';
 import { toast } from 'solid-sonner';
 
@@ -35,13 +36,14 @@ import { Button } from '~/components/ui/button';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { createBoard, getBoards, moveBoards } from '~/db/utils/boards';
+import { getBoards, moveBoards } from '~/db/utils/boards';
 import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { onSubmission } from '~/utils/action';
-import { decryptWithUserKeys } from '~/utils/auth.server';
 import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
 import invariant from '~/utils/tiny-invariant';
+import { createQuery, useQueryClient } from '@tanstack/solid-query';
+import { createLazyMemo } from '@solid-primitives/memo';
+import { Skeleton } from '~/components/ui/skeleton';
 
 export const route: RouteDefinition = {
 	matchFilters: {
@@ -49,18 +51,26 @@ export const route: RouteDefinition = {
 			pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
 	},
 	preload: ({ location }) => {
-		getBoards(location.pathname);
+		const queryClient = useQueryClient();
+		queryClient.prefetchQuery({
+			queryKey: ['boards', decodeURIComponent(location.pathname)],
+			queryFn: ({ queryKey }) => getBoards(queryKey[1])
+		});
 	}
 };
 
 export default function ProjectPage() {
 	const [appContext, setAppContext] = useApp();
-	const $boards = createAsync(() => getBoards(appContext.path));
-	const [boards, setBoards] = createWritableMemo(() => $boards.latest);
-	const hasBoards = () => boards() && boards()!.length > 0;
 
-	const boardsDirty = createMemo(() => {
-		const $boards = boards();
+	const boardsQuery = createQuery(() => ({
+		queryKey: ['boards', appContext.path],
+		queryFn: ({ queryKey }) => getBoards(queryKey[1])
+	}));
+	const hasBoards = () => boardsQuery.data && boardsQuery.data.length > 0;
+
+	const boardsDirty = createLazyMemo(() => {
+		if (boardsQuery.isPending) return false;
+		const $boards = boardsQuery.data;
 		if ($boards === undefined) return false;
 		return $boards.some((board) =>
 			board.tasks.some((task, index) => task.index !== index || task.boardId !== board.id)
@@ -71,40 +81,40 @@ export default function ProjectPage() {
 
 	createEffect(() => setIsDirty('project', boardsDirty()));
 
-	onSubmission(
-		createBoard,
-		{
-			onError(toastId: number | string | undefined) {
-				toast.error('Error', { id: toastId });
-			},
-			onPending(input) {
-				setBoards((boards) =>
-					produce(boards, (boards) => {
-						boards?.push({
-							createdAt: new Date(),
-							id: String(input[0].get('id')),
-							index: boards!.length,
-							nodeId: 'pending',
-							tasks: [],
-							title: String(input[0].get('title')),
-							updatedAt: new Date(),
-							userId: 'pending'
-						});
-					})
-				);
-				return toast.loading('Creating Board');
-			},
-			onSuccess(board, toastId) {
-				decryptWithUserKeys(board.title).then((title) => {
-					toast.success(`Created Board: ${title}`, { id: toastId });
-				});
-			}
-		},
-		{ predicate: () => true }
-	);
+	// onSubmission(
+	// 	createBoard,
+	// 	{
+	// 		onError(toastId: number | string | undefined) {
+	// 			toast.error('Error', { id: toastId });
+	// 		},
+	// 		onPending(input) {
+	// 			setBoards((boards) =>
+	// 				produce(boards, (boards) => {
+	// 					boards?.push({
+	// 						createdAt: new Date(),
+	// 						id: String(input[0].get('id')),
+	// 						index: boards!.length,
+	// 						nodeId: 'pending',
+	// 						tasks: [],
+	// 						title: String(input[0].get('title')),
+	// 						updatedAt: new Date(),
+	// 						userId: 'pending'
+	// 					});
+	// 				})
+	// 			);
+	// 			return toast.loading('Creating Board');
+	// 		},
+	// 		onSuccess(board, toastId) {
+	// 			decryptWithUserKeys(board.title).then((title) => {
+	// 				toast.success(`Created Board: ${title}`, { id: toastId });
+	// 			});
+	// 		}
+	// 	},
+	// 	{ predicate: () => true }
+	// );
 
-	createComputed(() => {
-		const $boards = boards();
+	createEffect(() => {
+		const $boards = boardsQuery.data;
 		untrack(() => {
 			setAppContext('boards', $boards ?? []);
 		});
@@ -113,72 +123,94 @@ export default function ProjectPage() {
 	void createSubscription(makeSubscriptionHandler([getBoards.key]));
 
 	return (
-		<Show
-			fallback={
-				<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
-					<div>Project Not Found</div>
-					<Button as={A} href="/">
-						Go Home
-					</Button>
-				</div>
-			}
-			when={!(boards() instanceof Error)}
-		>
-			<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-				<ApplyChangesPopup
-					boards={boards()}
-					boardsDirty={boardsDirty()}
-					reset={() => setBoards($boards.latest)}
-				/>
-				<Show when={hasBoards()}>
+		<Switch>
+			<Match when={boardsQuery.isPending}>
+				<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
 					<div class="flex justify-end gap-4">
-						<Button
-							class="flex items-center gap-2"
-							disabled={isDirty('project')}
-							onClick={() => setCreateBoardModalOpen(true)}
-						>
-							<span class="i-heroicons:plus text-lg" />
-							<span>Create Board</span>
-						</Button>
+						<Skeleton height={40} radius={5} width={150} />
 					</div>
-				</Show>
-				<PathCrumbs />
+					<PathCrumbs />
+					<AnimatedBoardsList boards={boardsQuery.data!} setBoards={() => {}}>
+						<For each={Array.from({ length: 3 })}>
+							{() => (
+								<Skeleton
+									class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
+									radius={5}
+								/>
+							)}
+						</For>
+					</AnimatedBoardsList>
+				</div>
+			</Match>
+			<Match when={boardsQuery.isSuccess}>
 				<Show
 					fallback={
-						<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
-							<img
-								class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
-								src="/empty.svg"
-							/>
-							<span>Empty Project</span>
-							<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
+						<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
+							<div>Project Not Found</div>
+							<Button as={A} href="/">
+								Go Home
+							</Button>
+						</div>
+					}
+					when={!(boardsQuery.data instanceof Error)}
+				>
+					<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
+						<ApplyChangesPopup
+							boards={boardsQuery.data}
+							boardsDirty={boardsDirty()}
+							reset={() => boardsQuery.refetch()}
+						/>
+						<Show when={hasBoards()}>
+							<div class="flex justify-end gap-4">
 								<Button
 									class="flex items-center gap-2"
+									disabled={isDirty('project')}
 									onClick={() => setCreateBoardModalOpen(true)}
 								>
 									<span class="i-heroicons:plus text-lg" />
 									<span>Create Board</span>
 								</Button>
 							</div>
-						</div>
-					}
-					when={hasBoards()}
-				>
-					<AnimatedBoardsList boards={boards()!} setBoards={setBoards}>
-						<Key by="id" each={boards()}>
-							{(board, index) => (
-								<Board
-									board={board()}
-									class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
-									index={index()}
-								/>
-							)}
-						</Key>
-						<SkeletonBoard class="hidden shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
-					</AnimatedBoardsList>
+						</Show>
+						<PathCrumbs />
+						<Show
+							fallback={
+								<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
+									<img
+										class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+										src="/empty.svg"
+									/>
+									<span>Empty Project</span>
+									<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
+										<Button
+											class="flex items-center gap-2"
+											onClick={() => setCreateBoardModalOpen(true)}
+										>
+											<span class="i-heroicons:plus text-lg" />
+											<span>Create Board</span>
+										</Button>
+									</div>
+								</div>
+							}
+							when={hasBoards()}
+						>
+							<AnimatedBoardsList boards={boardsQuery.data!} setBoards={() => {}}>
+								<Key by="id" each={boardsQuery.data}>
+									{(board, index) => (
+										<Board
+											board={board()}
+											class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
+											index={index()}
+										/>
+									)}
+								</Key>
+								<SkeletonBoard class="hidden shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
+							</AnimatedBoardsList>
+						</Show>
+					</div>
 				</Show>
-			</div>
-		</Show>
+			</Match>
+		</Switch>
 	);
 }
 

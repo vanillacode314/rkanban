@@ -41,6 +41,7 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
+import { useQueryClient } from '@tanstack/solid-query';
 
 export const Board: Component<{
 	board: { tasks: TTask[] } & TBoard;
@@ -157,9 +158,14 @@ export const Board: Component<{
 									props.board.userId !== 'pending' && '!hidden'
 								)}
 							/>
-							<Decrypt fallback value={props.board.title}>
-								{(title) => <span>{title()}</span>}
-							</Decrypt>
+							<Show
+								fallback={<span>{props.board.title}</span>}
+								when={props.board.userId !== 'pending'}
+							>
+								<Decrypt fallback value={props.board.title}>
+									{(title) => <span>{title()}</span>}
+								</Decrypt>
+							</Show>
 						</CardTitle>
 						<div class={cn('flex items-center justify-end gap-2')}>
 							<Button
@@ -252,6 +258,7 @@ function BoardContextMenu(props: {
 	const [appContext, setAppContext] = useApp();
 	const confirmModal = useConfirmModal();
 	const $deleteBoard = useAction(deleteBoard);
+	const queryClient = useQueryClient();
 
 	return (
 		<div class="flex-col">
@@ -284,11 +291,17 @@ function BoardContextMenu(props: {
 									const formData = new FormData();
 									formData.set('id', props.board.id.toString());
 									formData.set('appId', appContext.id);
-									toast.promise(() => $deleteBoard(formData), {
-										error: 'Error',
-										loading: 'Deleting Board',
-										success: 'Deleted Board'
-									});
+									toast.promise(
+										() =>
+											$deleteBoard(formData).then(() =>
+												queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
+											),
+										{
+											error: 'Error',
+											loading: 'Deleting Board',
+											success: 'Deleted Board'
+										}
+									);
 								},
 								title: 'Delete Board'
 							});
