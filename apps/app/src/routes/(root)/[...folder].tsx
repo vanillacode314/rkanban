@@ -132,7 +132,7 @@ export default function FolderPage() {
 					</div>
 					<PathCrumbs />
 					<AnimatedNodesList>
-						<For each={Array.from({ length: 10 })}>{() => <Skeleton height={40} radius={5} />}</For>
+						<For each={Array.from({ length: 4 })}>{() => <Skeleton height={40} radius={5} />}</For>
 					</AnimatedNodesList>
 				</div>
 			</Match>
