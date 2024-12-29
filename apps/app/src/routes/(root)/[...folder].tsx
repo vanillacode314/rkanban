@@ -4,6 +4,7 @@ import {
 	dropTargetForElements,
 	monitorForElements
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { createKeyHold } from '@solid-primitives/keyboard';
 import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
@@ -31,8 +32,10 @@ import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFi
 import { setCreateFolderModalOpen } from '~/components/modals/auto-import/CreateFolderModal';
 import { setRenameFileModalOpen } from '~/components/modals/auto-import/RenameFileModal';
 import { setRenameFolderModalOpen } from '~/components/modals/auto-import/RenameFolderModal';
+import Modal from '~/components/modals/BaseModal';
 import PathCrumbs from '~/components/PathCrumbs';
 import { Button } from '~/components/ui/button';
+import { Checkbox } from '~/components/ui/checkbox';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -64,7 +67,7 @@ export const route: RouteDefinition = {
 };
 
 export default function FolderPage() {
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 	const nodesQuery = createQuery(() => ({
 		queryFn: ({ queryKey }) => {
 			return getNodes(queryKey[1], { includeChildren: true });
@@ -110,36 +113,15 @@ export default function FolderPage() {
 	});
 
 	return (
-		<Switch>
-			<Match when={nodesQuery.isPending}>
-				<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-					<div class="flex justify-end gap-4">
-						<Skeleton height={40} radius={5} width={150} />
-						<Skeleton height={40} radius={5} width={150} />
-					</div>
-					<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-						<Show when={appContext.path === '/'}>
-							<Button
-								as={A}
-								class="flex items-center justify-start gap-2"
-								href="/settings"
-								variant="outline"
-							>
-								<span class="i-heroicons:cog text-lg" />
-								<span>Settings</span>
-							</Button>
-						</Show>
-					</div>
-					<PathCrumbs />
-					<AnimatedNodesList>
-						<For each={Array.from({ length: 4 })}>{() => <Skeleton height={40} radius={5} />}</For>
-					</AnimatedNodesList>
-				</div>
-			</Match>
-			<Match when={nodesQuery.isSuccess}>
-				<Show fallback={<FolderNotFound />} when={!(nodesQuery.data instanceof Error)}>
+		<>
+			<HelpOverlay />
+			<Switch>
+				<Match when={nodesQuery.isPending}>
 					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-						<Toolbar currentNode={currentNode()} nodes={children()} />
+						<div class="flex justify-end gap-4">
+							<Skeleton height={40} radius={5} width={150} />
+							<Skeleton height={40} radius={5} width={150} />
+						</div>
 						<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 							<Show when={appContext.path === '/'}>
 								<Button
@@ -154,32 +136,58 @@ export default function FolderPage() {
 							</Show>
 						</div>
 						<PathCrumbs />
-						<Show fallback={<EmptyFolder />} when={children().length > 0}>
-							<AnimatedNodesList>
-								<Show when={currentNode().parentId !== null}>
-									<FolderNode
-										node={{
-											createdAt: new Date(),
-											id: currentNode().parentId!,
-											name: '..',
-											parentId: '__parent__',
-											updatedAt: new Date(),
-											userId: currentNode().userId
-										}}
-									/>
-								</Show>
-								<Key by="id" each={folders()}>
-									{(node) => <FolderNode node={node()} />}
-								</Key>
-								<Key by="id" each={files()}>
-									{(node) => <FileNode node={node()} />}
-								</Key>
-							</AnimatedNodesList>
-						</Show>
+						<AnimatedNodesList>
+							<For each={Array.from({ length: 4 })}>
+								{() => <Skeleton height={40} radius={5} />}
+							</For>
+						</AnimatedNodesList>
 					</div>
-				</Show>
-			</Match>
-		</Switch>
+				</Match>
+				<Match when={nodesQuery.isSuccess}>
+					<Show fallback={<FolderNotFound />} when={!(nodesQuery.data instanceof Error)}>
+						<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
+							<Toolbar currentNode={currentNode()} nodes={children()} />
+							<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+								<Show when={appContext.path === '/'}>
+									<Button
+										as={A}
+										class="flex items-center justify-start gap-2"
+										href="/settings"
+										variant="outline"
+									>
+										<span class="i-heroicons:cog text-lg" />
+										<span>Settings</span>
+									</Button>
+								</Show>
+							</div>
+							<PathCrumbs />
+							<Show fallback={<EmptyFolder />} when={children().length > 0}>
+								<AnimatedNodesList>
+									<Show when={currentNode().parentId !== null}>
+										<FolderNode
+											node={{
+												createdAt: new Date(),
+												id: currentNode().parentId!,
+												name: '..',
+												parentId: '__parent__',
+												updatedAt: new Date(),
+												userId: currentNode().userId
+											}}
+										/>
+									</Show>
+									<Key by="id" each={folders()}>
+										{(node) => <FolderNode node={node()} />}
+									</Key>
+									<Key by="id" each={files()}>
+										{(node) => <FileNode node={node()} />}
+									</Key>
+								</AnimatedNodesList>
+							</Show>
+						</div>
+					</Show>
+				</Match>
+			</Switch>
+		</>
 	);
 }
 
@@ -193,6 +201,11 @@ function Node(props: {
 }) {
 	const [appContext, { addToClipboard, filterClipboard }] = useApp();
 	const navigate = useNavigate();
+	const shiftKey = createKeyHold('Shift', { preventDefault: false });
+	const isSelected = () =>
+		appContext.clipboard.some(
+			(item) => item.data === props.node.id && item.type === 'id/node' && item.mode === 'selection'
+		);
 
 	return (
 		<div
@@ -225,7 +238,41 @@ function Node(props: {
 					<span class="truncate">{props.node.name}</span>
 				</A>
 			</div>
-			{props.dropdownMenu}
+			<Show
+				fallback={
+					<div class="grid size-10 place-content-center">
+						<Checkbox
+							checked={isSelected()}
+							class="space-x-0"
+							onChange={(checked) => {
+								if (checked)
+									addToClipboard({
+										data: props.node.id,
+										meta: {
+											node: props.node,
+											path: path.join('/home', appContext.path, props.node.name)
+										},
+										mode: 'selection',
+										type: 'id/node'
+									});
+								else {
+									filterClipboard(
+										(item) =>
+											!(
+												item.data === props.node.id &&
+												item.type === 'id/node' &&
+												item.mode === 'selection'
+											)
+									);
+								}
+							}}
+						/>
+					</div>
+				}
+				when={(!shiftKey() && appContext.mode === 'normal') || props.node.name === '..'}
+			>
+				{props.dropdownMenu}
+			</Show>
 		</div>
 	);
 }
@@ -538,12 +585,21 @@ function EmptyFolder() {
 }
 
 function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
-	const [appContext, { setCurrentNode, filterClipboard }] = useApp();
+	const [appContext, { addToClipboard, clearClipboard, filterClipboard, setCurrentNode, setMode }] =
+		useApp();
 	const $updateNode = useAction(updateNode);
 	const $copyNode = useAction(copyNode);
 	const queryClient = useQueryClient();
+	const confirmModal = useConfirmModal();
+	const $deleteNode = useAction(deleteNode);
 
-	const nodesInClipboard = () => appContext.clipboard.filter((item) => item.type === 'id/node');
+	const nodesInClipboard = () =>
+		appContext.clipboard.filter(
+			(item) => item.type === 'id/node' && (item.mode === 'move' || item.mode === 'copy')
+		);
+
+	const selectedNodes = () =>
+		appContext.clipboard.filter((item) => item.mode === 'selection' && item.type === 'id/node');
 
 	function paste() {
 		const items = structuredClone(unwrap(nodesInClipboard()));
@@ -569,11 +625,11 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 						formData.set('parentId', props.currentNode.id);
 						formData.set('appId', appContext.id);
 						switch (item.mode) {
+							case 'copy':
+								return $copyNode(formData);
 							case 'move':
 								formData.set('name', node.name);
 								return $updateNode(formData);
-							case 'copy':
-								return $copyNode(formData);
 							default:
 								return;
 						}
@@ -592,13 +648,23 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 
 	return (
 		<div class="flex justify-end gap-4 empty:hidden">
-			<Show when={nodesInClipboard().length > 0}>
+			<Show when={appContext.mode === 'normal' && nodesInClipboard().length > 0}>
 				<Button class="flex items-center gap-2" onClick={paste} variant="secondary">
 					<span class="i-heroicons:clipboard text-lg" />
 					<span>Paste</span>
 				</Button>
 			</Show>
-			<Show when={props.nodes.length > 0}>
+			<Show when={appContext.mode === 'normal' && props.nodes.length > 0}>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						setMode('selection');
+					}}
+					variant="secondary"
+				>
+					<span class="i-fluent:select-all-24-regular text-lg" />
+					<span>Multi Select Mode</span>
+				</Button>
 				<Button
 					class="flex items-center gap-2"
 					onClick={() => {
@@ -618,6 +684,124 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 				>
 					<span class="i-heroicons:folder-plus text-lg" />
 					<span>Create Folder</span>
+				</Button>
+			</Show>
+			<Show when={appContext.mode === 'selection' && selectedNodes().length > 0}>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						filterClipboard((item) => item.mode !== 'selection');
+					}}
+				>
+					<span class="i-fluent:select-all-off-24-regular text-lg" />
+					<span>Unselect All</span>
+				</Button>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						filterClipboard((item) => item.mode !== 'selection');
+						addToClipboard(
+							...props.nodes.map((node) => ({
+								data: node.id,
+								meta: {
+									node,
+									path: path.join('/home', appContext.path, node.name)
+								},
+								mode: 'selection' as const,
+								type: 'id/node' as const
+							}))
+						);
+					}}
+				>
+					<span class="i-fluent:select-all-24-filled text-lg" />
+					<span>Select All</span>
+				</Button>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						const $selectedNodes = selectedNodes();
+						filterClipboard(
+							(item) =>
+								item.mode !== 'selection' &&
+								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
+						);
+						addToClipboard(
+							...$selectedNodes.map(
+								create((item) => {
+									item.mode = 'copy';
+								})
+							)
+						);
+					}}
+				>
+					<span class="i-heroicons:clipboard text-lg" />
+					<span>Copy</span>
+				</Button>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						const $selectedNodes = selectedNodes();
+						filterClipboard(
+							(item) =>
+								item.mode !== 'selection' &&
+								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
+						);
+						addToClipboard(
+							...$selectedNodes.map(
+								create((item) => {
+									item.mode = 'move';
+								})
+							)
+						);
+					}}
+				>
+					<span class="i-heroicons:scissors text-lg" />
+					<span>Cut</span>
+				</Button>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						confirmModal.open({
+							message: `Are you sure you want to delete the selected files and folders.`,
+							onYes() {
+								const formData = new FormData();
+								formData.set('appId', appContext.id);
+								for (const item of selectedNodes()) {
+									formData.append('id', item.data);
+								}
+								toast.promise(
+									async () => {
+										await $deleteNode(formData);
+										await queryClient.invalidateQueries({
+											queryKey: ['nodes', appContext.path]
+										});
+										clearClipboard();
+									},
+									{
+										error: 'Error',
+										loading: 'Deleting Folder',
+										success: 'Deleted Folder'
+									}
+								);
+							},
+							title: 'Delete Folder'
+						});
+					}}
+					variant="destructive"
+				>
+					<span class="i-heroicons:trash text-lg" />
+					<span>Delete</span>
+				</Button>
+			</Show>
+			<Show when={appContext.mode === 'selection'}>
+				<Button
+					class="flex items-center gap-2"
+					onClick={() => {
+						filterClipboard((item) => item.mode !== 'selection');
+					}}
+				>
+					<span class="i-heroicons:check-circle-solid text-lg" />
+					<span>Done</span>
 				</Button>
 			</Show>
 		</div>
@@ -661,3 +845,24 @@ const AnimatedNodesList: ParentComponent = (props) => {
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">{transition()}</div>
 	);
 };
+
+function HelpOverlay() {
+	const [open, setOpen] = createSignal(false);
+
+	return (
+		<>
+			<Modal id="help-overlay" open={open()} setOpen={setOpen} title="Help">
+				{() => (
+					<>
+						<p>Hold shift to access multi selection mode</p>
+					</>
+				)}
+			</Modal>
+			<div class="fixed bottom-4 right-4 opacity-50">
+				<button onClick={() => setOpen(true)} type="button">
+					<span class="i-heroicons:question-mark-circle text-2xl" />
+				</button>
+			</div>
+		</>
+	);
+}

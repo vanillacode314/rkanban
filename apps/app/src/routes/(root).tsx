@@ -17,6 +17,7 @@ import { DirtyProvider } from '~/context/dirty';
 import { cn } from '~/lib/utils';
 import { getUser } from '~/utils/auth.server';
 import { localforage } from '~/utils/localforage';
+import * as path from '~/utils/path';
 
 function CleanUpUser() {
 	const user = createAsync(() => getUser({ shouldThrow: false }), { initialValue: null });
@@ -109,7 +110,7 @@ function Clipboard() {
 											)}
 										/>
 										<span class="truncate">
-											{(item.meta as { node: TNode; path: string }).path}
+											{path.compressPath((item.meta as { node: TNode; path: string }).path)}
 										</span>
 										<span
 											class={cn(

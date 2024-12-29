@@ -11,23 +11,23 @@ type TClipboardItem = {
 	type: `${string}/${string}`;
 };
 const DEFAULT_APP_CONTEXT = {
-	mode: 'normal',
 	boards: [],
 	clipboard: [],
 	currentBoard: null,
 	currentNode: null,
 	currentTask: null,
 	id: nanoid(),
+	mode: 'normal',
 	path: '/'
 } satisfies TAppContext;
 type TAppContext = {
-	mode: 'normal' | 'selection';
 	boards: Array<{ tasks: TTask[] } & TBoard>;
 	clipboard: TClipboardItem[];
 	currentBoard: null | TBoard;
 	currentNode: null | TNode;
 	currentTask: null | TTask;
 	id: string;
+	mode: 'normal' | 'selection';
 	path: string;
 };
 const AppContext = createContext<
@@ -35,12 +35,13 @@ const AppContext = createContext<
 		appContext: TAppContext,
 		{
 			addToClipboard: (...item: TClipboardItem[]) => void;
-			filterClipboard: (predicate: (item: TClipboardItem) => boolean) => void;
 			clearClipboard: () => void;
+			filterClipboard: (predicate: (item: TClipboardItem) => boolean) => void;
 			setBoards: (boards: Array<{ tasks: TTask[] } & TBoard>) => void;
-			setCurrentNode: (node: TNode) => void;
 			setCurrentBoard: (board: TBoard) => void;
+			setCurrentNode: (node: TNode) => void;
 			setCurrentTask: (task: TTask) => void;
+			setMode: (mode: TAppContext['mode']) => void;
 		}
 	]
 >();
@@ -79,6 +80,13 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 							})
 						);
 					},
+					clearClipboard() {
+						setAppContext(
+							create((app) => {
+								app.clipboard.length = 0;
+							})
+						);
+					},
 					filterClipboard(predicate) {
 						setAppContext(
 							create((app) => {
@@ -86,10 +94,10 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 							})
 						);
 					},
-					setCurrentNode(node) {
+					setBoards(boards) {
 						setAppContext(
 							create((app) => {
-								app.currentNode = node;
+								app.boards = boards;
 							})
 						);
 					},
@@ -100,6 +108,13 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 							})
 						);
 					},
+					setCurrentNode(node) {
+						setAppContext(
+							create((app) => {
+								app.currentNode = node;
+							})
+						);
+					},
 					setCurrentTask(task) {
 						setAppContext(
 							create((app) => {
@@ -107,17 +122,10 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 							})
 						);
 					},
-					clearClipboard() {
+					setMode(mode) {
 						setAppContext(
 							create((app) => {
-								app.clipboard.length = 0;
-							})
-						);
-					},
-					setBoards(boards) {
-						setAppContext(
-							create((app) => {
-								app.boards = boards;
+								app.mode = mode;
 							})
 						);
 					}

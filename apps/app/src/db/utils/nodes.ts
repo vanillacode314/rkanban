@@ -1,6 +1,6 @@
 import { action, cache } from '@solidjs/router';
 import { boards, nodes, nodesSchema, tasks, TBoard, TNode, TTask } from 'db/schema';
-import { and, eq, like, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, like, or, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getCookie } from 'vinxi/http';
 import { z } from 'zod';
@@ -130,11 +130,11 @@ const deleteNode = action(async (formData: FormData) => {
 
 	const user = await checkUser();
 
-	const nodeId = String(formData.get('id')).trim();
+	const nodeIds = formData.getAll('id').map((item) => String(item).trim());
 
 	const [node] = await db
 		.delete(nodes)
-		.where(and(eq(nodes.id, nodeId), eq(nodes.userId, user.id)))
+		.where(and(inArray(nodes.id, nodeIds), eq(nodes.userId, user.id)))
 		.returning();
 
 	void notify({
