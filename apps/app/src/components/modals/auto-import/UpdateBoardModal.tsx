@@ -49,13 +49,13 @@ export default function UpdateBoardModal() {
 					board.userId = 'pending';
 				})
 			);
-			const toastId = toast.loading(`Creating Board: ${title}`);
+			const toastId = toast.loading(`Updating Board: ${title}`);
 			return { path: appContext.path, previousData, title, toastId };
 		},
 		onSettled: (_, __, ___, context) => {
 			if (!context) return;
 			queryClient.invalidateQueries({ queryKey: ['boards', context.path] });
-			toast.success(`Created Board: ${context.title}`, { id: context.toastId });
+			toast.success(`Updated Board: ${context.title}`, { id: context.toastId });
 		}
 	}));
 
