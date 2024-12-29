@@ -10,7 +10,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition, useAction, useNavigate } from '@solidjs/router';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TNode } from 'db/schema';
-import { produce } from 'immer';
+import { create } from 'mutative';
 import { animate, spring } from 'motion';
 import {
 	createSignal,
@@ -300,7 +300,7 @@ function FolderNode(props: { node: TNode }) {
 									return;
 								setAppContext(
 									'clipboard',
-									produce((clipboard) => {
+									create((clipboard) => {
 										clipboard.push({
 											data: props.node.id,
 											meta: {
@@ -329,7 +329,7 @@ function FolderNode(props: { node: TNode }) {
 									return;
 								setAppContext(
 									'clipboard',
-									produce((clipboard) => {
+									create((clipboard) => {
 										clipboard.push({
 											data: props.node.id,
 											meta: {
@@ -438,7 +438,7 @@ function FileNode(props: { node: TNode }) {
 							onSelect={() => {
 								setAppContext(
 									'clipboard',
-									produce((clipboard) => {
+									create((clipboard) => {
 										clipboard.push({
 											data: props.node.id,
 											meta: {
@@ -461,7 +461,7 @@ function FileNode(props: { node: TNode }) {
 							onSelect={() => {
 								setAppContext(
 									'clipboard',
-									produce((clipboard) => {
+									create((clipboard) => {
 										clipboard.push({
 											data: props.node.id,
 											meta: {
@@ -548,6 +548,7 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 	const [appContext, setAppContext] = useApp();
 	const $updateNode = useAction(updateNode);
 	const $copyNode = useAction(copyNode);
+	const queryClient = useQueryClient();
 
 	const nodesInClipboard = () => appContext.clipboard.filter((item) => item.type === 'id/node');
 
@@ -577,6 +578,7 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 							return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
 						})
 					);
+					await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
 					setAppContext('clipboard', ($items) =>
 						$items.filter(($item) => !items.some((item) => $item.data === item.data))
 					);

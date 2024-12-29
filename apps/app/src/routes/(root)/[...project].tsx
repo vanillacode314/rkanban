@@ -10,7 +10,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition } from '@solidjs/router';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
-import { produce } from 'immer';
+import { create } from 'mutative';
 import { animate, AnimationControls, spring } from 'motion';
 import {
 	createEffect,
@@ -314,8 +314,8 @@ const AnimatedBoardsList: ParentComponent<{
 					invariant(destinationIndex !== -1 && sourceIndex !== -1);
 
 					if (destinationBoard === sourceBoard) {
-						props.setBoards((boards) =>
-							produce(boards, (boards) => {
+						props.setBoards(
+							create((boards) => {
 								invariant(boards);
 								const board = boards[destinationBoardIndex];
 								board.tasks = reorderWithEdge({
@@ -328,8 +328,8 @@ const AnimatedBoardsList: ParentComponent<{
 							})
 						);
 					} else {
-						props.setBoards((boards) =>
-							produce(boards, (boards) => {
+						props.setBoards(
+							create((boards) => {
 								invariant(boards);
 								const destinationBoard = boards[destinationBoardIndex];
 								const sourceBoard = boards[sourceBoardIndex];
