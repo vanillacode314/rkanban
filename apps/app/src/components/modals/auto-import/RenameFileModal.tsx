@@ -15,7 +15,7 @@ export const [renameFileModalOpen, setRenameFileModalOpen] = createSignal<boolea
 
 export default function RenameFileModal() {
 	let el!: HTMLFormElement;
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 	const queryClient = useQueryClient();
 	const $updateNode = useAction(updateNode);
 

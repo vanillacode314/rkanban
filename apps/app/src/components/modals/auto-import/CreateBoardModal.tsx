@@ -16,7 +16,7 @@ import { encryptWithUserKeys } from '~/utils/auth.server';
 export const [createBoardModalOpen, setCreateBoardModalOpen] = createSignal<boolean>(false);
 
 export default function CreateBoardModal() {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 	const $createBoard = useAction(createBoard);
 
 	const queryClient = useQueryClient();

@@ -81,16 +81,18 @@ function getServerCookies() {
 }
 
 function Clipboard() {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { clearClipboard }] = useApp();
+	const items = () =>
+		appContext.clipboard.filter((item) => item.mode === 'move' || item.mode === 'copy');
 
 	return (
-		<Show when={appContext.clipboard.length > 0}>
+		<Show when={items().length > 0}>
 			<Card class="fixed bottom-5 right-5">
 				<CardHeader>
 					<CardTitle>Clipboard</CardTitle>
 				</CardHeader>
 				<CardContent class="flex w-full max-w-sm flex-col gap-2">
-					<For each={appContext.clipboard}>
+					<For each={items()}>
 						{(item) => (
 							<Switch>
 								<Match when={item.type === 'id/node'}>
@@ -123,7 +125,7 @@ function Clipboard() {
 					</For>
 				</CardContent>
 				<CardFooter>
-					<Button class="w-full" onClick={() => setAppContext('clipboard', [])}>
+					<Button class="w-full" onClick={clearClipboard}>
 						Clear
 					</Button>
 				</CardFooter>

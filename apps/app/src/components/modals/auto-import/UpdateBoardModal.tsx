@@ -16,7 +16,7 @@ import { encryptWithUserKeys } from '~/utils/auth.server';
 export const [updateBoardModalOpen, setUpdateBoardModalOpen] = createSignal<boolean>(false);
 
 export default function UpdateBoardModal() {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 
 	const board = () => appContext.currentBoard;
 	const $updateBoard = useAction(updateBoard);

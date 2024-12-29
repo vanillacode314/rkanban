@@ -64,7 +64,7 @@ export const route: RouteDefinition = {
 };
 
 export default function FolderPage() {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 	const nodesQuery = createQuery(() => ({
 		queryFn: ({ queryKey }) => {
 			return getNodes(queryKey[1], { includeChildren: true });
@@ -191,7 +191,7 @@ function Node(props: {
 	node: TNode;
 	ref: HTMLDivElement;
 }) {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, { addToClipboard, filterClipboard }] = useApp();
 	const navigate = useNavigate();
 
 	return (
@@ -231,7 +231,7 @@ function Node(props: {
 }
 
 function FolderNode(props: { node: TNode }) {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { addToClipboard, setCurrentNode }] = useApp();
 	const $deleteNode = useAction(deleteNode);
 	const confirmModal = useConfirmModal();
 	const queryClient = useQueryClient();
@@ -281,7 +281,7 @@ function FolderNode(props: { node: TNode }) {
 					<DropdownMenuContent class="w-48">
 						<DropdownMenuItem
 							onSelect={() => {
-								setAppContext('currentNode', props.node);
+								setCurrentNode(props.node);
 								setRenameFolderModalOpen(true);
 							}}
 						>
@@ -298,20 +298,15 @@ function FolderNode(props: { node: TNode }) {
 									)
 								)
 									return;
-								setAppContext(
-									'clipboard',
-									create((clipboard) => {
-										clipboard.push({
-											data: props.node.id,
-											meta: {
-												node: props.node,
-												path: path.join('/home', appContext.path, props.node.name)
-											},
-											mode: 'copy',
-											type: 'id/node'
-										});
-									})
-								);
+								addToClipboard({
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									},
+									mode: 'copy',
+									type: 'id/node'
+								});
 							}}
 						>
 							<span>Copy</span>
@@ -327,20 +322,15 @@ function FolderNode(props: { node: TNode }) {
 									)
 								)
 									return;
-								setAppContext(
-									'clipboard',
-									create((clipboard) => {
-										clipboard.push({
-											data: props.node.id,
-											meta: {
-												node: props.node,
-												path: path.join('/home', appContext.path, props.node.name)
-											},
-											mode: 'move',
-											type: 'id/node'
-										});
-									})
-								);
+								addToClipboard({
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									},
+									mode: 'move',
+									type: 'id/node'
+								});
 							}}
 						>
 							<span>Cut</span>
@@ -390,7 +380,7 @@ function FolderNode(props: { node: TNode }) {
 }
 
 function FileNode(props: { node: TNode }) {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { addToClipboard, setCurrentNode }] = useApp();
 	const $deleteNode = useAction(deleteNode);
 	const confirmModal = useConfirmModal();
 	const queryClient = useQueryClient();
@@ -425,7 +415,7 @@ function FileNode(props: { node: TNode }) {
 					<DropdownMenuContent class="w-48">
 						<DropdownMenuItem
 							onSelect={() => {
-								setAppContext('currentNode', props.node);
+								setCurrentNode(props.node);
 								setRenameFileModalOpen(true);
 							}}
 						>
@@ -436,20 +426,21 @@ function FileNode(props: { node: TNode }) {
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onSelect={() => {
-								setAppContext(
-									'clipboard',
-									create((clipboard) => {
-										clipboard.push({
-											data: props.node.id,
-											meta: {
-												node: props.node,
-												path: path.join('/home', appContext.path, props.node.name)
-											},
-											mode: 'copy',
-											type: 'id/node'
-										});
-									})
-								);
+								if (
+									appContext.clipboard.some(
+										(item) => item.type === 'id/node' && item.data === props.node.id
+									)
+								)
+									return;
+								addToClipboard({
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									},
+									mode: 'copy',
+									type: 'id/node'
+								});
 							}}
 						>
 							<span>Copy</span>
@@ -459,20 +450,22 @@ function FileNode(props: { node: TNode }) {
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							onSelect={() => {
-								setAppContext(
-									'clipboard',
-									create((clipboard) => {
-										clipboard.push({
-											data: props.node.id,
-											meta: {
-												node: props.node,
-												path: path.join('/home', appContext.path, props.node.name)
-											},
-											mode: 'move',
-											type: 'id/node'
-										});
-									})
-								);
+								if (
+									appContext.clipboard.some(
+										(item) => item.type === 'id/node' && item.data === props.node.id
+									)
+								)
+									return;
+
+								addToClipboard({
+									data: props.node.id,
+									meta: {
+										node: props.node,
+										path: path.join('/home', appContext.path, props.node.name)
+									},
+									mode: 'move',
+									type: 'id/node'
+								});
 							}}
 						>
 							<span>Cut</span>
@@ -545,7 +538,7 @@ function EmptyFolder() {
 }
 
 function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { setCurrentNode, filterClipboard }] = useApp();
 	const $updateNode = useAction(updateNode);
 	const $copyNode = useAction(copyNode);
 	const queryClient = useQueryClient();
@@ -564,31 +557,37 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 				items.splice(items.length - index - 1, 1);
 			}
 		}
-		if (items.length > 0)
-			toast.promise(
-				async () => {
-					await Promise.all(
-						items.map((item) => {
-							const formData = new FormData();
-							formData.set('id', item.data);
-							const { node } = item.meta as { node: TNode; path: string };
-							formData.set('parentId', props.currentNode.id);
-							formData.set('appId', appContext.id);
-							if (item.mode === 'move') formData.set('name', node.name);
-							return item.mode === 'move' ? $updateNode(formData) : $copyNode(formData);
-						})
-					);
-					await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
-					setAppContext('clipboard', ($items) =>
-						$items.filter(($item) => !items.some((item) => $item.data === item.data))
-					);
-				},
-				{
-					error: 'Paste Failed',
-					loading: 'Pasting...',
-					success: 'Pasted'
-				}
-			);
+		if (items.length <= 0) return;
+
+		toast.promise(
+			async () => {
+				await Promise.all(
+					items.map((item) => {
+						const formData = new FormData();
+						formData.set('id', item.data);
+						const { node } = item.meta as { node: TNode; path: string };
+						formData.set('parentId', props.currentNode.id);
+						formData.set('appId', appContext.id);
+						switch (item.mode) {
+							case 'move':
+								formData.set('name', node.name);
+								return $updateNode(formData);
+							case 'copy':
+								return $copyNode(formData);
+							default:
+								return;
+						}
+					})
+				);
+				await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
+				filterClipboard(($item) => !items.some((item) => $item.data === item.data));
+			},
+			{
+				error: 'Paste Failed',
+				loading: 'Pasting...',
+				success: 'Pasted'
+			}
+		);
 	}
 
 	return (
@@ -603,7 +602,7 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 				<Button
 					class="flex items-center gap-2"
 					onClick={() => {
-						setAppContext('currentNode', props.currentNode);
+						setCurrentNode(props.currentNode);
 						setCreateFileModalOpen(true);
 					}}
 				>
@@ -613,7 +612,7 @@ function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
 				<Button
 					class="flex items-center gap-2"
 					onClick={() => {
-						setAppContext('currentNode', props.currentNode);
+						setCurrentNode(props.currentNode);
 						setCreateFolderModalOpen(true);
 					}}
 				>

@@ -140,7 +140,7 @@ function TaskContextMenu(props: {
 	index: number;
 	task: TTask;
 }) {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { setCurrentTask }] = useApp();
 	const allTasks = () => appContext.boards.find((board) => board.id === props.task.boardId)!.tasks;
 	const confirmModal = useConfirmModal();
 	const $deleteTask = useAction(deleteTask);
@@ -161,7 +161,7 @@ function TaskContextMenu(props: {
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
 						onSelect={() => {
-							setAppContext('currentTask', props.task);
+							setCurrentTask(props.task);
 							setUpdateTaskModalOpen(true);
 						}}
 					>

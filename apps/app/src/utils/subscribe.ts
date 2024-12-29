@@ -11,7 +11,7 @@ import env from './env/client';
 
 async function createSubscription(handler: (item: TPublish['item']) => void) {
 	if (isServer) return;
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 	const ws = createWS(env.PUBLIC_SOCKET_URL);
 	const token = await fetch('/api/v1/me/websocket-token').then((res) => res.text());
 

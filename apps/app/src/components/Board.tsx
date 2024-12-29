@@ -43,7 +43,7 @@ export const Board: Component<{
 	class?: string;
 	index: number;
 }> = (props) => {
-	const [, setAppContext] = useApp();
+	const [, { setCurrentBoard }] = useApp();
 	const tasks = () => props.board.tasks;
 	const [dragState, setDragState] = createSignal<'boards-drop' | 'tasks-drop' | null>(null);
 	const [closestEdge, setClosestEdge] = createSignal<'left' | 'right'>('left');
@@ -136,7 +136,7 @@ export const Board: Component<{
 								disabled={isDirty(['project', props.board.id])}
 								onClick={() => {
 									setCreateTaskModalOpen(true);
-									setAppContext('currentBoard', props.board);
+									setCurrentBoard(props.board);
 								}}
 								size="icon"
 								title="Create Task"
@@ -218,7 +218,7 @@ function BoardContextMenu(props: {
 	disabled?: boolean;
 	index: number;
 }) {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { setCurrentBoard }] = useApp();
 	const confirmModal = useConfirmModal();
 	const $deleteBoard = useAction(deleteBoard);
 	const queryClient = useQueryClient();
@@ -237,7 +237,7 @@ function BoardContextMenu(props: {
 				<DropdownMenuContent class="w-48">
 					<DropdownMenuItem
 						onSelect={() => {
-							setAppContext('currentBoard', props.board);
+							setCurrentBoard(props.board);
 							setUpdateBoardModalOpen(true);
 						}}
 					>

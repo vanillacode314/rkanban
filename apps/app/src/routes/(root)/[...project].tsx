@@ -58,7 +58,7 @@ export const route: RouteDefinition = {
 };
 
 export default function ProjectPage() {
-	const [appContext, setAppContext] = useApp();
+	const [appContext, { setBoards }] = useApp();
 	const queryClient = useQueryClient();
 
 	const boardsQuery = createQuery(() => ({
@@ -82,9 +82,7 @@ export default function ProjectPage() {
 
 	createEffect(() => {
 		const $boards = boardsQuery.data;
-		untrack(() => {
-			setAppContext('boards', $boards ?? []);
-		});
+		untrack(() => setBoards($boards ?? []));
 	});
 
 	void createSubscription(makeSubscriptionHandler([getBoards.key]));
@@ -193,7 +191,7 @@ const AnimatedBoardsList: ParentComponent<{
 	) => void;
 }> = (props) => {
 	const queryClient = useQueryClient();
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 	const resolved = resolveElements(
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
@@ -392,7 +390,7 @@ function ApplyChangesPopup(props: {
 	reset: () => void;
 }) {
 	const queryClient = useQueryClient();
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 	const [count, setCount] = createSignal(0);
 	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
 	let animation: AnimationControls;

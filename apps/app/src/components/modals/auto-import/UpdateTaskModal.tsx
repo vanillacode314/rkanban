@@ -16,7 +16,7 @@ import { encryptWithUserKeys } from '~/utils/auth.server';
 export const [updateTaskModalOpen, setUpdateTaskModalOpen] = createSignal<boolean>(false);
 
 export default function UpdateTaskModal() {
-	const [appContext, _setAppContext] = useApp();
+	const [appContext, {}] = useApp();
 
 	const task = () => appContext.currentTask;
 	const $updateTask = useAction(updateTask);
