@@ -21,7 +21,6 @@ import {
 	onCleanup,
 	onMount,
 	ParentComponent,
-	Setter,
 	Show,
 	Switch,
 	untrack
@@ -60,6 +59,7 @@ export const route: RouteDefinition = {
 
 export default function ProjectPage() {
 	const [appContext, setAppContext] = useApp();
+	const queryClient = useQueryClient();
 
 	const boardsQuery = createQuery(() => ({
 		queryFn: ({ queryKey }) => getBoards(queryKey[1]),
@@ -161,7 +161,12 @@ export default function ProjectPage() {
 							}
 							when={hasBoards()}
 						>
-							<AnimatedBoardsList boards={boardsQuery.data!} setBoards={() => {}}>
+							<AnimatedBoardsList
+								boards={boardsQuery.data!}
+								setBoards={(setter) => {
+									queryClient.setQueryData(['boards', appContext.path], setter);
+								}}
+							>
 								<Key by="id" each={boardsQuery.data}>
 									{(board, index) => (
 										<Board
@@ -183,7 +188,9 @@ export default function ProjectPage() {
 
 const AnimatedBoardsList: ParentComponent<{
 	boards: Array<{ tasks: TTask[] } & TBoard>;
-	setBoards: Setter<Array<{ tasks: TTask[] } & TBoard> | undefined>;
+	setBoards: (
+		setter: (boards: Array<{ tasks: TTask[] } & TBoard>) => Array<{ tasks: TTask[] } & TBoard>
+	) => void;
 }> = (props) => {
 	const queryClient = useQueryClient();
 	const [appContext, _setAppContext] = useApp();
