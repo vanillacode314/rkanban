@@ -191,7 +191,7 @@ const AnimatedBoardsList: ParentComponent<{
 	) => void;
 }> = (props) => {
 	const queryClient = useQueryClient();
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 	const resolved = resolveElements(
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
@@ -390,7 +390,7 @@ function ApplyChangesPopup(props: {
 	reset: () => void;
 }) {
 	const queryClient = useQueryClient();
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 	const [count, setCount] = createSignal(0);
 	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
 	let animation: AnimationControls;

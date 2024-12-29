@@ -15,7 +15,7 @@ import { createNode } from '~/db/utils/nodes';
 export const [createFileModalOpen, setCreateFileModalOpen] = createSignal<boolean>(false);
 
 export default function CreateFileModal() {
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 	const $createNode = useAction(createNode);
 
 	const queryClient = useQueryClient();

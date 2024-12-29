@@ -12,7 +12,7 @@ import {
 } from './ui/breadcrumb';
 
 export function PathCrumbs() {
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 	const parts = () => {
 		const compressedParts = path.splitIntoParts(path.compressPath(appContext.path));
 		return path

@@ -16,7 +16,7 @@ import { encryptWithUserKeys } from '~/utils/auth.server';
 export const [createTaskModalOpen, setCreateTaskModalOpen] = createSignal<boolean>(false);
 
 export default function CreateTaskModal() {
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 	const board = () => appContext.currentBoard;
 	const $createTask = useAction(createTask);
 

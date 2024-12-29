@@ -14,7 +14,7 @@ import { updateNode } from '~/db/utils/nodes';
 export const [renameFolderModalOpen, setRenameFolderModalOpen] = createSignal<boolean>(false);
 
 export default function RenameFolderModal() {
-	const [appContext, {}] = useApp();
+	const [appContext, _] = useApp();
 
 	const queryClient = useQueryClient();
 	const $updateNode = useAction(updateNode);
