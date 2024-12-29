@@ -10,8 +10,8 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition } from '@solidjs/router';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
-import { create } from 'mutative';
 import { animate, AnimationControls, spring } from 'motion';
+import { create } from 'mutative';
 import {
 	createEffect,
 	createSignal,
