@@ -14,20 +14,20 @@ import { TNode } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
 import {
-	on,
 	createEffect,
+	createMemo,
 	createSignal,
 	For,
 	JSXElement,
 	Match,
+	on,
 	onCleanup,
 	onMount,
 	ParentComponent,
 	Show,
-	Switch,
-	createMemo
+	Switch
 } from 'solid-js';
-import { createStore, unwrap } from 'solid-js/store';
+import { unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
@@ -56,9 +56,9 @@ import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
 import { assertNotError } from '~/utils/types';
 
 type TAction = {
-	label: string;
-	icon: string;
 	handler: () => void;
+	icon: string;
+	label: string;
 	variant?: Parameters<typeof Button>[0]['variant'];
 };
 
@@ -77,7 +77,7 @@ export const route: RouteDefinition = {
 };
 
 export default function FolderPage() {
-	const [appContext, { filterClipboard, addToClipboard, setMode, clearClipboard }] = useApp();
+	const [appContext, { addToClipboard, clearClipboard, filterClipboard, setMode }] = useApp();
 	const queryClient = useQueryClient();
 
 	const nodesQuery = createQuery(() => ({
@@ -111,14 +111,14 @@ export default function FolderPage() {
 		if (appContext.mode === 'normal' && nodesInClipboard().length > 0) {
 			return [
 				{
-					label: 'Paste',
+					handler: paste,
 					icon: 'i-heroicons:clipboard',
-					handler: paste
+					label: 'Paste'
 				},
 				{
-					label: 'Clear',
-					icon: 'i-heroicons:x-circle',
 					handler: clearClipboard,
+					icon: 'i-heroicons:x-circle',
+					label: 'Clear',
 					variant: 'secondary'
 				}
 			];
@@ -126,16 +126,14 @@ export default function FolderPage() {
 		if (appContext.mode === 'selection' && selectedNodes().length > 0) {
 			return [
 				{
-					label: 'Unselect All',
-					icon: 'i-fluent:select-all-off-24-regular',
 					handler: () => {
 						filterClipboard((item) => item.mode !== 'selection');
 					},
+					icon: 'i-fluent:select-all-off-24-regular',
+					label: 'Unselect All',
 					variant: 'secondary'
 				},
 				{
-					label: 'Select All',
-					icon: 'i-fluent:select-all-24-filled',
 					handler: () => {
 						filterClipboard((item) => item.mode !== 'selection');
 						addToClipboard(
@@ -150,11 +148,11 @@ export default function FolderPage() {
 							}))
 						);
 					},
+					icon: 'i-fluent:select-all-24-filled',
+					label: 'Select All',
 					variant: 'secondary'
 				},
 				{
-					label: 'Copy',
-					icon: 'i-heroicons:clipboard',
 					handler: () => {
 						const $selectedNodes = selectedNodes();
 						filterClipboard(
@@ -169,11 +167,11 @@ export default function FolderPage() {
 								})
 							)
 						);
-					}
+					},
+					icon: 'i-heroicons:clipboard',
+					label: 'Copy'
 				},
 				{
-					label: 'Cut',
-					icon: 'i-heroicons:scissors',
 					handler: () => {
 						const $selectedNodes = selectedNodes();
 						filterClipboard(
@@ -188,11 +186,11 @@ export default function FolderPage() {
 								})
 							)
 						);
-					}
+					},
+					icon: 'i-heroicons:scissors',
+					label: 'Cut'
 				},
 				{
-					label: 'Delete',
-					icon: 'i-heroicons:trash',
 					handler: () => {
 						confirmModal.open({
 							message: `Are you sure you want to delete the selected files and folders.`,
@@ -220,31 +218,31 @@ export default function FolderPage() {
 							title: 'Delete Folder'
 						});
 					},
+					icon: 'i-heroicons:trash',
+					label: 'Delete',
 					variant: 'destructive'
 				},
 				{
-					label: 'Done',
-					icon: 'i-heroicons:check-circle-solid',
 					handler: () => {
 						filterClipboard((item) => item.mode !== 'selection');
 						setMode('normal');
-					}
+					},
+					icon: 'i-heroicons:check-circle-solid',
+					label: 'Done'
 				}
 			];
 		}
 		if (appContext.mode === 'selection') {
 			return [
 				{
-					label: 'Unselect All',
-					icon: 'i-fluent:select-all-off-24-regular',
 					handler: () => {
 						filterClipboard((item) => item.mode !== 'selection');
 					},
+					icon: 'i-fluent:select-all-off-24-regular',
+					label: 'Unselect All',
 					variant: 'secondary'
 				},
 				{
-					label: 'Select All',
-					icon: 'i-fluent:select-all-24-filled',
 					handler: () => {
 						filterClipboard((item) => item.mode !== 'selection');
 						addToClipboard(
@@ -259,40 +257,42 @@ export default function FolderPage() {
 							}))
 						);
 					},
+					icon: 'i-fluent:select-all-24-filled',
+					label: 'Select All',
 					variant: 'secondary'
 				},
 				{
-					label: 'Done',
-					icon: 'i-heroicons:check-circle-solid',
 					handler: () => {
 						filterClipboard((item) => item.mode !== 'selection');
 						setMode('normal');
-					}
+					},
+					icon: 'i-heroicons:check-circle-solid',
+					label: 'Done'
 				}
 			];
 		}
 		return [
 			{
-				label: 'Mutli Select Mode',
-				icon: 'i-fluent:select-all-24-regular',
 				handler: () => {
 					setMode('selection');
 				},
+				icon: 'i-fluent:select-all-24-regular',
+				label: 'Mutli Select Mode',
 				variant: 'secondary'
 			},
 			{
-				label: 'Create Project',
-				icon: 'i-heroicons:document-plus',
 				handler: () => {
 					setCreateFileModalOpen(true);
-				}
+				},
+				icon: 'i-heroicons:document-plus',
+				label: 'Create Project'
 			},
 			{
-				label: 'Create Folder',
-				icon: 'i-heroicons:folder-plus',
 				handler: () => {
 					setCreateFolderModalOpen(true);
-				}
+				},
+				icon: 'i-heroicons:folder-plus',
+				label: 'Create Folder'
 			}
 		];
 	});
@@ -478,8 +478,8 @@ function Node(props: {
 		>
 			<Show when={selectionMode()}>
 				<label
-					for={`select-${props.node.id}-input`}
 					class="absolute inset-0 z-10 bg-transparent"
+					for={`select-${props.node.id}-input`}
 					onClick={(event) => {
 						event.preventDefault();
 						event.stopPropagation();
@@ -538,9 +538,9 @@ function Node(props: {
 				fallback={
 					<div class="grid size-10 place-content-center">
 						<Checkbox
-							id={`select-${props.node.id}`}
 							checked={isSelected()}
 							class="space-x-0"
+							id={`select-${props.node.id}`}
 							onChange={(checked) => {
 								if (checked)
 									addToClipboard({
@@ -881,7 +881,7 @@ function EmptyFolder() {
 	);
 }
 
-function Toolbar(props: { currentNode: TNode; nodes: TNode[]; actions: TAction[] }) {
+function Toolbar(props: { actions: TAction[]; currentNode: TNode; nodes: TNode[] }) {
 	return (
 		<div class="hidden justify-end gap-4 empty:hidden md:flex">
 			<For each={props.actions}>
@@ -980,23 +980,23 @@ function Fab(props: { actions: TAction[] }) {
 	);
 
 	return (
-		<div class="isolate z-20">
+		<>
 			<Show when={open()}>
-				<div class="fixed inset-0 backdrop-blur"></div>
+				<button class="fixed inset-0 z-20 backdrop-blur md:hidden" onClick={() => setOpen(false)} />
 			</Show>
-			<div class="fixed bottom-4 right-4 z-10 flex flex-col gap-4 md:hidden">
+			<div class="fixed bottom-4 right-4 z-30 flex flex-col gap-4 md:hidden">
 				<Show when={open()}>
 					<ul class="flex flex-col gap-4">
 						<For each={props.actions}>
 							{(action) => (
 								<li class="contents">
 									<Button
+										class="motion-preset-pop flex items-center justify-end gap-2 self-end motion-duration-300"
 										onClick={async () => {
 											await action.handler();
 											setOpen(false);
 										}}
 										variant={action.variant}
-										class="motion-preset-pop motion-duration-300 flex items-center justify-end gap-2 self-end"
 									>
 										<span class="text-xs font-bold uppercase tracking-wide">{action.label}</span>
 										<span class={cn(action.icon, 'text-lg')} />
@@ -1007,14 +1007,14 @@ function Fab(props: { actions: TAction[] }) {
 					</ul>
 				</Show>
 				<Button
+					class="self-end motion-duration-300 motion-ease-spring-bounciest/rotate"
+					onClick={toggle}
 					ref={ref}
 					size="icon"
-					onClick={toggle}
-					class="motion-ease-spring-bounciest/rotate motion-duration-300 self-end"
 				>
 					<span class="i-heroicons:plus text-lg" />
 				</Button>
 			</div>
-		</div>
+		</>
 	);
 }
