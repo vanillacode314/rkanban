@@ -9,11 +9,14 @@ import {
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
+import { makePersisted, messageSync } from '@solid-primitives/storage';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { useAction } from '@solidjs/router';
 import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { animate, spring } from 'motion';
+import { create } from 'mutative';
+import { deserialize, serialize } from 'seroval';
 import { Component, createSignal, onCleanup, onMount, ParentComponent, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
 
@@ -50,6 +53,11 @@ export const Board: Component<{
 	const [isDirty, _setIsDirty] = useDirty();
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLDivElement;
+
+	const [collapsedBoards, setCollapsedBoards] = makePersisted(
+		createSignal<Map<string, TBoard>>(new Map()),
+		{ deserialize, name: 'collapsed-boards-v1', serialize, sync: messageSync() }
+	);
 
 	onMount(() => {
 		const cleanup = combine(
@@ -135,6 +143,22 @@ export const Board: Component<{
 								class="flex items-center gap-2"
 								disabled={isDirty(['project', props.board.id])}
 								onClick={() => {
+									setCollapsedBoards(
+										create((boards) => {
+											boards.set(props.board.id, props.board);
+										})
+									);
+								}}
+								size="icon"
+								title="Collapse Board"
+								variant="ghost"
+							>
+								<span class="i-heroicons:chevron-down" />
+							</Button>
+							<Button
+								class="flex items-center gap-2"
+								disabled={isDirty(['project', props.board.id])}
+								onClick={() => {
 									setCreateTaskModalOpen(true);
 									setCurrentBoard(props.board);
 								}}
@@ -145,8 +169,20 @@ export const Board: Component<{
 							</Button>
 							<BoardContextMenu
 								board={props.board}
+								collapsed={collapsedBoards().has(props.board.id)}
 								disabled={isDirty(['project', props.board.id])}
 								index={props.index}
+								setCollapsed={(collapsed) => {
+									setCollapsedBoards(
+										create((boards) => {
+											if (collapsed) {
+												boards.set(props.board.id, props.board);
+											} else {
+												boards.delete(props.board.id);
+											}
+										})
+									);
+								}}
 							/>
 						</div>
 					</div>
@@ -215,8 +251,10 @@ const AnimatedTaskList: ParentComponent = (props) => {
 
 function BoardContextMenu(props: {
 	board: { tasks: TTask[] } & TBoard;
+	collapsed: boolean;
 	disabled?: boolean;
 	index: number;
+	setCollapsed: (collapsed: boolean) => void;
 }) {
 	const [appContext, { setCurrentBoard }] = useApp();
 	const confirmModal = useConfirmModal();
@@ -319,6 +357,18 @@ function BoardContextMenu(props: {
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
 					</Show>
+					<DropdownMenuItem
+						onSelect={() => {
+							props.setCollapsed(!props.collapsed);
+						}}
+					>
+						<span>{props.collapsed ? 'Expand' : 'Collapse'}</span>
+						<DropdownMenuShortcut class="text-base">
+							<span
+								class={cn(props.collapsed ? 'i-heroicons:chevron-up' : 'i-heroicons:chevron-down')}
+							/>
+						</DropdownMenuShortcut>
+					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</div>

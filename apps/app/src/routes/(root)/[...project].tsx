@@ -6,12 +6,14 @@ import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/r
 import { Key } from '@solid-primitives/keyed';
 import { createLazyMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
+import { makePersisted, messageSync } from '@solid-primitives/storage';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition } from '@solidjs/router';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { animate, AnimationControls, spring } from 'motion';
 import { create } from 'mutative';
+import { deserialize, serialize } from 'seroval';
 import {
 	createEffect,
 	createSignal,
@@ -28,6 +30,7 @@ import {
 import { toast } from 'solid-sonner';
 
 import Board from '~/components/Board';
+import Decrypt from '~/components/Decrypt';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
 import PathCrumbs from '~/components/PathCrumbs';
 import ProgressCircle from '~/components/ProgressCircle';
@@ -85,6 +88,10 @@ export default function ProjectPage() {
 		untrack(() => setBoards($boards ?? []));
 	});
 
+	const [collapsedBoards, setCollapsedBoards] = makePersisted(
+		createSignal<Map<string, TBoard>>(new Map()),
+		{ deserialize, name: 'collapsed-boards-v1', serialize, sync: messageSync() }
+	);
 	void createSubscription(makeSubscriptionHandler([getBoards.key]));
 
 	return (
@@ -165,7 +172,37 @@ export default function ProjectPage() {
 									queryClient.setQueryData(['boards', appContext.path], setter);
 								}}
 							>
-								<Key by="id" each={boardsQuery.data}>
+								<div class="flex shrink-0 snap-start flex-col gap-2">
+									<For each={Array.from(collapsedBoards()).sort((a, b) => a[1].index - b[1].index)}>
+										{([id, board]) => (
+											<div class="flex items-center justify-between gap-4 rounded-lg border p-4 text-sm">
+												<Decrypt value={board.title}>
+													{(value) => <span class="font-bold">{value()}</span>}
+												</Decrypt>
+												<div class={cn('flex items-center justify-end gap-2')}>
+													<button
+														class="flex items-center gap-2"
+														disabled={isDirty(['project', id])}
+														onClick={() => {
+															setCollapsedBoards(
+																create((boards) => {
+																	boards.delete(id);
+																})
+															);
+														}}
+														title="Expand Board"
+													>
+														<span class="i-heroicons:chevron-up" />
+													</button>
+												</div>
+											</div>
+										)}
+									</For>
+								</div>
+								<Key
+									by="id"
+									each={boardsQuery.data?.filter((board) => !collapsedBoards().has(board.id))}
+								>
 									{(board, index) => (
 										<Board
 											board={board()}
@@ -354,6 +391,7 @@ const AnimatedBoardsList: ParentComponent<{
 		);
 		onCleanup(cleanup);
 	});
+
 	return (
 		<div
 			class={cn(
