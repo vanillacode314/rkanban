@@ -12,13 +12,14 @@ clientEnv;
 serverEnv;
 
 export default defineConfig({
-	ssr: false,
+	devOverlay: true,
 	server: {
+		compatibilityDate: '2025-01-02',
 		prerender: {
 			routes: ['/offline', '/manifest.webmanifest']
 		}
 	},
-	devOverlay: true,
+	ssr: false,
 	vite: {
 		envPrefix: 'PUBLIC_',
 		plugins: [
@@ -30,8 +31,8 @@ export default defineConfig({
 				presets: [
 					presetIcons({
 						extraProperties: {
-							display: 'inline-block',
 							color: 'auto',
+							display: 'inline-block',
 							'vertical-align': 'middle'
 						}
 					}),

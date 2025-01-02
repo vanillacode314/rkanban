@@ -55,7 +55,7 @@
     "effect": "^3.11.9",
     "jsonwebtoken": "^9.0.2",
     "localforage": "^1.10.0",
-    "motion": "^10.18.0",
+    "motion": "^11.15.0",
     "mutative": "^1.1.0",
     "nanoid": "^5.0.9",
     "postcss": "^8.4.49",
@@ -103,5 +103,8 @@
     "vite-plugin-pwa": "^0.20.5",
     "vitest": "^2.1.8",
     "workbox-build": "^7.3.0"
+  },
+  "overrides": {
+    "vite": "^5.4.11"
   }
 }

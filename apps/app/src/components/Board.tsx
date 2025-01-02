@@ -134,7 +134,11 @@ export const Board: Component<{
 								when={props.board.userId !== 'pending'}
 							>
 								<Decrypt fallback value={props.board.title}>
-									{(title) => <span>{title()}</span>}
+									{(title) => (
+										<span class="truncate" title={title()}>
+											{title()}
+										</span>
+									)}
 								</Decrypt>
 							</Show>
 						</CardTitle>
@@ -210,38 +214,20 @@ const AnimatedTaskList: ParentComponent = (props) => {
 	);
 	const transition = createListTransition(resolved.toArray, {
 		onChange({ added, finishRemoved, removed, unchanged }) {
-			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
 					el.scrollIntoView({ behavior: 'smooth' });
-					animate(el, { opacity: [0, 1], x: ['-100%', 0] }, { easing: spring() });
+					animate(el, { opacity: [0, 1], x: ['-100%', 0] }, { type: spring });
 				});
 			}
-			for (const el of removed) {
-				const { height, left, top, width } = el.getBoundingClientRect();
-				queueMicrotask(() => {
-					el.style.position = 'absolute';
-					el.style.left = `${left}px`;
-					el.style.top = `${top}px`;
-					el.style.width = `${width}px`;
-					el.style.height = `${height}px`;
-					animate(el, { opacity: [1, 0], x: [0, '-100%'] }, { easing: spring() }).finished.then(
-						() => {
-							removedCount -= 1;
-							if (removedCount === 0) {
-								finishRemoved(removed);
-							}
-						}
-					);
-				});
-			}
+			finishRemoved(removed);
 			if (added.length === 0 && removed.length === 0) return;
 			for (const el of unchanged) {
 				const { left: left1, top: top1 } = el.getBoundingClientRect();
 				if (!el.isConnected) return;
 				queueMicrotask(() => {
 					const { left: left2, top: top2 } = el.getBoundingClientRect();
-					animate(el, { x: [left1 - left2, 0], y: [top1 - top2, 0] }, { easing: spring() });
+					animate(el, { x: [left1 - left2, 0], y: [top1 - top2, 0] }, { type: spring });
 				});
 			}
 		}

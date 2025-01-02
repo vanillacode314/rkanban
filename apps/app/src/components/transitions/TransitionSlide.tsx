@@ -22,11 +22,7 @@ export function TransitionSlide(props: {
 			appear: props.appear,
 			onEnter(el) {
 				queueMicrotask(() => {
-					animate(
-						el,
-						{ x: '-50%', y: ['-100%', 0] },
-						{ x: { duration: 0 }, y: { easing: spring() } }
-					);
+					animate(el, { x: '-50%', y: ['-100%', 0] }, { x: { duration: 0 }, y: { type: spring } });
 				});
 			}
 		})

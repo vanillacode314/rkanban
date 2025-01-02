@@ -913,7 +913,6 @@ const AnimatedNodesList: ParentComponent = (props) => {
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
 
-	const easing = spring({ damping: 20, stiffness: 150 });
 	const transition = createListTransition(resolved.toArray, {
 		onChange({ added, finishRemoved, removed, unchanged }) {
 			finishRemoved(removed);
@@ -923,7 +922,11 @@ const AnimatedNodesList: ParentComponent = (props) => {
 				if (!el.isConnected) return;
 				queueMicrotask(() => {
 					const { left: left2, top: top2 } = el.getBoundingClientRect();
-					animate(el, { x: [left1 - left2, 0], y: [top1 - top2, 0] }, { easing });
+					animate(
+						el,
+						{ x: [left1 - left2, 0], y: [top1 - top2, 0] },
+						{ damping: 20, stiffness: 150, type: spring }
+					);
 				});
 			}
 		}

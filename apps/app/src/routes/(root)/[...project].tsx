@@ -11,7 +11,7 @@ import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition } from '@solidjs/router';
 import { createQuery, useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
-import { animate, AnimationControls, spring } from 'motion';
+import { animate, spring } from 'motion';
 import { create } from 'mutative';
 import { deserialize, serialize } from 'seroval';
 import {
@@ -102,7 +102,12 @@ export default function ProjectPage() {
 						<Skeleton height={40} radius={5} width={150} />
 					</div>
 					<PathCrumbs />
-					<AnimatedBoardsList boards={boardsQuery.data!} setBoards={() => {}}>
+					<AnimatedBoardsList
+						boards={boardsQuery.data!}
+						collapsedBoards={new Map()}
+						setBoards={() => {}}
+						setCollapsedBoards={() => {}}
+					>
 						<For each={Array.from({ length: 3 })}>
 							{() => (
 								<Skeleton
@@ -168,37 +173,14 @@ export default function ProjectPage() {
 						>
 							<AnimatedBoardsList
 								boards={boardsQuery.data!}
+								collapsedBoards={collapsedBoards()}
 								setBoards={(setter) => {
 									queryClient.setQueryData(['boards', appContext.path], setter);
 								}}
+								setCollapsedBoards={(setter) => {
+									setCollapsedBoards(setter);
+								}}
 							>
-								<div class="flex shrink-0 snap-start flex-col gap-2">
-									<For each={Array.from(collapsedBoards()).sort((a, b) => a[1].index - b[1].index)}>
-										{([id, board]) => (
-											<div class="flex items-center justify-between gap-4 rounded-lg border p-4 text-sm">
-												<Decrypt value={board.title}>
-													{(value) => <span class="font-bold">{value()}</span>}
-												</Decrypt>
-												<div class={cn('flex items-center justify-end gap-2')}>
-													<button
-														class="flex items-center gap-2"
-														disabled={isDirty(['project', id])}
-														onClick={() => {
-															setCollapsedBoards(
-																create((boards) => {
-																	boards.delete(id);
-																})
-															);
-														}}
-														title="Expand Board"
-													>
-														<span class="i-heroicons:chevron-up" />
-													</button>
-												</div>
-											</div>
-										)}
-									</For>
-								</div>
 								<Key
 									by="id"
 									each={boardsQuery.data?.filter((board) => !collapsedBoards().has(board.id))}
@@ -206,12 +188,12 @@ export default function ProjectPage() {
 									{(board, index) => (
 										<Board
 											board={board()}
-											class="shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
+											class="shrink-0 basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
 											index={index()}
 										/>
 									)}
 								</Key>
-								<SkeletonBoard class="hidden shrink-0 basis-[calc((100%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
+								<SkeletonBoard class="hidden shrink-0 basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
 							</AnimatedBoardsList>
 						</Show>
 					</div>
@@ -223,9 +205,11 @@ export default function ProjectPage() {
 
 const AnimatedBoardsList: ParentComponent<{
 	boards: Array<{ tasks: TTask[] } & TBoard>;
+	collapsedBoards: Map<string, TBoard>;
 	setBoards: (
 		setter: (boards: Array<{ tasks: TTask[] } & TBoard>) => Array<{ tasks: TTask[] } & TBoard>
 	) => void;
+	setCollapsedBoards: (setter: (boards: Map<string, TBoard>) => Map<string, TBoard>) => void;
 }> = (props) => {
 	const queryClient = useQueryClient();
 	const [appContext, _] = useApp();
@@ -235,37 +219,27 @@ const AnimatedBoardsList: ParentComponent<{
 	);
 	const transition = createListTransition(resolved.toArray, {
 		onChange({ added, finishRemoved, list: _list, removed, unchanged }) {
-			let removedCount = removed.length;
 			for (const el of added) {
 				queueMicrotask(() => {
-					animate(el, { opacity: [0, 1], width: [0, 'auto'] }, { easing: spring() });
-				});
-			}
-			for (const el of removed) {
-				const { height, left, top, width } = el.getBoundingClientRect();
-				queueMicrotask(() => {
-					el.style.position = 'absolute';
-					el.style.left = `${left}px`;
-					el.style.top = `${top}px`;
-					el.style.width = `${width}px`;
-					el.style.height = `${height}px`;
-					animate(el, { opacity: [1, 0], width: ['auto', 0] }, { easing: spring() }).finished.then(
-						() => {
-							removedCount -= 1;
-							if (removedCount === 0) {
-								finishRemoved(removed);
-							}
-						}
+					animate(
+						el,
+						{ opacity: [0, 1], width: [0, 'auto'] },
+						{ damping: 20, stiffness: 150, type: spring }
 					);
 				});
 			}
+			finishRemoved(removed);
 			if (added.length === 0 && removed.length === 0) return;
 			for (const el of unchanged) {
 				const { left: left1, top: top1 } = el.getBoundingClientRect();
 				if (!el.isConnected) return;
 				queueMicrotask(() => {
 					const { left: left2, top: top2 } = el.getBoundingClientRect();
-					animate(el, { x: [left1 - left2, 0], y: [top1 - top2, 0] }, { easing: spring() });
+					animate(
+						el,
+						{ x: [left1 - left2, 0], y: [top1 - top2, 0] },
+						{ damping: 20, stiffness: 150, type: spring }
+					);
 				});
 			}
 		}
@@ -400,6 +374,39 @@ const AnimatedBoardsList: ParentComponent<{
 			)}
 			ref={ref}
 		>
+			<div
+				class={cn(
+					'flex shrink-0 flex-col gap-2',
+					props.collapsedBoards.size > 0 ?
+						'basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start'
+					:	'hidden'
+				)}
+			>
+				<For each={Array.from(props.collapsedBoards).sort((a, b) => a[1].index - b[1].index)}>
+					{([id, board]) => (
+						<div class="flex items-center justify-between gap-4 rounded-lg border p-4 text-sm">
+							<Decrypt value={board.title}>
+								{(value) => <span class="font-bold">{value()}</span>}
+							</Decrypt>
+							<div class={cn('flex items-center justify-end gap-2')}>
+								<button
+									class="flex items-center gap-2"
+									onClick={() => {
+										props.setCollapsedBoards(
+											create((boards) => {
+												boards.delete(id);
+											})
+										);
+									}}
+									title="Expand Board"
+								>
+									<span class="i-heroicons:chevron-up" />
+								</button>
+							</div>
+						</div>
+					)}
+				</For>
+			</div>
 			{transition()}
 		</div>
 	);
@@ -436,13 +443,14 @@ function ApplyChangesPopup(props: {
 	function startCountdown() {
 		animation?.cancel();
 		setCount(mergedProps.countdownDuration);
-		animation = animate(
-			(progress) => {
+		animation = animate(0, 1, {
+			duration: mergedProps.countdownDuration,
+			ease: 'linear',
+			onUpdate: (progress) => {
 				setCount((1 - progress) * mergedProps.countdownDuration);
-			},
-			{ duration: mergedProps.countdownDuration, easing: 'linear' }
-		);
-		animation.finished.then(() => {
+			}
+		});
+		animation.then(() => {
 			const changedTasks = props.boards!.flatMap((board) => {
 				const data = [];
 				for (const [index, task] of board.tasks.entries()) {
