@@ -1,12 +1,13 @@
 import plugin from 'tailwindcss/plugin';
 import animate from 'tailwindcss-animate';
+import motion from 'tailwindcss-motion';
 
 /**@type {import("tailwindcss").Config} */
 export default {
 	content: ['./src/**/*.{ts,tsx}'],
 	darkMode: ['class', '[data-kb-theme="dark"]'],
 	plugins: [
-		animate,
+		motion,
 		plugin(function ({ addVariant }) {
 			addVariant('hocus', ['&:hover', '&:focus']);
 			addVariant('group-hocus', ['.group:hover &', '.group:focus &']);

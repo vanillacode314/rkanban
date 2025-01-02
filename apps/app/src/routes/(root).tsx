@@ -34,11 +34,19 @@ function CleanUpUser() {
 	return <></>;
 }
 
+function RouteGuards() {
+	const [_, { filterClipboard }] = useApp();
+	useBeforeLeave(() => toast.dismiss());
+	useBeforeLeave(() => {
+		filterClipboard((item) => item.mode !== 'selection');
+	});
+	return <></>;
+}
+
 const RootLayout = (props: { children: JSXElement }) => {
 	const location = useLocation();
 	const path = () => decodeURIComponent(location.pathname);
 	const storageManager = cookieStorageManagerSSR(isServer ? getServerCookies() : document.cookie);
-	useBeforeLeave(() => toast.dismiss());
 	const navigate = useNavigate();
 	const isOnline = createConnectivitySignal();
 	createEffect(() => !isOnline() && navigate('/offline'));
@@ -47,6 +55,7 @@ const RootLayout = (props: { children: JSXElement }) => {
 		<>
 			<ColorModeProvider storageManager={storageManager}>
 				<AppProvider path={path()}>
+					<RouteGuards />
 					<DirtyProvider>
 						<Title>RKanban</Title>
 						<Toaster closeButton duration={3000} position="top-center" />
@@ -88,7 +97,7 @@ function Clipboard() {
 
 	return (
 		<Show when={items().length > 0}>
-			<Card class="fixed bottom-5 right-5">
+			<Card class="fixed bottom-5 right-5 hidden md:block">
 				<CardHeader>
 					<CardTitle>Clipboard</CardTitle>
 				</CardHeader>

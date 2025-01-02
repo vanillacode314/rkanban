@@ -95,6 +95,7 @@
     "prettier-plugin-tailwindcss": "^0.6.9",
     "simple-git-hooks": "^2.11.1",
     "solid-devtools": "^0.30.1",
+    "tailwindcss-motion": "^1.0.0",
     "typescript-eslint": "^8.18.1",
     "unocss": "^0.62.4",
     "vite-bundle-analyzer": "^0.11.1",

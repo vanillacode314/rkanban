@@ -71,7 +71,7 @@ export default function App() {
 					<Suspense>
 						<QueryClientProvider client={queryClient}>
 							<MetaProvider>{props.children}</MetaProvider>
-							<SolidQueryDevtools initialIsOpen={false} />
+							<SolidQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
 						</QueryClientProvider>
 					</Suspense>
 				</ErrorBoundary>

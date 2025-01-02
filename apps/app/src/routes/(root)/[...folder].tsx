@@ -14,6 +14,8 @@ import { TNode } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
 import {
+	on,
+	createEffect,
 	createSignal,
 	For,
 	JSXElement,
@@ -22,9 +24,10 @@ import {
 	onMount,
 	ParentComponent,
 	Show,
-	Switch
+	Switch,
+	createMemo
 } from 'solid-js';
-import { unwrap } from 'solid-js/store';
+import { createStore, unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
@@ -52,6 +55,13 @@ import * as path from '~/utils/path';
 import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
 import { assertNotError } from '~/utils/types';
 
+type TAction = {
+	label: string;
+	icon: string;
+	handler: () => void;
+	variant?: Parameters<typeof Button>[0]['variant'];
+};
+
 export const route: RouteDefinition = {
 	matchFilters: {
 		folder: (pathname: string) =>
@@ -67,7 +77,9 @@ export const route: RouteDefinition = {
 };
 
 export default function FolderPage() {
-	const [appContext, _] = useApp();
+	const [appContext, { filterClipboard, addToClipboard, setMode, clearClipboard }] = useApp();
+	const queryClient = useQueryClient();
+
 	const nodesQuery = createQuery(() => ({
 		queryFn: ({ queryKey }) => {
 			return getNodes(queryKey[1], { includeChildren: true });
@@ -75,7 +87,10 @@ export default function FolderPage() {
 		queryKey: ['nodes', appContext.path]
 	}));
 
+	const confirmModal = useConfirmModal();
 	const $updateNode = useAction(updateNode);
+	const $copyNode = useAction(copyNode);
+	const $deleteNode = useAction(deleteNode);
 
 	const currentNode = () => assertNotError(nodesQuery.data)!.node;
 	const children = () => (nodesQuery.data ? assertNotError(nodesQuery.data)!.children : []);
@@ -83,6 +98,249 @@ export default function FolderPage() {
 	const files = () => children()?.filter((node) => !isFolder(node));
 
 	void createSubscription(makeSubscriptionHandler([getNodes.key]));
+
+	const nodesInClipboard = () =>
+		appContext.clipboard.filter(
+			(item) => item.type === 'id/node' && (item.mode === 'move' || item.mode === 'copy')
+		);
+
+	const selectedNodes = () =>
+		appContext.clipboard.filter((item) => item.mode === 'selection' && item.type === 'id/node');
+
+	const actions = createMemo<TAction[]>(() => {
+		if (appContext.mode === 'normal' && nodesInClipboard().length > 0) {
+			return [
+				{
+					label: 'Paste',
+					icon: 'i-heroicons:clipboard',
+					handler: paste
+				},
+				{
+					label: 'Clear',
+					icon: 'i-heroicons:x-circle',
+					handler: clearClipboard,
+					variant: 'secondary'
+				}
+			];
+		}
+		if (appContext.mode === 'selection' && selectedNodes().length > 0) {
+			return [
+				{
+					label: 'Unselect All',
+					icon: 'i-fluent:select-all-off-24-regular',
+					handler: () => {
+						filterClipboard((item) => item.mode !== 'selection');
+					},
+					variant: 'secondary'
+				},
+				{
+					label: 'Select All',
+					icon: 'i-fluent:select-all-24-filled',
+					handler: () => {
+						filterClipboard((item) => item.mode !== 'selection');
+						addToClipboard(
+							...children().map((node) => ({
+								data: node.id,
+								meta: {
+									node,
+									path: path.join('/home', appContext.path, node.name)
+								},
+								mode: 'selection' as const,
+								type: 'id/node' as const
+							}))
+						);
+					},
+					variant: 'secondary'
+				},
+				{
+					label: 'Copy',
+					icon: 'i-heroicons:clipboard',
+					handler: () => {
+						const $selectedNodes = selectedNodes();
+						filterClipboard(
+							(item) =>
+								item.mode !== 'selection' &&
+								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
+						);
+						addToClipboard(
+							...$selectedNodes.map(
+								create((item) => {
+									item.mode = 'copy';
+								})
+							)
+						);
+					}
+				},
+				{
+					label: 'Cut',
+					icon: 'i-heroicons:scissors',
+					handler: () => {
+						const $selectedNodes = selectedNodes();
+						filterClipboard(
+							(item) =>
+								item.mode !== 'selection' &&
+								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
+						);
+						addToClipboard(
+							...$selectedNodes.map(
+								create((item) => {
+									item.mode = 'move';
+								})
+							)
+						);
+					}
+				},
+				{
+					label: 'Delete',
+					icon: 'i-heroicons:trash',
+					handler: () => {
+						confirmModal.open({
+							message: `Are you sure you want to delete the selected files and folders.`,
+							onYes() {
+								const formData = new FormData();
+								formData.set('appId', appContext.id);
+								for (const item of selectedNodes()) {
+									formData.append('id', item.data);
+								}
+								toast.promise(
+									async () => {
+										await $deleteNode(formData);
+										await queryClient.invalidateQueries({
+											queryKey: ['nodes', appContext.path]
+										});
+										clearClipboard();
+									},
+									{
+										error: 'Error',
+										loading: 'Deleting Folder',
+										success: 'Deleted Folder'
+									}
+								);
+							},
+							title: 'Delete Folder'
+						});
+					},
+					variant: 'destructive'
+				},
+				{
+					label: 'Done',
+					icon: 'i-heroicons:check-circle-solid',
+					handler: () => {
+						filterClipboard((item) => item.mode !== 'selection');
+						setMode('normal');
+					}
+				}
+			];
+		}
+		if (appContext.mode === 'selection') {
+			return [
+				{
+					label: 'Unselect All',
+					icon: 'i-fluent:select-all-off-24-regular',
+					handler: () => {
+						filterClipboard((item) => item.mode !== 'selection');
+					},
+					variant: 'secondary'
+				},
+				{
+					label: 'Select All',
+					icon: 'i-fluent:select-all-24-filled',
+					handler: () => {
+						filterClipboard((item) => item.mode !== 'selection');
+						addToClipboard(
+							...children().map((node) => ({
+								data: node.id,
+								meta: {
+									node,
+									path: path.join('/home', appContext.path, node.name)
+								},
+								mode: 'selection' as const,
+								type: 'id/node' as const
+							}))
+						);
+					},
+					variant: 'secondary'
+				},
+				{
+					label: 'Done',
+					icon: 'i-heroicons:check-circle-solid',
+					handler: () => {
+						filterClipboard((item) => item.mode !== 'selection');
+						setMode('normal');
+					}
+				}
+			];
+		}
+		return [
+			{
+				label: 'Mutli Select Mode',
+				icon: 'i-fluent:select-all-24-regular',
+				handler: () => {
+					setMode('selection');
+				},
+				variant: 'secondary'
+			},
+			{
+				label: 'Create Project',
+				icon: 'i-heroicons:document-plus',
+				handler: () => {
+					setCreateFileModalOpen(true);
+				}
+			},
+			{
+				label: 'Create Folder',
+				icon: 'i-heroicons:folder-plus',
+				handler: () => {
+					setCreateFolderModalOpen(true);
+				}
+			}
+		];
+	});
+
+	function paste() {
+		const items = structuredClone(unwrap(nodesInClipboard()));
+		for (const [index, item] of items.toReversed().entries()) {
+			const { node, path } = item.meta as { node: TNode; path: string };
+			if (node.id === currentNode().id && item.mode === 'move') {
+				toast.info(`Skipping ${path} because it is the current folder`);
+				items.splice(items.length - index - 1, 1);
+			} else if (node.parentId === currentNode().id && item.mode === 'move') {
+				toast.info(`Skipping ${path} because it is already in the current folder`);
+				items.splice(items.length - index - 1, 1);
+			}
+		}
+		if (items.length <= 0) return;
+
+		toast.promise(
+			async () => {
+				await Promise.all(
+					items.map((item) => {
+						const formData = new FormData();
+						formData.set('id', item.data);
+						const { node } = item.meta as { node: TNode; path: string };
+						formData.set('parentId', currentNode().id);
+						formData.set('appId', appContext.id);
+						switch (item.mode) {
+							case 'copy':
+								return $copyNode(formData);
+							case 'move':
+								formData.set('name', node.name);
+								return $updateNode(formData);
+							default:
+								return;
+						}
+					})
+				);
+				await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
+				filterClipboard(($item) => !items.some((item) => $item.data === item.data));
+			},
+			{
+				error: 'Paste Failed',
+				loading: 'Pasting...',
+				success: 'Pasted'
+			}
+		);
+	}
 
 	onMount(() => {
 		const cleanup = combine(
@@ -144,9 +402,10 @@ export default function FolderPage() {
 					</div>
 				</Match>
 				<Match when={nodesQuery.isSuccess}>
+					<Fab actions={actions()} />
 					<Show fallback={<FolderNotFound />} when={!(nodesQuery.data instanceof Error)}>
-						<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-							<Toolbar currentNode={currentNode()} nodes={children()} />
+						<div class="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden py-4">
+							<Toolbar actions={actions()} currentNode={currentNode()} nodes={children()} />
 							<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 								<Show when={appContext.path === '/'}>
 									<Button
@@ -207,12 +466,49 @@ function Node(props: {
 			(item) => item.data === props.node.id && item.type === 'id/node' && item.mode === 'selection'
 		);
 
+	const selectionMode = () => shiftKey() || appContext.mode === 'selection';
+
 	return (
 		<div
-			class={cn('grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border', props.class)}
+			class={cn(
+				'relative grid h-10 grid-cols-[1fr_auto] overflow-hidden rounded-md border',
+				props.class
+			)}
 			ref={props.ref}
 		>
+			<Show when={selectionMode()}>
+				<label
+					for={`select-${props.node.id}-input`}
+					class="absolute inset-0 z-10 bg-transparent"
+					onClick={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+						if (props.node.name === '..') return;
+						if (!isSelected())
+							addToClipboard({
+								data: props.node.id,
+								meta: {
+									node: props.node,
+									path: path.join('/home', appContext.path, props.node.name)
+								},
+								mode: 'selection',
+								type: 'id/node'
+							});
+						else {
+							filterClipboard(
+								(item) =>
+									!(
+										item.data === props.node.id &&
+										item.type === 'id/node' &&
+										item.mode === 'selection'
+									)
+							);
+						}
+					}}
+				/>
+			</Show>
 			<div class="grid grid-cols-[auto_1fr] text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+				{/* NOTE: Not using anchor to make sure we control the drag behaviour */}
 				<button
 					class="grid cursor-move place-content-center py-2 pl-4 pr-2"
 					data-href={path.join(appContext.path, props.node.name)}
@@ -242,6 +538,7 @@ function Node(props: {
 				fallback={
 					<div class="grid size-10 place-content-center">
 						<Checkbox
+							id={`select-${props.node.id}`}
 							checked={isSelected()}
 							class="space-x-0"
 							onChange={(checked) => {
@@ -269,7 +566,7 @@ function Node(props: {
 						/>
 					</div>
 				}
-				when={(!shiftKey() && appContext.mode === 'normal') || props.node.name === '..'}
+				when={!(selectionMode() && props.node.name !== '..')}
 			>
 				{props.dropdownMenu}
 			</Show>
@@ -584,226 +881,17 @@ function EmptyFolder() {
 	);
 }
 
-function Toolbar(props: { currentNode: TNode; nodes: TNode[] }) {
-	const [appContext, { addToClipboard, clearClipboard, filterClipboard, setCurrentNode, setMode }] =
-		useApp();
-	const $updateNode = useAction(updateNode);
-	const $copyNode = useAction(copyNode);
-	const queryClient = useQueryClient();
-	const confirmModal = useConfirmModal();
-	const $deleteNode = useAction(deleteNode);
-
-	const nodesInClipboard = () =>
-		appContext.clipboard.filter(
-			(item) => item.type === 'id/node' && (item.mode === 'move' || item.mode === 'copy')
-		);
-
-	const selectedNodes = () =>
-		appContext.clipboard.filter((item) => item.mode === 'selection' && item.type === 'id/node');
-
-	function paste() {
-		const items = structuredClone(unwrap(nodesInClipboard()));
-		for (const [index, item] of items.toReversed().entries()) {
-			const { node, path } = item.meta as { node: TNode; path: string };
-			if (node.id === props.currentNode.id && item.mode === 'move') {
-				toast.info(`Skipping ${path} because it is the current folder`);
-				items.splice(items.length - index - 1, 1);
-			} else if (node.parentId === props.currentNode.id && item.mode === 'move') {
-				toast.info(`Skipping ${path} because it is already in the current folder`);
-				items.splice(items.length - index - 1, 1);
-			}
-		}
-		if (items.length <= 0) return;
-
-		toast.promise(
-			async () => {
-				await Promise.all(
-					items.map((item) => {
-						const formData = new FormData();
-						formData.set('id', item.data);
-						const { node } = item.meta as { node: TNode; path: string };
-						formData.set('parentId', props.currentNode.id);
-						formData.set('appId', appContext.id);
-						switch (item.mode) {
-							case 'copy':
-								return $copyNode(formData);
-							case 'move':
-								formData.set('name', node.name);
-								return $updateNode(formData);
-							default:
-								return;
-						}
-					})
-				);
-				await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
-				filterClipboard(($item) => !items.some((item) => $item.data === item.data));
-			},
-			{
-				error: 'Paste Failed',
-				loading: 'Pasting...',
-				success: 'Pasted'
-			}
-		);
-	}
-
+function Toolbar(props: { currentNode: TNode; nodes: TNode[]; actions: TAction[] }) {
 	return (
-		<div class="flex justify-end gap-4 empty:hidden">
-			<Show when={appContext.mode === 'normal' && nodesInClipboard().length > 0}>
-				<Button class="flex items-center gap-2" onClick={paste} variant="secondary">
-					<span class="i-heroicons:clipboard text-lg" />
-					<span>Paste</span>
-				</Button>
-			</Show>
-			<Show when={appContext.mode === 'normal' && props.nodes.length > 0}>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						setMode('selection');
-					}}
-					variant="secondary"
-				>
-					<span class="i-fluent:select-all-24-regular text-lg" />
-					<span>Multi Select Mode</span>
-				</Button>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						setCurrentNode(props.currentNode);
-						setCreateFileModalOpen(true);
-					}}
-				>
-					<span class="i-heroicons:document-plus text-lg" />
-					<span>Create Project</span>
-				</Button>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						setCurrentNode(props.currentNode);
-						setCreateFolderModalOpen(true);
-					}}
-				>
-					<span class="i-heroicons:folder-plus text-lg" />
-					<span>Create Folder</span>
-				</Button>
-			</Show>
-			<Show when={appContext.mode === 'selection' && selectedNodes().length > 0}>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						filterClipboard((item) => item.mode !== 'selection');
-					}}
-				>
-					<span class="i-fluent:select-all-off-24-regular text-lg" />
-					<span>Unselect All</span>
-				</Button>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						filterClipboard((item) => item.mode !== 'selection');
-						addToClipboard(
-							...props.nodes.map((node) => ({
-								data: node.id,
-								meta: {
-									node,
-									path: path.join('/home', appContext.path, node.name)
-								},
-								mode: 'selection' as const,
-								type: 'id/node' as const
-							}))
-						);
-					}}
-				>
-					<span class="i-fluent:select-all-24-filled text-lg" />
-					<span>Select All</span>
-				</Button>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						const $selectedNodes = selectedNodes();
-						filterClipboard(
-							(item) =>
-								item.mode !== 'selection' &&
-								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
-						);
-						addToClipboard(
-							...$selectedNodes.map(
-								create((item) => {
-									item.mode = 'copy';
-								})
-							)
-						);
-					}}
-				>
-					<span class="i-heroicons:clipboard text-lg" />
-					<span>Copy</span>
-				</Button>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						const $selectedNodes = selectedNodes();
-						filterClipboard(
-							(item) =>
-								item.mode !== 'selection' &&
-								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
-						);
-						addToClipboard(
-							...$selectedNodes.map(
-								create((item) => {
-									item.mode = 'move';
-								})
-							)
-						);
-					}}
-				>
-					<span class="i-heroicons:scissors text-lg" />
-					<span>Cut</span>
-				</Button>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						confirmModal.open({
-							message: `Are you sure you want to delete the selected files and folders.`,
-							onYes() {
-								const formData = new FormData();
-								formData.set('appId', appContext.id);
-								for (const item of selectedNodes()) {
-									formData.append('id', item.data);
-								}
-								toast.promise(
-									async () => {
-										await $deleteNode(formData);
-										await queryClient.invalidateQueries({
-											queryKey: ['nodes', appContext.path]
-										});
-										clearClipboard();
-									},
-									{
-										error: 'Error',
-										loading: 'Deleting Folder',
-										success: 'Deleted Folder'
-									}
-								);
-							},
-							title: 'Delete Folder'
-						});
-					}}
-					variant="destructive"
-				>
-					<span class="i-heroicons:trash text-lg" />
-					<span>Delete</span>
-				</Button>
-			</Show>
-			<Show when={appContext.mode === 'selection'}>
-				<Button
-					class="flex items-center gap-2"
-					onClick={() => {
-						filterClipboard((item) => item.mode !== 'selection');
-					}}
-				>
-					<span class="i-heroicons:check-circle-solid text-lg" />
-					<span>Done</span>
-				</Button>
-			</Show>
+		<div class="hidden justify-end gap-4 empty:hidden md:flex">
+			<For each={props.actions}>
+				{(action) => (
+					<Button class="flex items-center gap-2" onClick={action.handler} variant={action.variant}>
+						<span class={cn(action.icon, 'text-lg')} />
+						<span>{action.label}</span>
+					</Button>
+				)}
+			</For>
 		</div>
 	);
 }
@@ -858,11 +946,75 @@ function HelpOverlay() {
 					</>
 				)}
 			</Modal>
-			<div class="fixed bottom-4 right-4 opacity-50">
+			<div class="fixed bottom-4 right-4 hidden opacity-50 md:block">
 				<button onClick={() => setOpen(true)} type="button">
 					<span class="i-heroicons:question-mark-circle text-2xl" />
 				</button>
 			</div>
 		</>
+	);
+}
+
+function Fab(props: { actions: TAction[] }) {
+	let ref!: HTMLButtonElement;
+	const [open, setOpen] = createSignal<boolean>(false);
+
+	function toggle() {
+		setOpen(!open());
+	}
+
+	createEffect(
+		on(
+			open,
+			($open) => {
+				if ($open) {
+					ref.classList.remove('motion-rotate-in-45');
+					ref.classList.add('motion-rotate-out-45');
+				} else {
+					ref.classList.remove('motion-rotate-out-45');
+					ref.classList.add('motion-rotate-in-45');
+				}
+			},
+			{ defer: true }
+		)
+	);
+
+	return (
+		<div class="isolate z-20">
+			<Show when={open()}>
+				<div class="fixed inset-0 backdrop-blur"></div>
+			</Show>
+			<div class="fixed bottom-4 right-4 z-10 flex flex-col gap-4 md:hidden">
+				<Show when={open()}>
+					<ul class="flex flex-col gap-4">
+						<For each={props.actions}>
+							{(action) => (
+								<li class="contents">
+									<Button
+										onClick={async () => {
+											await action.handler();
+											setOpen(false);
+										}}
+										variant={action.variant}
+										class="motion-preset-pop motion-duration-300 flex items-center justify-end gap-2 self-end"
+									>
+										<span class="text-xs font-bold uppercase tracking-wide">{action.label}</span>
+										<span class={cn(action.icon, 'text-lg')} />
+									</Button>
+								</li>
+							)}
+						</For>
+					</ul>
+				</Show>
+				<Button
+					ref={ref}
+					size="icon"
+					onClick={toggle}
+					class="motion-ease-spring-bounciest/rotate motion-duration-300 self-end"
+				>
+					<span class="i-heroicons:plus text-lg" />
+				</Button>
+			</div>
+		</div>
 	);
 }
