@@ -173,7 +173,13 @@ export default function ProjectPage() {
 						>
 							<AnimatedBoardsList
 								boards={boardsQuery.data!}
-								collapsedBoards={collapsedBoards()}
+								collapsedBoards={
+									new Map(
+										Array.from(collapsedBoards()).filter(([id, _]) =>
+											boardsQuery.data!.some((board) => board.id === id)
+										)
+									)
+								}
 								setBoards={(setter) => {
 									queryClient.setQueryData(['boards', appContext.path], setter);
 								}}
