@@ -274,7 +274,12 @@ export default function SettingsPage() {
 						Download Backup
 					</Button>
 					<Button
-						onClick={() => onRestore().catch(() => toast.error('Restore failed'))}
+						onClick={() =>
+							onRestore().catch((error) => {
+								console.error(error);
+								toast.error('Restore failed');
+							})
+						}
 						variant="secondary"
 					>
 						Restore Backup

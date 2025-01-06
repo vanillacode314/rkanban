@@ -2,6 +2,7 @@ import { InferSelectModel, sql } from 'drizzle-orm';
 import { AnySQLiteColumn, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 import { createSelectSchema } from 'drizzle-zod';
 import { nanoid } from 'nanoid';
+import z from 'zod';
 
 import { ms } from '~/utils/ms';
 
@@ -93,9 +94,13 @@ const boards = sqliteTable(
 const tasks = sqliteTable(
 	'tasks',
 	{
+		archived: integer('archived', { mode: 'boolean' })
+			.notNull()
+			.default(sql`0`),
 		boardId: text('boardId')
 			.references(() => boards.id, { onDelete: 'cascade' })
 			.notNull(),
+		body: text('body').notNull().default(''),
 		createdAt: integer('createdAt', { mode: 'timestamp' })
 			.notNull()
 			.default(sql`(unixepoch('now'))`),
@@ -103,6 +108,7 @@ const tasks = sqliteTable(
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
 		index: integer('index').notNull(),
+		tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default([]),
 		title: text('title').notNull(),
 		updatedAt: integer('updatedAt', { mode: 'timestamp' })
 			.notNull()
@@ -145,9 +151,18 @@ const nodes = sqliteTable(
 	})
 );
 
-const nodesSchema = createSelectSchema(nodes);
-const boardsSchema = createSelectSchema(boards);
-const tasksSchema = createSelectSchema(tasks);
+const nodesSchema = createSelectSchema(nodes, {
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date()
+});
+const boardsSchema = createSelectSchema(boards, {
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date()
+});
+const tasksSchema = createSelectSchema(tasks, {
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date()
+});
 
 type TBoard = InferSelectModel<typeof boards>;
 type TTask = InferSelectModel<typeof tasks>;

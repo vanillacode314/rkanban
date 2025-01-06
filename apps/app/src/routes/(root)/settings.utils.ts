@@ -46,6 +46,8 @@ function diffNodes(
 	const sourcePathMap = new Map<string, string>();
 	for (const source of sources) {
 		sourceIdMap.set(source.id, source);
+	}
+	for (const source of sources) {
 		const sourcePath = getNodePath(source, sourceIdMap);
 		sourcePathMap.set(source.id, sourcePath);
 	}
@@ -53,6 +55,8 @@ function diffNodes(
 	const destinationPathMap = new Map<string, TStrippedNode>();
 	for (const destination of destinations) {
 		destinationIdMap.set(destination.id, destination);
+	}
+	for (const destination of destinations) {
 		const destinationPath = getNodePath(destination, destinationIdMap);
 		destinationPathMap.set(destinationPath, destination);
 	}
