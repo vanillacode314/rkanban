@@ -115,7 +115,7 @@ export const Board: Component<{
 			>
 				<CardHeader>
 					<div class="grid grid-cols-[1fr_auto] items-center gap-4">
-						<CardTitle class="flex items-center gap-2">
+						<CardTitle class="flex items-center gap-2 overflow-hidden">
 							<span
 								class={cn(
 									'i-akar-icons:drag-vertical shrink-0 cursor-move',
