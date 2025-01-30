@@ -1,5 +1,5 @@
 import { action, cache, redirect, reload } from '@solidjs/router';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { refreshTokens, TUser, users, verificationTokens } from 'db/schema';
 import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -18,7 +18,7 @@ import { resend } from './resend.server';
 // NOTE: only need till the upstream solid-start bug is fixed https://github.com/solidjs/solid-start/issues/1624
 async function checkUser() {
 	const user = await getUser({ shouldThrow: false });
-	if (!user) throw redirect('/auth/signin');
+	//if (!user) throw redirect('/auth/signin');
 	return user;
 }
 
@@ -35,8 +35,8 @@ const getUser = cache(
 		'use server';
 		const user = await parseUser();
 
-		if (!user && redirectOnUnauthenticated) throw redirect('/auth/signin');
-		if (user && redirectOnAuthenticated) throw redirect('/');
+		//if (!user && redirectOnUnauthenticated) throw redirect('/auth/signin');
+		//if (user && redirectOnAuthenticated) throw redirect('/');
 		if (!user && shouldThrow) throw new Error('Unauthorized');
 
 		return user;
@@ -70,11 +70,9 @@ async function parseRefreshAccessToken() {
 	try {
 		data = jwt.verify(refreshToken, env.AUTH_SECRET) as TUser;
 	} catch {
-		deleteCookie('refreshToken');
 		return null;
 	}
 	if (!data) {
-		deleteCookie('refreshToken');
 		return null;
 	}
 	const [user] = await db
@@ -82,16 +80,13 @@ async function parseRefreshAccessToken() {
 		.from(refreshTokens)
 		.where(eq(refreshTokens.token, refreshToken));
 	if (!user) {
-		deleteCookie('refreshToken');
 		return null;
 	}
 	const [$user] = await db.select().from(users).where(eq(users.id, user.id));
 	if (!$user) {
-		deleteCookie('refreshToken');
 		return null;
 	}
 	if ($user.salt && $user.salt !== data.salt) {
-		deleteCookie('refreshToken');
 		return null;
 	}
 	const accessToken = jwt.sign({ ...$user, passwordHash: undefined }, env.AUTH_SECRET, {
@@ -109,7 +104,6 @@ async function parseRefreshAccessToken() {
 async function refreshAccessToken() {
 	'use server';
 
-	deleteCookie('accessToken');
 	return reload({ revalidate: getUser.key });
 }
 
@@ -141,9 +135,7 @@ async function verifyPassword(password: string): Promise<boolean | Error> {
 const $signOut = async () => {
 	'use server';
 
-	deleteCookie('accessToken');
 	const refreshToken = getCookie('refreshToken');
-	deleteCookie('refreshToken');
 	if (refreshToken) await db.delete(refreshTokens).where(eq(refreshTokens.token, refreshToken));
 	return redirect('/auth/signin');
 };

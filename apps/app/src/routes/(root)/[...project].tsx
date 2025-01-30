@@ -9,7 +9,7 @@ import { resolveElements } from '@solid-primitives/refs';
 import { makePersisted, messageSync } from '@solid-primitives/storage';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition } from '@solidjs/router';
-import { createQuery, useQueryClient } from '@tanstack/solid-query';
+import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
@@ -40,23 +40,18 @@ import { Skeleton } from '~/components/ui/skeleton';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { getBoards, moveBoards } from '~/db/utils/boards';
-import { moveTasks } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
-import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
+import { useBoards, useBoardsByPath } from '~/queries/boards';
 import invariant from '~/utils/tiny-invariant';
+import { useTasks } from '~/queries/tasks';
 
 export const route: RouteDefinition = {
 	matchFilters: {
-		project: (pathname: string) =>
-			pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
-	},
-	preload: ({ location }) => {
-		const queryClient = useQueryClient();
-		queryClient.prefetchQuery({
-			queryFn: ({ queryKey }) => getBoards(queryKey[1]),
-			queryKey: ['boards', decodeURIComponent(location.pathname)]
-		});
+		project: (pathname: string) => {
+			if (RESERVED_PATHS.includes(`/${pathname}`)) return false;
+			if (!pathname.endsWith('.project')) return false;
+			return true;
+		}
 	}
 };
 
@@ -64,10 +59,7 @@ export default function ProjectPage() {
 	const [appContext, { setBoards }] = useApp();
 	const queryClient = useQueryClient();
 
-	const boardsQuery = createQuery(() => ({
-		queryFn: ({ queryKey }) => getBoards(queryKey[1]),
-		queryKey: ['boards', appContext.path]
-	}));
+	const [boardsQuery] = useBoardsByPath(() => ({ includeTasks: true, path: appContext.path }));
 	const hasBoards = () => boardsQuery.data && boardsQuery.data.length > 0;
 
 	const boardsDirty = createLazyMemo(() => {
@@ -92,7 +84,6 @@ export default function ProjectPage() {
 		createSignal<Map<string, TBoard>>(new Map()),
 		{ deserialize, name: 'collapsed-boards-v1', serialize, sync: messageSync() }
 	);
-	void createSubscription(makeSubscriptionHandler([getBoards.key]));
 
 	return (
 		<Switch>
@@ -103,7 +94,7 @@ export default function ProjectPage() {
 					</div>
 					<PathCrumbs />
 					<AnimatedBoardsList
-						boards={boardsQuery.data!}
+						boards={[]}
 						collapsedBoards={new Map()}
 						setBoards={() => {}}
 						setCollapsedBoards={() => {}}
@@ -132,11 +123,11 @@ export default function ProjectPage() {
 					when={!(boardsQuery.data instanceof Error)}
 				>
 					<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-						<ApplyChangesPopup
-							boards={boardsQuery.data}
-							boardsDirty={boardsDirty()}
-							reset={() => boardsQuery.refetch()}
-						/>
+						{/* <ApplyChangesPopup */}
+						{/* 	boards={boardsQuery.data} */}
+						{/* 	boardsDirty={boardsDirty()} */}
+						{/* 	reset={() => boardsQuery.refetch()} */}
+						{/* /> */}
 						<Show when={hasBoards()}>
 							<div class="flex justify-end gap-4">
 								<Button
@@ -181,7 +172,7 @@ export default function ProjectPage() {
 									)
 								}
 								setBoards={(setter) => {
-									queryClient.setQueryData(['boards', appContext.path], setter);
+									queryClient.setQueryData(['boards', 'by-path', appContext.path, true], setter);
 								}}
 								setCollapsedBoards={(setter) => {
 									setCollapsedBoards(setter);
@@ -223,6 +214,9 @@ const AnimatedBoardsList: ParentComponent<{
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
 	);
+
+	const [, { shiftBoard }] = useBoards(() => ({ enabled: false }));
+	const [, { changeBoard }] = useTasks(() => ({ enabled: false }));
 	const transition = createListTransition(resolved.toArray, {
 		onChange({ added, finishRemoved, list: _list, removed, unchanged }) {
 			for (const el of added) {
@@ -271,33 +265,26 @@ const AnimatedBoardsList: ParentComponent<{
 
 					const destinationIndex = props.boards.findIndex((b) => b.id === destination.data.boardId);
 					const sourceIndex = props.boards.findIndex((b) => b.id === source.data.boardId);
-					invariant(destinationIndex !== -1 && sourceIndex !== -1);
-
-					props.setBoards((boards) =>
-						reorderWithEdge({
-							axis: 'horizontal',
-							closestEdgeOfTarget,
-							indexOfTarget: destinationIndex,
-							list: boards!,
-							startIndex: sourceIndex
-						})
+					invariant(
+						destinationIndex !== -1 && sourceIndex !== -1 && typeof source.data.boardId === 'string'
 					);
+					const direction = destinationIndex - sourceIndex;
+					if (destinationIndex === sourceIndex) return;
 
-					const changedBoards = [] as Parameters<typeof moveBoards>[1];
+					const reorderedBoards = reorderWithEdge({
+						axis: 'horizontal',
+						closestEdgeOfTarget,
+						indexOfTarget: destinationIndex,
+						list: props.boards,
+						startIndex: sourceIndex
+					});
+					props.setBoards(() => reorderedBoards);
 
-					for (const [index, board] of props.boards.entries()) {
-						if (index === board.index) continue;
-						changedBoards.push({ id: board.id, index });
-					}
-
-					if (changedBoards.length === 0) return;
 					toast.promise(
 						async () => {
 							setIsDirty('project', true);
-							await moveBoards(appContext.id, changedBoards)
-								.then(() =>
-									queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
-								)
+							await shiftBoard
+								.mutateAsync({ id: source.data.boardId, direction })
 								.finally(() => setIsDirty('project', false));
 						},
 						{
@@ -334,6 +321,8 @@ const AnimatedBoardsList: ParentComponent<{
 						:	destinationBoard.tasks.findIndex((task) => task.id === destination.data.taskId);
 					const sourceIndex = sourceBoard.tasks.findIndex((task) => task.id === source.data.taskId);
 					invariant(destinationIndex !== -1 && sourceIndex !== -1);
+					if (sourceBoardIndex === destinationBoardIndex && sourceIndex === destinationIndex)
+						return;
 
 					if (destinationBoard === sourceBoard) {
 						props.setBoards(
@@ -360,6 +349,24 @@ const AnimatedBoardsList: ParentComponent<{
 							})
 						);
 					}
+
+					toast.promise(
+						async () => {
+							setIsDirty('project', true);
+							await changeBoard
+								.mutateAsync({
+									id: source.data.taskId,
+									boardId: destination.data.boardId,
+									index: destinationIndex
+								})
+								.finally(() => setIsDirty('project', false));
+						},
+						{
+							error: 'Failed to move task',
+							loading: 'Moving task...',
+							success: 'Task moved'
+						}
+					);
 				}
 			}),
 			autoScrollForElements({
@@ -443,6 +450,7 @@ function ApplyChangesPopup(props: {
 	const queryClient = useQueryClient();
 	const [appContext, _] = useApp();
 	const [count, setCount] = createSignal(0);
+	const [, { shiftTask }] = useTasks(() => ({ enabled: false }));
 	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
 	let animation: AnimationControls;
 
@@ -457,26 +465,15 @@ function ApplyChangesPopup(props: {
 			}
 		});
 		animation.then(() => {
-			const changedTasks = props.boards!.flatMap((board) => {
-				const data = [];
-				for (const [index, task] of board.tasks.entries()) {
-					if (index === task.index && task.boardId === board.id) continue;
-					data.push({ boardId: board.id, id: task.id, index });
-				}
-				return data;
-			});
-			if (changedTasks.length === 0) return;
-			toast.promise(
-				() =>
-					moveTasks(appContext.id, changedTasks).then(() =>
-						queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
-					),
-				{
-					error: 'Failed to apply changes',
-					loading: 'Applying changes...',
-					success: 'Changes applied'
-				}
+			const hasTasksChanged = props.boards?.some((board) =>
+				board.tasks.some((task, index) => task.index !== index || task.boardId !== board.id)
 			);
+			if (!hasTasksChanged) return;
+			toast.promise(() => shiftTask({}), {
+				error: 'Failed to apply changes',
+				loading: 'Applying changes...',
+				success: 'Changes applied'
+			});
 		});
 	}
 

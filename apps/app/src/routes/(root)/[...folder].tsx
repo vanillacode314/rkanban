@@ -9,7 +9,7 @@ import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
 import { A, RouteDefinition, useAction, useNavigate } from '@solidjs/router';
-import { createQuery, useQueryClient } from '@tanstack/solid-query';
+import { useQueryClient } from '@tanstack/solid-query';
 import { TNode } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
@@ -49,11 +49,10 @@ import {
 import { Skeleton } from '~/components/ui/skeleton';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
-import { copyNode, deleteNode, getNodes, isFolder, updateNode } from '~/db/utils/nodes';
 import { cn } from '~/lib/utils';
+import { useNode, useNodes, useNodesByPath } from '~/queries/nodes';
+import { FetchError } from '~/utils/fetchers';
 import * as path from '~/utils/path';
-import { createSubscription, makeSubscriptionHandler } from '~/utils/subscribe';
-import { assertNotError } from '~/utils/types';
 
 type TAction = {
 	handler: () => void;
@@ -64,40 +63,28 @@ type TAction = {
 
 export const route: RouteDefinition = {
 	matchFilters: {
-		folder: (pathname: string) =>
-			!pathname.endsWith('.project') && !RESERVED_PATHS.includes(pathname)
-	},
-	preload: ({ location }) => {
-		const queryClient = useQueryClient();
-		queryClient.prefetchQuery({
-			queryFn: ({ queryKey }) => getNodes(queryKey[1], { includeChildren: true }),
-			queryKey: ['nodes', decodeURIComponent(location.pathname)]
-		});
+		folder: (pathname: string) => {
+			if (RESERVED_PATHS.includes(`/${pathname}`)) return false;
+			if (pathname.endsWith('.project')) return false;
+			return true;
+		}
 	}
 };
 
 export default function FolderPage() {
-	const [appContext, { addToClipboard, clearClipboard, filterClipboard, setMode }] = useApp();
+	const [appContext, { setCurrentNode, addToClipboard, clearClipboard, filterClipboard, setMode }] =
+		useApp();
 	const queryClient = useQueryClient();
 
-	const nodesQuery = createQuery(() => ({
-		queryFn: ({ queryKey }) => {
-			return getNodes(queryKey[1], { includeChildren: true });
-		},
-		queryKey: ['nodes', appContext.path]
-	}));
+	const [nodes] = useNodesByPath(() => ({ includeChildren: true, path: appContext.path }));
+
+	const currentNode = () => nodes.data![0];
+	const children = createMemo(() => nodes.data?.slice(1) ?? []);
+	const folders = createMemo(() => children().filter((node) => !node.name.endsWith('.project')));
+	const files = createMemo(() => children().filter((node) => node.name.endsWith('.project')));
 
 	const confirmModal = useConfirmModal();
-	const $updateNode = useAction(updateNode);
-	const $copyNode = useAction(copyNode);
-	const $deleteNode = useAction(deleteNode);
-
-	const currentNode = () => assertNotError(nodesQuery.data)!.node;
-	const children = () => (nodesQuery.data ? assertNotError(nodesQuery.data)!.children : []);
-	const folders = () => children()?.filter((node) => isFolder(node));
-	const files = () => children()?.filter((node) => !isFolder(node));
-
-	void createSubscription(makeSubscriptionHandler([getNodes.key]));
+	const [_, { deleteNodes, updateNode }] = useNodes(() => ({ enabled: false }));
 
 	const nodesInClipboard = () =>
 		appContext.clipboard.filter(
@@ -163,25 +150,6 @@ export default function FolderPage() {
 						addToClipboard(
 							...$selectedNodes.map(
 								create((item) => {
-									item.mode = 'copy';
-								})
-							)
-						);
-					},
-					icon: 'i-heroicons:clipboard',
-					label: 'Copy'
-				},
-				{
-					handler: () => {
-						const $selectedNodes = selectedNodes();
-						filterClipboard(
-							(item) =>
-								item.mode !== 'selection' &&
-								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
-						);
-						addToClipboard(
-							...$selectedNodes.map(
-								create((item) => {
 									item.mode = 'move';
 								})
 							)
@@ -194,27 +162,19 @@ export default function FolderPage() {
 					handler: () => {
 						confirmModal.open({
 							message: `Are you sure you want to delete the selected files and folders.`,
-							onYes() {
-								const formData = new FormData();
-								formData.set('appId', appContext.id);
-								for (const item of selectedNodes()) {
-									formData.append('id', item.data);
-								}
-								toast.promise(
-									async () => {
-										await $deleteNode(formData);
-										await queryClient.invalidateQueries({
-											queryKey: ['nodes', appContext.path]
-										});
-										clearClipboard();
-									},
-									{
-										error: 'Error',
-										loading: 'Deleting Folder',
-										success: 'Deleted Folder'
-									}
-								);
-							},
+							onYes: () =>
+								deleteNodes
+									.mutateAsync(selectedNodes().map((item) => item.data))
+									.then(() => clearClipboard())
+									.catch(async (error) => {
+										if (error instanceof FetchError) {
+											const data = await error.response.json();
+											if (data.message) {
+												toast.error(data.message);
+												return;
+											}
+										}
+									}),
 							title: 'Delete Folder'
 						});
 					},
@@ -282,6 +242,7 @@ export default function FolderPage() {
 			},
 			{
 				handler: () => {
+					setCurrentNode(currentNode());
 					setCreateFileModalOpen(true);
 				},
 				icon: 'i-heroicons:document-plus',
@@ -289,6 +250,7 @@ export default function FolderPage() {
 			},
 			{
 				handler: () => {
+					setCurrentNode(currentNode());
 					setCreateFolderModalOpen(true);
 				},
 				icon: 'i-heroicons:folder-plus',
@@ -315,23 +277,17 @@ export default function FolderPage() {
 			async () => {
 				await Promise.all(
 					items.map((item) => {
-						const formData = new FormData();
-						formData.set('id', item.data);
-						const { node } = item.meta as { node: TNode; path: string };
-						formData.set('parentId', currentNode().id);
-						formData.set('appId', appContext.id);
 						switch (item.mode) {
-							case 'copy':
-								return $copyNode(formData);
 							case 'move':
-								formData.set('name', node.name);
-								return $updateNode(formData);
+								return updateNode.mutateAsync({
+									id: item.data,
+									data: { parentId: currentNode().id }
+								});
 							default:
-								return;
+								return Promise.resolve();
 						}
 					})
 				);
-				await queryClient.invalidateQueries({ queryKey: ['nodes', appContext.path] });
 				filterClipboard(($item) => !items.some((item) => $item.data === item.data));
 			},
 			{
@@ -354,16 +310,19 @@ export default function FolderPage() {
 					if (!(destination.data.type === 'node' && source.data.type === 'node')) return;
 					if (typeof destination.data.id !== 'string') return;
 					if (typeof source.data.id !== 'string') return;
-					const parentId = destination.data.id;
-					const formData = new FormData();
-					formData.set('id', source.data.id);
-					formData.set('parentId', parentId);
-					formData.set('appId', appContext.id);
-					toast.promise(() => $updateNode(formData), {
-						error: 'Error',
-						loading: 'Moving...',
-						success: 'Moved Successfully'
-					});
+
+					toast.promise(
+						() =>
+							updateNode.mutateAsync({
+								id: source.data.id as string,
+								data: { parentId: destination.data.id as string }
+							}),
+						{
+							error: 'Error',
+							loading: 'Moving...',
+							success: 'Moved Successfully'
+						}
+					);
 				}
 			})
 		);
@@ -374,7 +333,7 @@ export default function FolderPage() {
 		<>
 			<HelpOverlay />
 			<Switch>
-				<Match when={nodesQuery.isPending}>
+				<Match when={nodes.isPending}>
 					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
 						<div class="flex justify-end gap-4">
 							<Skeleton height={40} radius={5} width={150} />
@@ -401,11 +360,11 @@ export default function FolderPage() {
 						</AnimatedNodesList>
 					</div>
 				</Match>
-				<Match when={nodesQuery.isSuccess}>
+				<Match when={nodes.isSuccess}>
 					<Fab actions={actions()} />
-					<Show fallback={<FolderNotFound />} when={!(nodesQuery.data instanceof Error)}>
+					<Show fallback={<FolderNotFound />} when={!nodes.isError}>
 						<div class="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden py-4">
-							<Toolbar actions={actions()} currentNode={currentNode()} nodes={children()} />
+							<Toolbar actions={actions()} currentNode={currentNode()!} nodes={children()} />
 							<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
 								<Show when={appContext.path === '/'}>
 									<Button
@@ -576,9 +535,8 @@ function Node(props: {
 
 function FolderNode(props: { node: TNode }) {
 	const [appContext, { addToClipboard, setCurrentNode }] = useApp();
-	const $deleteNode = useAction(deleteNode);
+	const [_, { deleteNode }] = useNode(() => ({ id: props.node.id, enabled: false }));
 	const confirmModal = useConfirmModal();
-	const queryClient = useQueryClient();
 
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLButtonElement;
@@ -634,30 +592,7 @@ function FolderNode(props: { node: TNode }) {
 								<span class="i-heroicons:pencil-solid" />
 							</DropdownMenuShortcut>
 						</DropdownMenuItem>
-						<DropdownMenuItem
-							onSelect={() => {
-								if (
-									appContext.clipboard.some(
-										(item) => item.type === 'id/node' && item.data === props.node.id
-									)
-								)
-									return;
-								addToClipboard({
-									data: props.node.id,
-									meta: {
-										node: props.node,
-										path: path.join('/home', appContext.path, props.node.name)
-									},
-									mode: 'copy',
-									type: 'id/node'
-								});
-							}}
-						>
-							<span>Copy</span>
-							<DropdownMenuShortcut class="text-base">
-								<span class="i-heroicons:document-duplicate" />
-							</DropdownMenuShortcut>
-						</DropdownMenuItem>
+
 						<DropdownMenuItem
 							onSelect={() => {
 								if (
@@ -686,24 +621,16 @@ function FolderNode(props: { node: TNode }) {
 							onSelect={() => {
 								confirmModal.open({
 									message: `Are you sure you want to delete ${props.node.name}?`,
-									onYes() {
-										const formData = new FormData();
-										formData.set('id', props.node.id);
-										formData.set('appId', appContext.id);
-										toast.promise(
-											async () => {
-												await $deleteNode(formData);
-												await queryClient.invalidateQueries({
-													queryKey: ['nodes', appContext.path]
-												});
-											},
-											{
-												error: 'Error',
-												loading: 'Deleting Folder',
-												success: 'Deleted Folder'
+									onYes: () =>
+										deleteNode.mutateAsync().catch(async (error) => {
+											if (error instanceof FetchError) {
+												const data = await error.response.json();
+												if (data.message) {
+													toast.error(data.message);
+													return;
+												}
 											}
-										);
-									},
+										}),
 									title: 'Delete Folder'
 								});
 							}}
@@ -725,9 +652,8 @@ function FolderNode(props: { node: TNode }) {
 
 function FileNode(props: { node: TNode }) {
 	const [appContext, { addToClipboard, setCurrentNode }] = useApp();
-	const $deleteNode = useAction(deleteNode);
+	const [_, { deleteNode }] = useNode(() => ({ id: props.node.id, enabled: false }));
 	const confirmModal = useConfirmModal();
-	const queryClient = useQueryClient();
 
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLButtonElement;
@@ -776,30 +702,6 @@ function FileNode(props: { node: TNode }) {
 									)
 								)
 									return;
-								addToClipboard({
-									data: props.node.id,
-									meta: {
-										node: props.node,
-										path: path.join('/home', appContext.path, props.node.name)
-									},
-									mode: 'copy',
-									type: 'id/node'
-								});
-							}}
-						>
-							<span>Copy</span>
-							<DropdownMenuShortcut class="text-base">
-								<span class="i-heroicons:document-duplicate" />
-							</DropdownMenuShortcut>
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							onSelect={() => {
-								if (
-									appContext.clipboard.some(
-										(item) => item.type === 'id/node' && item.data === props.node.id
-									)
-								)
-									return;
 
 								addToClipboard({
 									data: props.node.id,
@@ -821,24 +723,16 @@ function FileNode(props: { node: TNode }) {
 							onSelect={() => {
 								confirmModal.open({
 									message: `Are you sure you want to delete ${props.node.name}?`,
-									onYes: () => {
-										const formData = new FormData();
-										formData.set('id', props.node.id);
-										formData.set('appId', appContext.id);
-										toast.promise(
-											async () => {
-												await $deleteNode(formData);
-												await queryClient.invalidateQueries({
-													queryKey: ['nodes', appContext.path]
-												});
-											},
-											{
-												error: 'Error',
-												loading: 'Deleting File',
-												success: 'Deleted File'
+									onYes: () =>
+										deleteNode.mutateAsync().catch(async (error) => {
+											if (error instanceof FetchError) {
+												const data = await error.response.json();
+												if (data.message) {
+													toast.error(data.message);
+													return;
+												}
 											}
-										);
-									},
+										}),
 									title: 'Delete File'
 								});
 							}}

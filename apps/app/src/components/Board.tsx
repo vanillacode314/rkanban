@@ -11,8 +11,6 @@ import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
 import { makePersisted, messageSync } from '@solid-primitives/storage';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { useAction } from '@solidjs/router';
-import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
@@ -22,7 +20,6 @@ import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { deleteBoard, shiftBoard } from '~/db/utils/boards';
 import { cn } from '~/lib/utils';
 import invariant from '~/utils/tiny-invariant';
 
@@ -40,6 +37,8 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
+import { useBoard } from '~/queries/boards';
+import { FetchError } from '~/utils/fetchers';
 
 export const Board: Component<{
 	board: { tasks: TTask[] } & TBoard;
@@ -244,8 +243,7 @@ function BoardContextMenu(props: {
 }) {
 	const [appContext, { setCurrentBoard }] = useApp();
 	const confirmModal = useConfirmModal();
-	const $deleteBoard = useAction(deleteBoard);
-	const queryClient = useQueryClient();
+	const [, { deleteBoard, shiftBoard }] = useBoard(() => ({ id: props.board.id, enabled: false }));
 
 	return (
 		<div class="flex-col">
@@ -274,22 +272,16 @@ function BoardContextMenu(props: {
 						onSelect={() => {
 							confirmModal.open({
 								message: 'Are you sure you want to delete this board and all its tasks?',
-								onYes: async () => {
-									const formData = new FormData();
-									formData.set('id', props.board.id.toString());
-									formData.set('appId', appContext.id);
-									toast.promise(
-										() =>
-											$deleteBoard(formData).then(() =>
-												queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
-											),
-										{
-											error: 'Error',
-											loading: 'Deleting Board',
-											success: 'Deleted Board'
+								onYes: () =>
+									deleteBoard.mutateAsync().catch(async (error) => {
+										if (error instanceof FetchError) {
+											const data = await error.response.json();
+											if (data.message) {
+												toast.error(data.message);
+												return;
+											}
 										}
-									);
-								},
+									}),
 								title: 'Delete Board'
 							});
 						}}
@@ -302,17 +294,11 @@ function BoardContextMenu(props: {
 					<Show when={props.index < appContext.boards.length - 1}>
 						<DropdownMenuItem
 							onSelect={() => {
-								toast.promise(
-									async () => {
-										await shiftBoard(appContext.id, props.board.id, 1);
-										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
-									},
-									{
-										error: 'Error',
-										loading: 'Moving Board',
-										success: 'Moved Board'
-									}
-								);
+								toast.promise(() => shiftBoard.mutateAsync(1), {
+									error: 'Error',
+									loading: 'Moving Board',
+									success: 'Moved Board'
+								});
 							}}
 						>
 							<span>Shift Right</span>
@@ -324,17 +310,11 @@ function BoardContextMenu(props: {
 					<Show when={props.index > 0}>
 						<DropdownMenuItem
 							onSelect={() => {
-								toast.promise(
-									async () => {
-										await shiftBoard(appContext.id, props.board.id, -1);
-										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
-									},
-									{
-										error: 'Error',
-										loading: 'Moving Board',
-										success: 'Moved Board'
-									}
-								);
+								toast.promise(async () => shiftBoard.mutateAsync(-1), {
+									error: 'Error',
+									loading: 'Moving Board',
+									success: 'Moved Board'
+								});
 							}}
 						>
 							<span>Shift Left</span>

@@ -17,10 +17,17 @@ export default defineConfig({
 		compatibilityDate: '2025-01-02',
 		prerender: {
 			routes: ['/offline', '/manifest.webmanifest']
+		},
+		devProxy: {
+			'/api': 'http://localhost:3002/api'
 		}
 	},
 	ssr: false,
+	middleware: 'src/middleware.ts',
 	vite: {
+		optimizeDeps: {
+			exclude: ['sqlocal']
+		},
 		envPrefix: 'PUBLIC_',
 		plugins: [
 			devtools({

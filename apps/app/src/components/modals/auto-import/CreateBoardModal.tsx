@@ -1,67 +1,40 @@
-import { useAction } from '@solidjs/router';
-import { createMutation, useQueryClient } from '@tanstack/solid-query';
-import { TBoard, TTask } from 'db/schema';
-import { create } from 'mutative';
+import { type } from 'arktype';
 import { nanoid } from 'nanoid';
-import { createSignal } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
+import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
+import ValidationErrors from '~/components/form/ValidationErrors';
 
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
-import { createBoard } from '~/db/utils/boards';
+import { useBoardsByPath } from '~/queries/boards';
+import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
+import { FetchError } from '~/utils/fetchers';
 
 export const [createBoardModalOpen, setCreateBoardModalOpen] = createSignal<boolean>(false);
 
+const formSchema = type({
+	appId: 'string',
+	nodePath: 'string.trim',
+	id: type('string | undefined').pipe((v) => v ?? nanoid()),
+	title: type('string.trim')
+});
 export default function CreateBoardModal() {
 	const [appContext, _] = useApp();
-	const $createBoard = useAction(createBoard);
-
-	const queryClient = useQueryClient();
-	const mutation = createMutation(() => ({
-		mutationFn: async (formData: FormData) => {
-			formData.set('title', await encryptWithUserKeys(String(formData.get('title'))));
-			await $createBoard(formData);
-		},
-		onError: (_, __, context) => {
-			if (!context) return;
-			queryClient.setQueryData(['boards', context.path], context.previousData);
-			toast.error('Failed to create board', { id: context.toastId });
-		},
-		onMutate: async (formData) => {
-			await queryClient.cancelQueries({ queryKey: ['boards', appContext.path] });
-			const previousData = queryClient.getQueryData<Array<{ tasks: TTask[] } & TBoard>>([
-				'boards',
-				appContext.path
-			]);
-			if (previousData === undefined) return;
-			const title = String(formData.get('title'));
-			queryClient.setQueryData(
-				['boards', appContext.path],
-				create(previousData, (draft) => {
-					draft.push({
-						createdAt: new Date(),
-						id: String(formData.get('id')),
-						index: draft!.length,
-						nodeId: 'pending',
-						tasks: [],
-						title,
-						updatedAt: new Date(),
-						userId: 'pending'
-					});
-				})
-			);
-			const toastId = toast.loading(`Creating Board: ${title}`);
-			return { path: appContext.path, previousData, title, toastId };
-		},
-		onSettled: (_, __, ___, context) => {
-			if (!context) return;
-			queryClient.invalidateQueries({ queryKey: ['boards', context.path] });
-			toast.success(`Created Board: ${context.title}`, { id: context.toastId });
-		}
-	}));
+	const [id, setId] = createSignal(nanoid());
+	const [, { createBoard }] = useBoardsByPath(() => ({ enabled: false, path: appContext.path }));
+	const [formErrors, setFormErrors] = createStore<
+		Record<keyof typeof formSchema.infer | 'form', string[]>
+	>({
+		form: [],
+		title: [],
+		id: [],
+		appId: [],
+		nodePath: []
+	});
 
 	return (
 		<BaseModal open={createBoardModalOpen()} setOpen={setCreateBoardModalOpen} title="Create Board">
@@ -71,14 +44,36 @@ export default function CreateBoardModal() {
 					onSubmit={async (event) => {
 						event.preventDefault();
 						const form = event.target as HTMLFormElement;
-						const formData = new FormData(form);
-						const idInput = form.querySelector('input[name="id"]') as HTMLInputElement;
-						mutation.mutate(formData);
-						idInput.value = nanoid();
+						const result = formSchema(Object.fromEntries(new FormData(form)));
+						if (result instanceof type.errors) {
+							setFormErrors(parseFormErrors(result));
+							return;
+						}
+						result.title = await encryptWithUserKeys(result.title);
+						createBoard.mutate(result, {
+							onError: async (error) => {
+								if (error instanceof FetchError) {
+									const data = await error.response.json();
+									if (data.message && data.message !== 'Error') {
+										setFormErrors('form', [data.message]);
+										return;
+									}
+								}
+								setFormErrors('form', [
+									`Failed to create board. Try again later if the issue persists`
+								]);
+							},
+							onSuccess: () => {
+								setId(nanoid());
+								toast.success(`Board created: ${result.title}`);
+								close();
+							}
+						});
 					}}
 				>
-					<input name="id" type="hidden" value={nanoid()} />
-					<input name="path" type="hidden" value={appContext.path} />
+					<ValidationErrors errors={formErrors.form} />
+					<input name="id" type="hidden" value={id()} />
+					<input name="nodePath" type="hidden" value={appContext.path} />
 					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
@@ -91,9 +86,13 @@ export default function CreateBoardModal() {
 							required
 							type="text"
 						/>
+						<ValidationErrors errors={formErrors.title} />
 					</TextField>
-					<Button class="self-end" onClick={close} type="submit">
-						Submit
+					<Button class="flex items-center gap-2 self-end" type="submit">
+						<Show when={createBoard.isPending}>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+						</Show>
+						<span>Submit</span>
 					</Button>
 				</form>
 			)}

@@ -1,4 +1,4 @@
-import { A, action, createAsync, redirect, RouteDefinition, useAction } from '@solidjs/router';
+import { A, action, createAsync, redirect, useAction } from '@solidjs/router';
 import { boards, tasks, TBoard, TTask, users } from 'db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { Show } from 'solid-js';
@@ -9,9 +9,6 @@ import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { useSeedPhraseModal } from '~/components/modals/auto-import/SeedPhraseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
-import { getBoards } from '~/db/utils/boards';
-import { getTasks } from '~/db/utils/tasks';
-import { cn } from '~/lib/utils';
 import {
 	decryptObjectKeys,
 	decryptWithUserKeys,
@@ -31,6 +28,7 @@ import {
 	TStrippedNode,
 	TStrippedTask
 } from './settings.utils';
+import { apiFetch } from '~/utils/fetchers';
 
 const deleteUser = action(async () => {
 	'use server';
@@ -72,10 +70,6 @@ const disableEncryption = action(async (decryptedBoards: TBoard[], decryptedTask
 	deleteCookie('accessToken');
 }, 'disable-encryption');
 
-export const route: RouteDefinition = {
-	preload: () => getUser({ redirectOnUnauthenticated: true })
-};
-
 type TBackup = {
 	boards: TStrippedBoard[];
 	nodes: TStrippedNode[];
@@ -100,7 +94,7 @@ export default function SettingsPage() {
 
 	async function onBackup() {
 		const toastId = toast.loading('Downloading All Data...');
-		const response = await fetch('/api/v1/me.json');
+		const response = await fetch('/api/v1/private/me.json');
 		if (!response.ok) {
 			toast.error('Failed to download backup, Retry again later', { id: toastId });
 			return;
@@ -137,7 +131,7 @@ export default function SettingsPage() {
 			return;
 		}
 		const toastId = toast.loading('Downloading current data...');
-		let response = await fetch('/api/v1/me.json');
+		let response = await fetch('/api/v1/private/me.json');
 		if (!response.ok) {
 			toast.error('Failed to download current data', { id: toastId });
 			return;
@@ -191,7 +185,7 @@ export default function SettingsPage() {
 				)
 			);
 		}
-		response = await fetch('/api/v1/me', {
+		response = await fetch('/api/v1/private/me', {
 			body: JSON.stringify({ boards: newBoards.boards, nodes: newNodes.nodes, tasks: newTasks }),
 			headers: {
 				'Content-Type': 'application/json'
@@ -242,7 +236,12 @@ export default function SettingsPage() {
 					alert('Incorrect password');
 					throw new Error('Incorrect password');
 				}
-				const [$boards, $tasks] = await Promise.all([getBoards(null), getTasks()]);
+				const [$boards, $tasks] = await Promise.all([
+					apiFetch
+						.forwardHeaders()
+						.as_json<Array<TBoard & { tasks: TTask[] }>>('/api/v1/private/boards'),
+					apiFetch.forwardHeaders().as_json<TTask[]>('/api/v1/private/tasks')
+				]);
 				const [decryptedBoards, decryptedTasks] = await Promise.all([
 					decryptObjectKeys($boards, ['title']),
 					decryptObjectKeys($tasks, ['title'])
@@ -283,29 +282,6 @@ export default function SettingsPage() {
 						variant="secondary"
 					>
 						Restore Backup
-					</Button>
-					<Button
-						class="flex items-center gap-2"
-						onClick={async () => {
-							if (encryptionEnabled()) {
-								confirmModal.open({
-									message: 'Are you sure you want to disable encryption?',
-									onYes: onDisableEncryption,
-									title: 'Disable Encryption'
-								});
-							} else {
-								enableEncryption();
-							}
-						}}
-						variant="secondary"
-					>
-						<span
-							class={cn(
-								'text-xl',
-								encryptionEnabled() ? 'i-heroicons:lock-closed' : 'i-heroicons:lock-open'
-							)}
-						/>
-						<span>{encryptionEnabled() ? 'Disable Encryption' : 'Enable Encryption'}</span>
 					</Button>
 				</div>
 				<h3 class="text-lg font-medium">Danger Zone</h3>

@@ -15,7 +15,6 @@ import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
-import { changeBoard, deleteTask, shiftTask } from '~/db/utils/tasks';
 import { cn } from '~/lib/utils';
 import invariant from '~/utils/tiny-invariant';
 
@@ -35,6 +34,8 @@ import {
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
+import { FetchError } from '~/utils/fetchers';
+import { useTask } from '~/queries/tasks';
 
 export const Task: Component<{
 	boardId: TBoard['id'];
@@ -143,7 +144,10 @@ function TaskContextMenu(props: {
 	const [appContext, { setCurrentTask }] = useApp();
 	const allTasks = () => appContext.boards.find((board) => board.id === props.task.boardId)!.tasks;
 	const confirmModal = useConfirmModal();
-	const $deleteTask = useAction(deleteTask);
+	const [, { deleteTask, shiftTask, changeBoard }] = useTask(() => ({
+		enabled: false,
+		id: props.task.id
+	}));
 	const $changeBoard = useAction(changeBoard);
 	const queryClient = useQueryClient();
 
@@ -174,22 +178,16 @@ function TaskContextMenu(props: {
 						onSelect={() => {
 							confirmModal.open({
 								message: 'Are you sure you want to delete this task?',
-								onYes: async () => {
-									const formData = new FormData();
-									formData.set('id', props.task.id);
-									formData.set('appId', appContext.id);
-									toast.promise(
-										() =>
-											$deleteTask(formData).then(() =>
-												queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] })
-											),
-										{
-											error: 'Error',
-											loading: 'Deleting Task',
-											success: 'Deleted Task'
+								onYes: () =>
+									deleteTask.mutateAsync().catch(async (error) => {
+										if (error instanceof FetchError) {
+											const data = await error.response.json();
+											if (data.message) {
+												toast.error(data.message);
+												return;
+											}
 										}
-									);
-								},
+									}),
 								title: 'Delete Task'
 							});
 						}}
@@ -209,17 +207,12 @@ function TaskContextMenu(props: {
 									{(board) => (
 										<DropdownMenuItem
 											onSelect={() => {
-												const formData = new FormData();
-												formData.set('id', props.task.id);
-												formData.set('boardId', board.id);
-												formData.set('appId', appContext.id);
 												toast.promise(
 													() =>
-														$changeBoard(formData).then(() =>
-															queryClient.invalidateQueries({
-																queryKey: ['boards', appContext.path]
-															})
-														),
+														changeBoard.mutateAsync({
+															boardId: board.id,
+															index: board.tasks.length
+														}),
 													{
 														error: 'Error',
 														loading: 'Moving Task',
@@ -240,17 +233,11 @@ function TaskContextMenu(props: {
 					<Show when={props.index < allTasks().length - 1}>
 						<DropdownMenuItem
 							onSelect={() => {
-								toast.promise(
-									async () => {
-										await shiftTask(appContext.id, props.task.id, 1);
-										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
-									},
-									{
-										error: 'Error',
-										loading: 'Moving Task',
-										success: 'Moved Task'
-									}
-								);
+								toast.promise(() => shiftTask.mutateAsync(1), {
+									error: 'Error',
+									loading: 'Moving Task',
+									success: 'Moved Task'
+								});
 							}}
 						>
 							<span>Shift Down</span>
@@ -262,17 +249,11 @@ function TaskContextMenu(props: {
 					<Show when={props.index > 0}>
 						<DropdownMenuItem
 							onSelect={() => {
-								toast.promise(
-									async () => {
-										await shiftTask(appContext.id, props.task.id, -1);
-										await queryClient.invalidateQueries({ queryKey: ['boards', appContext.path] });
-									},
-									{
-										error: 'Error',
-										loading: 'Moving Task',
-										success: 'Moved Task'
-									}
-								);
+								toast.promise(() => shiftTask.mutateAsync(-1), {
+									error: 'Error',
+									loading: 'Moving Task',
+									success: 'Moved Task'
+								});
 							}}
 						>
 							<span>Shift Up</span>

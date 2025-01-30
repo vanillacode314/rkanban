@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
   "tasks": {
     "build": {
       "outputs": [
@@ -12,6 +13,9 @@
         "AUTH_SECRET",
         "TURSO_AUTH_TOKEN",
         "TURSO_CONNECTION_URL",
+        "RSUITE_API_URL",
+        "PUBLIC_RSUITE_CLIENT_ID",
+        "RSUITE_CLIENT_SECRET",
         "RESEND_API_KEY",
         "NOTIFICATIONS_EMAIL_ADDRESS",
         "SERVER_PRESET",
@@ -28,7 +32,10 @@
         "AUTH_SECRET",
         "TURSO_AUTH_TOKEN",
         "TURSO_CONNECTION_URL",
+        "PUBLIC_RSUITE_CLIENT_ID",
+        "RSUITE_CLIENT_SECRET",
         "RESEND_API_KEY",
+        "RSUITE_API_URL",
         "NOTIFICATIONS_EMAIL_ADDRESS",
         "SERVER_PRESET",
         "PUBLIC_SOCKET_URL",

@@ -1,14 +1,17 @@
 import { useColorMode } from '@kobalte/core/color-mode';
-import { A, useAction, useLocation } from '@solidjs/router';
-import { createQuery } from '@tanstack/solid-query';
+import { A } from '@solidjs/router';
 import { createSignal, Show, Suspense } from 'solid-js';
 
 import { cn } from '~/lib/utils';
-import { getUser, refreshAccessToken, resendVerificationEmail, signOut } from '~/utils/auth.server';
+import { useUser } from '~/utils/auth';
 import { localforage } from '~/utils/localforage';
 
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
+
+// TODO: implement this
+const refreshAccessToken = () => {};
+const resendVerificationEmail = () => {};
 
 export default function Nav(props: { class?: string }) {
 	const { toggleColorMode } = useColorMode();
@@ -37,12 +40,9 @@ export default function Nav(props: { class?: string }) {
 }
 
 function UserCard() {
-	const location = useLocation();
-	const user = createQuery(() => ({
-		queryFn: () => getUser({ shouldThrow: false }),
-		queryKey: ['user', location.pathname]
-	}));
-	const $signOut = useAction(signOut);
+	const user = useUser();
+	// TODO: implement this
+	const $signOut = () => {};
 	return (
 		<Show when={user.data}>
 			<form
@@ -62,11 +62,7 @@ function UserCard() {
 }
 
 function VerificationEmailAlert() {
-	const location = useLocation();
-	const user = createQuery(() => ({
-		queryFn: () => getUser({ shouldThrow: false }),
-		queryKey: ['user', location.pathname]
-	}));
+	const user = useUser();
 	const [cooldown, setCooldown] = createSignal<number>(0);
 
 	function countdown() {

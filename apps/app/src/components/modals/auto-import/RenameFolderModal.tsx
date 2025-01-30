@@ -1,59 +1,54 @@
-import { useAction } from '@solidjs/router';
-import { createMutation, useQueryClient } from '@tanstack/solid-query';
-import { TNode } from 'db/schema';
-import { create } from 'mutative';
-import { createSignal } from 'solid-js';
+import { type } from 'arktype';
+import { nanoid } from 'nanoid';
+import { createSignal, Show } from 'solid-js';
+import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
+import ValidationErrors from '~/components/form/ValidationErrors';
 
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
-import { updateNode } from '~/db/utils/nodes';
+import { useNode } from '~/queries/nodes';
+import { parseFormErrors } from '~/utils/arktype';
+import { FetchError } from '~/utils/fetchers';
 
 export const [renameFolderModalOpen, setRenameFolderModalOpen] = createSignal<boolean>(false);
 
+const formSchema = type({
+	name: type('string.trim')
+		.narrow((name, ctx) => {
+			if (!name.endsWith('.project')) return true;
+			return ctx.reject({
+				problem: `cannot end with .project (was "${name}")`
+			});
+		})
+		.narrow((name, ctx) => {
+			if (!name.includes('/')) return true;
+			return ctx.reject({
+				problem: `cannot contain / (was "${name}")`
+			});
+		}),
+	id: 'string',
+	parentId: 'string'
+});
 export default function RenameFolderModal() {
+	let el!: HTMLFormElement;
+
 	const [appContext, _] = useApp();
-
-	const queryClient = useQueryClient();
-	const $updateNode = useAction(updateNode);
-
-	const mutation = createMutation(() => ({
-		mutationFn: $updateNode,
-		onError: (_, __, context) => {
-			if (!context) return;
-			queryClient.setQueryData(['nodes', context.path], context.previousData);
-			toast.error('Failed to rename folder', { id: context.toastId });
-		},
-		onMutate: async (formData) => {
-			await queryClient.cancelQueries({ queryKey: ['nodes', appContext.path] });
-			const previousData = queryClient.getQueryData<{ children: TNode[]; node: TNode }>([
-				'nodes',
-				appContext.path
-			]);
-			if (!previousData) return;
-			queryClient.setQueryData(
-				['nodes', appContext.path],
-				create(previousData, (draft) => {
-					const node = draft.children.find((node) => node.id === formData.get('id'));
-					if (!node) return;
-					node.name = String(formData.get('name'));
-					node.userId = 'pending';
-				})
-			);
-			const toastId = toast.loading(`Renaming Folder: ${formData.get('name')}`);
-			return { path: appContext.path, previousData, toastId };
-		},
-		onSettled: (data, __, ___, context) => {
-			if (!context) return;
-			queryClient.invalidateQueries({ queryKey: ['nodes', context.path] });
-			if (!data) return;
-			toast.success(`Renamed Folder: ${data.name}`, { id: context.toastId });
-		}
+	const [__, { updateNode }] = useNode(() => ({
+		id: appContext.currentNode?.id,
+		enabled: false
 	}));
 
-	let el!: HTMLFormElement;
+	const [formErrors, setFormErrors] = createStore<
+		Record<keyof typeof formSchema.infer | 'form', string[]>
+	>({
+		form: [],
+		id: [],
+		name: [],
+		parentId: []
+	});
 
 	return (
 		<BaseModal
@@ -66,16 +61,42 @@ export default function RenameFolderModal() {
 		>
 			{(close) => (
 				<form
-					action={updateNode}
 					class="flex flex-col gap-4"
 					method="post"
 					onSubmit={(event) => {
 						event.preventDefault();
 						const form = event.target as HTMLFormElement;
-						mutation.mutate(new FormData(form));
+						const result = formSchema(Object.fromEntries(new FormData(form)));
+						if (result instanceof type.errors) {
+							setFormErrors(parseFormErrors(result));
+							return;
+						}
+						updateNode.mutate(result, {
+							onError: async (error) => {
+								if (error instanceof FetchError) {
+									const data = await error.response.json();
+									if (data.message && data.message !== 'Error') {
+										setFormErrors('form', [data.message]);
+										return;
+									}
+									if (error.response.status === 409) {
+										setFormErrors('form', [`Folder with name "${result.name}" already exists`]);
+										return;
+									}
+								}
+								setFormErrors('form', [
+									`Failed to rename folder. Try again later if the issue persists.`
+								]);
+							},
+							onSuccess: () => {
+								toast.success(`Successfully renamed folder to ${result.name}`);
+								close();
+							}
+						});
 					}}
 					ref={el}
 				>
+					<ValidationErrors errors={formErrors.form} />
 					<input
 						name="parentId"
 						type="hidden"
@@ -95,9 +116,13 @@ export default function RenameFolderModal() {
 							type="text"
 							value={appContext.currentNode?.name}
 						/>
+						<ValidationErrors errors={formErrors.name} />
 					</TextField>
-					<Button class="self-end" onClick={close} type="submit">
-						Submit
+					<Button class="flex items-center gap-2 self-end" type="submit">
+						<Show when={updateNode.isPending}>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+						</Show>
+						<span>Submit</span>
 					</Button>
 				</form>
 			)}

@@ -1,3 +1,4 @@
+import { createSignal, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 
 import BaseModal from '~/components/modals/BaseModal';
@@ -6,7 +7,7 @@ import { Button } from '~/components/ui/button';
 type TConfirmModalState = {
 	message: string;
 	onNo: () => void;
-	onYes: () => void;
+	onYes: () => Promise<unknown> | unknown;
 	open: boolean;
 	title: string;
 };
@@ -47,6 +48,7 @@ export function useConfirmModal() {
 
 export function ConfirmModal() {
 	const confirmModal = useConfirmModal();
+	const [loading, setLoading] = createSignal(false);
 
 	return (
 		<BaseModal
@@ -59,8 +61,15 @@ export function ConfirmModal() {
 					class="flex flex-col gap-4"
 					onSubmit={(event) => {
 						event.preventDefault();
-						confirmModalState.onYes();
-						confirmModal.close();
+						setLoading(true);
+						const process = confirmModalState.onYes();
+						if (process instanceof Promise) {
+							process.finally(() => {
+								setLoading(false);
+								confirmModal.close();
+							});
+							return;
+						}
 					}}
 				>
 					<p>{confirmModalState.message}</p>
@@ -74,8 +83,11 @@ export function ConfirmModal() {
 						>
 							No
 						</Button>
-						<Button autofocus type="submit">
-							Yes
+						<Button class="flex items-center gap-2 self-end" type="submit" autofocus>
+							<Show when={loading()}>
+								<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+							</Show>
+							<span>Yes</span>
 						</Button>
 					</div>
 				</form>

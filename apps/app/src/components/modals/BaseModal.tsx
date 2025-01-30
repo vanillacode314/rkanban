@@ -4,6 +4,7 @@ import {
 	createUniqueId,
 	JSXElement,
 	mergeProps,
+	onCleanup,
 	untrack
 } from 'solid-js';
 import { Portal } from 'solid-js/web';
@@ -51,10 +52,14 @@ export function Modal(props: Props) {
 		});
 	});
 
+	onCleanup(() => {
+		mergedProps.setOpen(false);
+	});
+
 	return (
 		<Portal>
 			<dialog
-				class="m-0 h-full w-full max-w-full bg-transparent"
+				class="relative isolate m-0 h-full max-h-full w-full max-w-full bg-transparent"
 				id={mergedProps.id}
 				onClose={() => {
 					mergedProps.setOpen(false);

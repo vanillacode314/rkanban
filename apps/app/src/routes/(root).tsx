@@ -1,10 +1,20 @@
 import { ColorModeProvider, cookieStorageManagerSSR } from '@kobalte/core/color-mode';
 import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
-import { createAsync, useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
+import { useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
 import { TNode } from 'db/schema';
-import { createEffect, For, JSXElement, Match, Show, Suspense, Switch, untrack } from 'solid-js';
-import { isServer } from 'solid-js/web';
+import {
+	createEffect,
+	createMemo,
+	For,
+	JSXElement,
+	Match,
+	onMount,
+	Show,
+	Suspense,
+	Switch
+} from 'solid-js';
+import { isServer, Portal } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { getCookie } from 'vinxi/http';
 
@@ -13,23 +23,23 @@ import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
 import { Toaster } from '~/components/ui/sonner';
 import { AppProvider, useApp } from '~/context/app';
+import { DBProvider } from '~/context/db';
 import { DirtyProvider } from '~/context/dirty';
 import { cn } from '~/lib/utils';
-import { getUser } from '~/utils/auth.server';
-import { localforage } from '~/utils/localforage';
+import { useUser } from '~/utils/auth';
 import * as path from '~/utils/path';
 
 function CleanUpUser() {
-	const user = createAsync(() => getUser({ shouldThrow: false }), { initialValue: null });
-	createEffect(() => {
-		const $user = user();
-		if (!$user) return;
-		untrack(() => {
-			if ($user.encryptedPrivateKey === null) {
-				void localforage.removeMany(['privateKey', 'publicKey', 'salt']);
-			}
-		});
-	});
+	return '';
+	// const user = useUser()
+	// createEffect(() => {
+	// 	if (!user.data) return;
+	// 	untrack(() => {
+	// 		if ($user.encryptedPrivateKey === null) {
+	// 			void localforage.removeMany(['privateKey', 'publicKey', 'salt']);
+	// 		}
+	// 	});
+	// });
 
 	return <></>;
 }
@@ -39,6 +49,27 @@ function RouteGuards() {
 	useBeforeLeave(() => toast.dismiss());
 	useBeforeLeave(() => {
 		filterClipboard((item) => item.mode !== 'selection');
+	});
+	return <></>;
+}
+
+function AuthGuard() {
+	const location = useLocation();
+	const user = useUser(location.pathname);
+	const isAuthRoute = createMemo(() => location.pathname.startsWith('/auth'));
+	const isLoggedIn = createMemo(() => user.data !== null);
+	const navigate = useNavigate();
+	createEffect(() => {
+		if (isAuthRoute() && isLoggedIn()) {
+			const redirectUrl = new URLSearchParams(location.search).get('redirect') ?? '/';
+			navigate(redirectUrl);
+			return;
+		}
+		if (!isAuthRoute() && !isLoggedIn()) {
+			const redirectUrl = location.search ? location.pathname + location.search : location.pathname;
+			navigate(`/auth/signin?redirect=${redirectUrl}`);
+			return;
+		}
 	});
 	return <></>;
 }
@@ -55,17 +86,20 @@ const RootLayout = (props: { children: JSXElement }) => {
 		<>
 			<ColorModeProvider storageManager={storageManager}>
 				<AppProvider path={path()}>
-					<RouteGuards />
-					<DirtyProvider>
-						<Title>RKanban</Title>
-						<Toaster closeButton duration={3000} position="top-center" />
-						<div class="flex h-full flex-col overflow-hidden">
-							<Nav class="full-width content-grid" />
-							<div class="content-grid h-full overflow-hidden">{props.children}</div>
-						</div>
-						<AutoImportModals />
-						<Clipboard />
-					</DirtyProvider>
+					<DBProvider>
+						<AuthGuard />
+						<RouteGuards />
+						<DirtyProvider>
+							<Title>RKanban</Title>
+							<Toaster closeButton duration={3000} position="top-center" />
+							<div class="flex h-full flex-col overflow-hidden">
+								<Nav class="full-width content-grid" />
+								<div class="content-grid h-full overflow-hidden">{props.children}</div>
+							</div>
+							<AutoImportModals />
+							<Clipboard />
+						</DirtyProvider>
+					</DBProvider>
 				</AppProvider>
 			</ColorModeProvider>
 			<Suspense>
