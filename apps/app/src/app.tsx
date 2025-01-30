@@ -11,7 +11,7 @@ import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
 import { listenForWaitingServiceWorker } from './utils/service-worker';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({});
 
 const ErrorPage: Component = () => {
 	const [updateAvailable, setUpdateAvailable] = createSignal<boolean>(false);

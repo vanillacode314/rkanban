@@ -1,3 +1,4 @@
+import { usersSchema } from 'db/schema';
 import { z } from 'zod';
 
 const publishSchema = z.object({
@@ -25,5 +26,11 @@ type TSubscribe = z.infer<typeof subscribeSchema>;
 const messageSchema = z.discriminatedUnion('type', [publishSchema, subscribeSchema]);
 type TMessage = z.infer<typeof messageSchema>;
 
-export { messageSchema, publishSchema, subscribeSchema };
-export type { TMessage, TPublish, TPublishInput, TSubscribe };
+const authSchema = z.object({
+	type: z.enum(['access']),
+	user: usersSchema.omit({ createdAt: true, passwordHash: true, updatedAt: true })
+});
+type TAuth = z.infer<typeof authSchema>;
+
+export { authSchema, messageSchema, publishSchema, subscribeSchema };
+export type { TAuth, TMessage, TPublish, TPublishInput, TSubscribe };

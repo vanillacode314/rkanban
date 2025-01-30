@@ -1,65 +1,36 @@
-import { useAction } from '@solidjs/router';
-import { createMutation, useQueryClient } from '@tanstack/solid-query';
-import { TBoard, TTask } from 'db/schema';
-import { create } from 'mutative';
-import { createSignal } from 'solid-js';
+import { type } from 'arktype';
+import { createSignal, Show } from 'solid-js';
+import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
 import Decrypt from '~/components/Decrypt';
+import ValidationErrors from '~/components/form/ValidationErrors';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
-import { updateTask } from '~/db/utils/tasks';
+import { useTask } from '~/queries/tasks';
+import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
+import { FetchError } from '~/utils/fetchers';
 
 export const [updateTaskModalOpen, setUpdateTaskModalOpen] = createSignal<boolean>(false);
 
+const formSchema = type({
+	id: 'string',
+	title: 'string.trim'
+});
 export default function UpdateTaskModal() {
 	const [appContext, _] = useApp();
-
 	const task = () => appContext.currentTask;
-	const $updateTask = useAction(updateTask);
-
-	const queryClient = useQueryClient();
-	const mutation = createMutation(() => ({
-		mutationFn: async (formData: FormData) => {
-			formData.set('title', await encryptWithUserKeys(String(formData.get('title'))));
-			await $updateTask(formData);
-		},
-		onError: (_, __, context) => {
-			if (!context) return;
-			queryClient.setQueryData(['boards', context.path], context.previousData);
-			toast.error('Failed to update task', { id: context.toastId });
-		},
-		onMutate: async (formData) => {
-			await queryClient.cancelQueries({ queryKey: ['boards', appContext.path] });
-			const previousData = queryClient.getQueryData<Array<{ tasks: TTask[] } & TBoard>>([
-				'boards',
-				appContext.path
-			]);
-			if (previousData === undefined) return;
-			const title = String(formData.get('title'));
-			queryClient.setQueryData(
-				['boards', appContext.path],
-				create(previousData, (draft) => {
-					const board = draft.find((board) => board.id === appContext.currentTask?.boardId);
-					if (!board) return;
-					const task = board.tasks.find((task) => task.id === formData.get('id'));
-					if (!task) return;
-					task.title = title;
-					task.userId = 'pending';
-				})
-			);
-			const toastId = toast.loading(`Updating Task: ${title}`);
-			return { path: appContext.path, previousData, title, toastId };
-		},
-		onSettled: (_, __, ___, context) => {
-			if (!context) return;
-			queryClient.invalidateQueries({ queryKey: ['boards', context.path] });
-			toast.success(`Updated Task: ${context.title}`, { id: context.toastId });
-		}
-	}));
+	const [, { updateTask }] = useTask(() => ({ enabled: false, id: task()?.id }));
+	const [formErrors, setFormErrors] = createStore<
+		Record<'form' | keyof typeof formSchema.infer, string[]>
+	>({
+		form: [],
+		title: [],
+		id: []
+	});
 
 	return (
 		<BaseModal open={updateTaskModalOpen()} setOpen={setUpdateTaskModalOpen} title="Update Task">
@@ -69,9 +40,34 @@ export default function UpdateTaskModal() {
 					onSubmit={async (event) => {
 						event.preventDefault();
 						const form = event.target as HTMLFormElement;
-						mutation.mutate(new FormData(form));
+						const result = formSchema(Object.fromEntries(new FormData(form)));
+						if (result instanceof type.errors) {
+							setFormErrors(parseFormErrors(result));
+							return;
+						}
+
+						result.title = await encryptWithUserKeys(result.title);
+						updateTask.mutate(result, {
+							onError: async (error) => {
+								if (error instanceof FetchError) {
+									const data = await error.response.json();
+									if (data.message && data.message !== 'Error') {
+										setFormErrors('form', [data.message]);
+										return;
+									}
+								}
+								setFormErrors('form', [
+									`Failed to update task. Try again later if the issue persists`
+								]);
+							},
+							onSuccess: () => {
+								toast.success(`Task updated`);
+								close();
+							}
+						});
 					}}
 				>
+					<ValidationErrors errors={formErrors.form} />
 					<input name="id" type="hidden" value={task()?.id} />
 					<input name="appId" type="hidden" value={appContext.id} />
 					<TextField class="grid w-full items-center gap-1.5">
@@ -89,9 +85,13 @@ export default function UpdateTaskModal() {
 								/>
 							)}
 						</Decrypt>
+						<ValidationErrors errors={formErrors.title} />
 					</TextField>
-					<Button class="self-end" onClick={close} type="submit">
-						Submit
+					<Button class="flex items-center gap-2 self-end" type="submit">
+						<Show when={updateTask.isPending}>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg" />
+						</Show>
+						<span>Submit</span>
 					</Button>
 				</form>
 			)}

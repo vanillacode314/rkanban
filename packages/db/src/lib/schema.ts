@@ -4,49 +4,19 @@ import { createSelectSchema } from 'drizzle-zod';
 import { nanoid } from 'nanoid';
 import z from 'zod';
 
-import { ms } from '~/utils/ms';
+const createdAt = () =>
+	integer('createdAt', { mode: 'timestamp' })
+		.notNull()
+		.default(sql`(unixepoch('now'))`);
 
-const refreshTokens = sqliteTable('refreshTokens', {
-	expiresAt: integer('expiresAt', { mode: 'timestamp' }).notNull(),
-	id: text('id')
-		.primaryKey()
-		.$defaultFn(() => nanoid()),
-	token: text('token').notNull(),
-	userId: text('userId')
+const updatedAt = () =>
+	integer('updatedAt', { mode: 'timestamp' })
 		.notNull()
-		.references(() => users.id, { onDelete: 'cascade' })
-});
-
-const verificationTokens = sqliteTable('verificationTokens', {
-	expiresAt: integer('expiresAt', { mode: 'timestamp' })
-		.notNull()
-		.$defaultFn(() => new Date(Date.now() + ms('10 min'))),
-	id: text('id')
-		.primaryKey()
-		.$defaultFn(() => nanoid()),
-	token: text('token').notNull(),
-	userId: text('userId')
-		.notNull()
-		.references(() => users.id, { onDelete: 'cascade' })
-});
-
-const forgotPasswordTokens = sqliteTable('forgotPasswordTokens', {
-	expiresAt: integer('expiresAt', { mode: 'timestamp' })
-		.notNull()
-		.$defaultFn(() => new Date(Date.now() + ms('10 min'))),
-	id: text('id')
-		.primaryKey()
-		.$defaultFn(() => nanoid()),
-	token: text('token').notNull(),
-	userId: text('userId')
-		.notNull()
-		.references(() => users.id, { onDelete: 'cascade' })
-});
+		.default(sql`(unixepoch('now'))`)
+		.$onUpdateFn(() => new Date());
 
 const users = sqliteTable('users', {
-	createdAt: integer('createdAt', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch('now'))`),
+	createdAt: createdAt(),
 	email: text('email').notNull().unique(),
 	emailVerified: integer('emailVerified', { mode: 'boolean' }).default(false),
 	encryptedPrivateKey: text('encryptedPrivateKey'),
@@ -56,18 +26,13 @@ const users = sqliteTable('users', {
 	passwordHash: text('passwordHash').notNull(),
 	publicKey: text('publicKey'),
 	salt: text('salt'),
-	updatedAt: integer('updatedAt', { mode: 'timestamp' })
-		.notNull()
-		.default(sql`(unixepoch('now'))`)
-		.$onUpdateFn(() => new Date())
+	updatedAt: updatedAt()
 });
 
 const boards = sqliteTable(
 	'boards',
 	{
-		createdAt: integer('createdAt', { mode: 'timestamp' })
-			.notNull()
-			.default(sql`(unixepoch('now'))`),
+		createdAt: createdAt(),
 		id: text('id')
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
@@ -76,19 +41,12 @@ const boards = sqliteTable(
 			.references(() => nodes.id, { onDelete: 'cascade' })
 			.notNull(),
 		title: text('title').notNull(),
-		updatedAt: integer('updatedAt', { mode: 'timestamp' })
-			.notNull()
-			.default(sql`(unixepoch('now'))`)
-			.$onUpdateFn(() => new Date()),
+		updatedAt: updatedAt(),
 		userId: text('userId')
 			.references(() => users.id, { onDelete: 'cascade' })
 			.notNull()
 	},
-	(table) => {
-		return {
-			unq: unique().on(table.index, table.userId, table.nodeId)
-		};
-	}
+	(table) => [unique().on(table.userId, table.nodeId, table.index)]
 );
 
 const tasks = sqliteTable(
@@ -101,36 +59,25 @@ const tasks = sqliteTable(
 			.references(() => boards.id, { onDelete: 'cascade' })
 			.notNull(),
 		body: text('body').notNull().default(''),
-		createdAt: integer('createdAt', { mode: 'timestamp' })
-			.notNull()
-			.default(sql`(unixepoch('now'))`),
+		createdAt: createdAt(),
 		id: text('id')
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
 		index: integer('index').notNull(),
 		tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default([]),
 		title: text('title').notNull(),
-		updatedAt: integer('updatedAt', { mode: 'timestamp' })
-			.notNull()
-			.default(sql`(unixepoch('now'))`)
-			.$onUpdateFn(() => new Date()),
+		updatedAt: updatedAt(),
 		userId: text('userId')
 			.references(() => users.id, { onDelete: 'cascade' })
 			.notNull()
 	},
-	(table) => {
-		return {
-			unq: unique().on(table.index, table.boardId)
-		};
-	}
+	(table) => [unique().on(table.index, table.boardId)]
 );
 
 const nodes = sqliteTable(
 	'nodes',
 	{
-		createdAt: integer('createdAt', { mode: 'timestamp' })
-			.notNull()
-			.default(sql`(unixepoch('now'))`),
+		createdAt: createdAt(),
 		id: text('id')
 			.primaryKey()
 			.$defaultFn(() => nanoid()),
@@ -138,17 +85,12 @@ const nodes = sqliteTable(
 		parentId: text('parentId').references((): AnySQLiteColumn => nodes.id, {
 			onDelete: 'cascade'
 		}),
-		updatedAt: integer('updatedAt', { mode: 'timestamp' })
-			.notNull()
-			.default(sql`(unixepoch('now'))`)
-			.$onUpdate(() => new Date()),
+		updatedAt: updatedAt(),
 		userId: text('userId')
 			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' })
 	},
-	(t) => ({
-		unq: unique().on(t.name, t.parentId, t.userId)
-	})
+	(t) => [unique().on(t.userId, t.name, t.parentId)]
 );
 
 const nodesSchema = createSelectSchema(nodes, {
@@ -163,22 +105,15 @@ const tasksSchema = createSelectSchema(tasks, {
 	createdAt: z.coerce.date(),
 	updatedAt: z.coerce.date()
 });
+const usersSchema = createSelectSchema(users, {
+	createdAt: z.coerce.date(),
+	updatedAt: z.coerce.date()
+});
 
 type TBoard = InferSelectModel<typeof boards>;
 type TTask = InferSelectModel<typeof tasks>;
 type TUser = InferSelectModel<typeof users>;
 type TNode = InferSelectModel<typeof nodes>;
 
-export {
-	boards,
-	boardsSchema,
-	forgotPasswordTokens,
-	nodes,
-	nodesSchema,
-	refreshTokens,
-	tasks,
-	tasksSchema,
-	users,
-	verificationTokens
-};
+export { boards, boardsSchema, nodes, nodesSchema, tasks, tasksSchema, users, usersSchema };
 export type { TBoard, TNode, TTask, TUser };

@@ -59,5 +59,10 @@ export default [
 		}
 	},
 	perfectionist.configs['recommended-natural'],
+	{
+		rules: {
+			'perfectionist/sort-objects': ['off']
+		}
+	},
 	{ files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'] }
 ];

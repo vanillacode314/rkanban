@@ -1,32 +1,33 @@
 import { defineConfig } from '@solidjs/start/config';
-import devtools from 'solid-devtools/vite';
 import { presetIcons, presetWebFonts } from 'unocss';
 import Unocss from 'unocss/vite';
-//import { analyzer } from 'vite-bundle-analyzer';
-import clientEnv from './src/utils/env/client';
-import serverEnv from './src/utils/env/server';
+import { compression } from 'vite-plugin-compression2';
+
+import env from './src/utils/env';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-clientEnv;
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-serverEnv;
+env;
 
 export default defineConfig({
 	devOverlay: true,
+	// middleware: 'src/middleware.ts',
 	server: {
 		compatibilityDate: '2025-01-02',
 		prerender: {
 			routes: ['/offline', '/manifest.webmanifest']
-		}
+		},
+		devProxy: {
+			'/api': 'http://localhost:3002/api'
+		},
+		static: true
 	},
 	ssr: false,
 	vite: {
+		optimizeDeps: {
+			exclude: ['sqlocal']
+		},
 		envPrefix: 'PUBLIC_',
 		plugins: [
-			devtools({
-				/* features options - all disabled by default */
-				autoname: true // e.g. enable autoname
-			}),
 			Unocss({
 				presets: [
 					presetIcons({
@@ -42,7 +43,8 @@ export default defineConfig({
 						}
 					})
 				]
-			})
+			}),
+			compression()
 			//analyzer({ analyzerPort: 8889 })
 		]
 	}

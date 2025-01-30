@@ -1,13 +1,10 @@
 import { useColorMode } from '@kobalte/core/color-mode';
-import { A, useAction, useLocation } from '@solidjs/router';
-import { createQuery } from '@tanstack/solid-query';
-import { createSignal, Show, Suspense } from 'solid-js';
+import { A } from '@solidjs/router';
+import { Show, Suspense } from 'solid-js';
 
 import { cn } from '~/lib/utils';
-import { getUser, refreshAccessToken, resendVerificationEmail, signOut } from '~/utils/auth.server';
-import { localforage } from '~/utils/localforage';
+import { useUser } from '~/utils/auth';
 
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
 
 export default function Nav(props: { class?: string }) {
@@ -29,87 +26,20 @@ export default function Nav(props: { class?: string }) {
 					<span class="sr-only">Toggle theme</span>
 				</Button>
 			</div>
-			<Suspense>
-				<VerificationEmailAlert />
-			</Suspense>
 		</nav>
 	);
 }
 
 function UserCard() {
-	const location = useLocation();
-	const user = createQuery(() => ({
-		queryFn: () => getUser({ shouldThrow: false }),
-		queryKey: ['user', location.pathname]
-	}));
-	const $signOut = useAction(signOut);
+	const user = useUser();
 	return (
 		<Show when={user.data}>
-			<form
-				onClick={async (event) => {
-					event.preventDefault();
-					await $signOut();
-					await localforage.removeMany(['privateKey', 'publicKey', 'salt']);
-				}}
-			>
+			<form action="/api/v1/public/auth/signout" method="post">
 				<Button class="flex items-center gap-2" type="submit" variant="outline">
 					<span>Sign Out</span>
 					<span class="i-heroicons:arrow-right-end-on-rectangle text-xl" />
 				</Button>
 			</form>
-		</Show>
-	);
-}
-
-function VerificationEmailAlert() {
-	const location = useLocation();
-	const user = createQuery(() => ({
-		queryFn: () => getUser({ shouldThrow: false }),
-		queryKey: ['user', location.pathname]
-	}));
-	const [cooldown, setCooldown] = createSignal<number>(0);
-
-	function countdown() {
-		if (cooldown() > 0) return;
-		setCooldown(60);
-		const interval = setInterval(() => {
-			if (cooldown() <= 0) {
-				clearInterval(interval);
-			}
-			setCooldown((value) => value - 1);
-		}, 1000);
-	}
-
-	return (
-		<Show when={user.data && !user.data?.emailVerified}>
-			<Alert class="mt-4 flex flex-col justify-between gap-4 md:flex-row">
-				<div>
-					<AlertTitle>Email not verified</AlertTitle>
-					<AlertDescription>
-						Please check your inbox to verify your email. Unverified accounts will be deleted 30days
-						from creation.
-					</AlertDescription>
-				</div>
-				<div class="flex shrink-0 gap-4">
-					<Button onClick={() => refreshAccessToken()} variant="secondary">
-						Check Again
-					</Button>
-					<Button
-						disabled={cooldown() > 0}
-						onClick={async () => {
-							countdown();
-							await resendVerificationEmail();
-							user.refetch();
-						}}
-						variant="outline"
-					>
-						Send Again{' '}
-						{cooldown() > 0 ?
-							<>(Wait {cooldown()}s)</>
-						:	''}
-					</Button>
-				</div>
-			</Alert>
 		</Show>
 	);
 }

@@ -1,13 +1,13 @@
 FROM node:20-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN npm i -g pnpm
 COPY . /app
 WORKDIR /app
 
 
 FROM base AS build
-RUN --mount=type=cache,id=s/075144c5-3986-46fd-a4bd-6c806c3bf099-pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=s/9231f356-4531-44ea-8938-f125232d568d-/pnpm/store,target=/pnpm/store pnpm install --frozen-lockfile
 RUN pnpm run build
 
 

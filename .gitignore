@@ -11,3 +11,4 @@ docker/*
 
 # Local Netlify folder
 .netlify
+.aider*
