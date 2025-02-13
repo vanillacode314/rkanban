@@ -1,10 +1,10 @@
 import { createMutation, createQuery, queryOptions, useQueryClient } from '@tanstack/solid-query';
-import { TNode } from 'db/schema';
 import { type } from 'arktype';
-
-import { apiFetch } from '~/utils/fetchers';
-import { throwOnParseError } from '~/utils/arktype';
+import { TNode } from 'db/schema';
 import { createMemo } from 'solid-js';
+
+import { throwOnParseError } from '~/utils/arktype';
+import { apiFetch } from '~/utils/fetchers';
 
 const useNodesByPathInputSchema = type({
 	enabled: 'boolean = true',
@@ -68,7 +68,7 @@ function useNodes(input: () => typeof useNodesInputSchema.inferIn) {
 	}));
 
 	const updateNode = createMutation(() => ({
-		mutationFn: ({ id, data }: { id: string; data: Partial<TNode> }) => {
+		mutationFn: ({ id, data }: { data: Partial<TNode>; id: string }) => {
 			return apiFetch
 				.appendHeaders({ 'Content-Type': 'application/json' })
 				.as_json<{ node: TNode; path: string }>(`/api/v1/private/nodes/${id}`, {
@@ -156,4 +156,4 @@ function useNode(input: () => typeof useNodeInputSchema.inferIn) {
 	return [node, { updateNode, deleteNode }] as const;
 }
 
-export { useNodes, useNodesByPath, useNode };
+export { useNode, useNodes, useNodesByPath };

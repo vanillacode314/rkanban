@@ -8,8 +8,7 @@ import { createKeyHold } from '@solid-primitives/keyboard';
 import { Key } from '@solid-primitives/keyed';
 import { resolveElements } from '@solid-primitives/refs';
 import { createListTransition } from '@solid-primitives/transition-group';
-import { A, RouteDefinition, useAction, useNavigate } from '@solidjs/router';
-import { useQueryClient } from '@tanstack/solid-query';
+import { A, RouteDefinition, useNavigate } from '@solidjs/router';
 import { TNode } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
@@ -74,7 +73,6 @@ export const route: RouteDefinition = {
 export default function FolderPage() {
 	const [appContext, { setCurrentNode, addToClipboard, clearClipboard, filterClipboard, setMode }] =
 		useApp();
-	const queryClient = useQueryClient();
 
 	const [nodes] = useNodesByPath(() => ({ includeChildren: true, path: appContext.path }));
 

@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
-		throw createError({ statusCode: 400, message: body.summary });
+		throw createError({ message: body.summary, statusCode: 400 });
 	}
 	await db.delete(nodes).where(and(inArray(nodes.id, body.ids), eq(nodes.userId, user.id)));
 

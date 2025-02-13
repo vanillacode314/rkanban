@@ -1,6 +1,6 @@
 import { type } from 'arktype';
 import { tasks } from 'db/schema';
-import { gt, lt, and, eq, sql } from 'drizzle-orm';
+import { and, eq, gt, lt, sql } from 'drizzle-orm';
 
 const TEMPORARY_LARGE_NUMBER_FOR_SHIFTING_SQL_INDICES = 99999;
 
@@ -11,11 +11,11 @@ export default defineEventHandler(async (event) => {
 
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
-		throw createError({ statusCode: 400, message: body.summary });
+		throw createError({ message: body.summary, statusCode: 400 });
 	}
 	const params = await getValidatedRouterParams(event, paramsSchema);
 	if (params instanceof type.errors) {
-		throw createError({ statusCode: 400, message: params.summary });
+		throw createError({ message: params.summary, statusCode: 400 });
 	}
 
 	const [task] = await db

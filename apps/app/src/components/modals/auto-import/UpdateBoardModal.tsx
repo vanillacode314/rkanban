@@ -29,7 +29,7 @@ export default function UpdateBoardModal() {
 
 	const [, { updateBoard }] = useBoard(() => ({ enabled: false, id: board()?.id }));
 	const [formErrors, setFormErrors] = createStore<
-		Record<keyof typeof formSchema.infer | 'form', string[]>
+		Record<'form' | keyof typeof formSchema.infer, string[]>
 	>({
 		form: [],
 		title: [],
@@ -48,7 +48,6 @@ export default function UpdateBoardModal() {
 		>
 			{(close) => (
 				<form
-					ref={el}
 					class="flex flex-col gap-4"
 					onSubmit={async (event) => {
 						event.preventDefault();
@@ -78,6 +77,7 @@ export default function UpdateBoardModal() {
 							}
 						});
 					}}
+					ref={el}
 				>
 					<ValidationErrors errors={formErrors.form} />
 					<input name="id" type="hidden" value={board()?.id} />
@@ -101,7 +101,7 @@ export default function UpdateBoardModal() {
 					</TextField>
 					<Button class="flex items-center gap-2 self-end" type="submit">
 						<Show when={updateBoard.isPending}>
-							<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg" />
 						</Show>
 						<span>Submit</span>
 					</Button>

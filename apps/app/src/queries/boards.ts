@@ -1,10 +1,10 @@
 import { createMutation, createQuery, queryOptions, useQueryClient } from '@tanstack/solid-query';
-import { TBoard, TTask } from 'db/schema';
 import { type } from 'arktype';
-
-import { apiFetch } from '~/utils/fetchers';
-import { throwOnParseError } from '~/utils/arktype';
+import { TBoard, TTask } from 'db/schema';
 import { createMemo } from 'solid-js';
+
+import { throwOnParseError } from '~/utils/arktype';
+import { apiFetch } from '~/utils/fetchers';
 
 const useBoardsByPathInputSchema = type({
 	enabled: 'boolean = true',
@@ -39,7 +39,7 @@ function useBoardsByPath(input: () => typeof useBoardsByPathInputSchema.inferIn)
 	}));
 
 	const createBoard = createMutation(() => ({
-		mutationFn: (data: Partial<TBoard> & { nodePath: string }) => {
+		mutationFn: (data: { nodePath: string } & Partial<TBoard>) => {
 			return apiFetch
 				.appendHeaders({ 'Content-Type': 'application/json' })
 				.as_json<{ board: TBoard; path: string }>(`/api/v1/private/boards/by-path`, {
@@ -171,7 +171,7 @@ function useBoards(input: () => typeof useBoardsInputSchema.inferIn) {
 	}));
 
 	const shiftBoard = createMutation(() => ({
-		mutationFn: (data: { id: string; direction: number }) => {
+		mutationFn: (data: { direction: number; id: string }) => {
 			return apiFetch.appendHeaders({ 'Content-Type': 'application/json' })(
 				`/api/v1/private/boards/${data.id}/shift`,
 				{
@@ -188,4 +188,4 @@ function useBoards(input: () => typeof useBoardsInputSchema.inferIn) {
 	return [boards, { createBoard, shiftBoard }] as const;
 }
 
-export { useBoardsByPath, useBoard, useBoards };
+export { useBoard, useBoards, useBoardsByPath };

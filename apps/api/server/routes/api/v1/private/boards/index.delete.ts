@@ -1,13 +1,13 @@
+import { type } from 'arktype';
 import { boards } from 'db/schema';
 import { and, eq, gt, sql } from 'drizzle-orm';
-import { type } from 'arktype';
 
 const bodySchema = type({ id: 'string' });
 export default defineEventHandler(async (event) => {
 	const user = event.context.auth!.user;
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
-		throw createError({ statusCode: 400, message: body.summary });
+		throw createError({ message: body.summary, statusCode: 400 });
 	}
 
 	const board = await db.transaction(async (tx) => {

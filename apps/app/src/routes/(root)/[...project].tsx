@@ -19,7 +19,6 @@ import {
 	createSignal,
 	For,
 	Match,
-	mergeProps,
 	onCleanup,
 	onMount,
 	ParentComponent,
@@ -33,8 +32,6 @@ import Board from '~/components/Board';
 import Decrypt from '~/components/Decrypt';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
 import PathCrumbs from '~/components/PathCrumbs';
-import ProgressCircle from '~/components/ProgressCircle';
-import { TransitionSlide } from '~/components/transitions/TransitionSlide';
 import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import { RESERVED_PATHS } from '~/consts/index';
@@ -42,8 +39,8 @@ import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
 import { cn } from '~/lib/utils';
 import { useBoards, useBoardsByPath } from '~/queries/boards';
-import invariant from '~/utils/tiny-invariant';
 import { useTasks } from '~/queries/tasks';
+import invariant from '~/utils/tiny-invariant';
 
 export const route: RouteDefinition = {
 	matchFilters: {
@@ -123,11 +120,6 @@ export default function ProjectPage() {
 					when={!(boardsQuery.data instanceof Error)}
 				>
 					<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-						{/* <ApplyChangesPopup */}
-						{/* 	boards={boardsQuery.data} */}
-						{/* 	boardsDirty={boardsDirty()} */}
-						{/* 	reset={() => boardsQuery.refetch()} */}
-						{/* /> */}
 						<Show when={hasBoards()}>
 							<div class="flex justify-end gap-4">
 								<Button
@@ -208,8 +200,6 @@ const AnimatedBoardsList: ParentComponent<{
 	) => void;
 	setCollapsedBoards: (setter: (boards: Map<string, TBoard>) => Map<string, TBoard>) => void;
 }> = (props) => {
-	const queryClient = useQueryClient();
-	const [appContext, _] = useApp();
 	const resolved = resolveElements(
 		() => props.children,
 		(el): el is HTMLElement => el instanceof HTMLElement
@@ -438,80 +428,5 @@ function SkeletonBoard(props: { class?: string }) {
 			<span class="i-heroicons:plus text-lg" />
 			<span>Create Board</span>
 		</Button>
-	);
-}
-
-function ApplyChangesPopup(props: {
-	boards: Array<{ tasks: TTask[] } & TBoard> | undefined;
-	boardsDirty: boolean;
-	countdownDuration?: number;
-	reset: () => void;
-}) {
-	const queryClient = useQueryClient();
-	const [appContext, _] = useApp();
-	const [count, setCount] = createSignal(0);
-	const [, { shiftTask }] = useTasks(() => ({ enabled: false }));
-	const mergedProps = mergeProps({ countdownDuration: 3 }, props);
-	let animation: AnimationControls;
-
-	function startCountdown() {
-		animation?.cancel();
-		setCount(mergedProps.countdownDuration);
-		animation = animate(0, 1, {
-			duration: mergedProps.countdownDuration,
-			ease: 'linear',
-			onUpdate: (progress) => {
-				setCount((1 - progress) * mergedProps.countdownDuration);
-			}
-		});
-		animation.then(() => {
-			const hasTasksChanged = props.boards?.some((board) =>
-				board.tasks.some((task, index) => task.index !== index || task.boardId !== board.id)
-			);
-			if (!hasTasksChanged) return;
-			toast.promise(() => shiftTask({}), {
-				error: 'Failed to apply changes',
-				loading: 'Applying changes...',
-				success: 'Changes applied'
-			});
-		});
-	}
-
-	function reset() {
-		animation?.cancel();
-		props.reset();
-	}
-
-	async function apply() {
-		animation?.finish();
-	}
-
-	createEffect(() => {
-		if (props.boardsDirty) startCountdown();
-		else animation?.cancel();
-	});
-
-	return (
-		<TransitionSlide appear when={props.boardsDirty}>
-			<div class="absolute left-1/2 top-4 flex -translate-x-1/2 items-center justify-center gap-2 rounded-lg border border-border p-2">
-				<Button class="flex items-center gap-2" onClick={apply}>
-					<Show
-						fallback={<span class="i-heroicons:check-circle-solid shrink-0 text-xl" />}
-						when={count() > 0}
-					>
-						<ProgressCircle
-							class="text-xl"
-							text={Math.ceil(count()).toString()}
-							value={count() / mergedProps.countdownDuration}
-						/>
-					</Show>
-					<span>Apply Changes</span>
-				</Button>
-				<Button class="flex items-center gap-2" onClick={reset} variant="secondary">
-					<span class="i-heroicons:x-circle-solid shrink-0 text-xl" />
-					<span>Cancel</span>
-				</Button>
-			</div>
-		</TransitionSlide>
 	);
 }

@@ -21,6 +21,8 @@ import { toast } from 'solid-sonner';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
 import { cn } from '~/lib/utils';
+import { useBoard } from '~/queries/boards';
+import { FetchError } from '~/utils/fetchers';
 import invariant from '~/utils/tiny-invariant';
 
 import Decrypt from './Decrypt';
@@ -37,8 +39,6 @@ import {
 	DropdownMenuShortcut,
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
-import { useBoard } from '~/queries/boards';
-import { FetchError } from '~/utils/fetchers';
 
 export const Board: Component<{
 	board: { tasks: TTask[] } & TBoard;

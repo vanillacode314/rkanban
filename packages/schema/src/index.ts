@@ -1,4 +1,4 @@
-import { users, usersSchema } from 'db/schema';
+import { usersSchema } from 'db/schema';
 import { z } from 'zod';
 
 const publishSchema = z.object({
@@ -28,9 +28,9 @@ type TMessage = z.infer<typeof messageSchema>;
 
 const authSchema = z.object({
 	type: z.enum(['access']),
-	user: usersSchema.omit({ createdAt: true, updatedAt: true, passwordHash: true })
+	user: usersSchema.omit({ createdAt: true, passwordHash: true, updatedAt: true })
 });
 type TAuth = z.infer<typeof authSchema>;
 
-export { messageSchema, publishSchema, subscribeSchema, authSchema };
-export type { TMessage, TPublish, TPublishInput, TSubscribe, TAuth };
+export { authSchema, messageSchema, publishSchema, subscribeSchema };
+export type { TAuth, TMessage, TPublish, TPublishInput, TSubscribe };

@@ -58,4 +58,4 @@ function syncQueryToDB<T extends CreateQueryResult>(
 	);
 }
 
-export { useDB, DBProvider, useTableQueryOptions, syncQueryToDB };
+export { DBProvider, syncQueryToDB, useDB, useTableQueryOptions };

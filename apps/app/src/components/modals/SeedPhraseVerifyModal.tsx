@@ -2,10 +2,11 @@ import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
-import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput } from '~/components/ui/text-field';
 import { decryptDataWithKey, deriveKey, getPasswordKey } from '~/utils/crypto';
+
+import BaseModal from './BaseModal';
 
 type TSeedPhraseState = {
 	decryptedString: string;

@@ -6,7 +6,6 @@ import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 import { deleteCookie } from 'vinxi/http';
 
-import { default as BaseModal } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { db } from '~/db';
 import { getUser, verifyPassword } from '~/utils/auth.server';
@@ -20,6 +19,7 @@ import {
 } from '~/utils/crypto';
 import { localforage } from '~/utils/localforage';
 
+import { default as BaseModal } from './BaseModal';
 import { useSeedPhraseVerifyModal } from './SeedPhraseVerifyModal';
 
 type TSeedPhraseState = {

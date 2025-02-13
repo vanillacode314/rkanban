@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 	const user = event.context.auth!.user;
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
-		throw createError({ statusCode: 400, message: body.summary });
+		throw createError({ message: body.summary, statusCode: 400 });
 	}
 
 	const [node] = await db

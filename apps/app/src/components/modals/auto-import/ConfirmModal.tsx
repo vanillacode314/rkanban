@@ -83,9 +83,9 @@ export function ConfirmModal() {
 						>
 							No
 						</Button>
-						<Button class="flex items-center gap-2 self-end" type="submit" autofocus>
+						<Button autofocus class="flex items-center gap-2 self-end" type="submit">
 							<Show when={loading()}>
-								<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+								<span class="i-svg-spinners:180-ring-with-bg text-lg" />
 							</Show>
 							<span>Yes</span>
 						</Button>

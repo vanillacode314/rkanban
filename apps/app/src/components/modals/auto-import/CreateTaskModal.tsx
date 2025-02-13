@@ -3,8 +3,8 @@ import { nanoid } from 'nanoid';
 import { createSignal, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
-import ValidationErrors from '~/components/form/ValidationErrors';
 
+import ValidationErrors from '~/components/form/ValidationErrors';
 import BaseModal from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
@@ -30,7 +30,7 @@ export default function CreateTaskModal() {
 	const [, { createTask }] = useTasks(() => ({ enabled: false }));
 
 	const [formErrors, setFormErrors] = createStore<
-		Record<keyof typeof formSchema.infer | 'form', string[]>
+		Record<'form' | keyof typeof formSchema.infer, string[]>
 	>({
 		form: [],
 		title: [],
@@ -93,7 +93,7 @@ export default function CreateTaskModal() {
 					</TextField>
 					<Button class="flex items-center gap-2 self-end" type="submit">
 						<Show when={createTask.isPending}>
-							<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg" />
 						</Show>
 						<span>Submit</span>
 					</Button>

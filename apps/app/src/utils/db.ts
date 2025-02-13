@@ -1,6 +1,6 @@
 import { SQLocal } from 'sqlocal';
 
-let db: SQLocal | null = null;
+let db: null | SQLocal = null;
 
 function useDb() {
 	if (db !== null) return db;

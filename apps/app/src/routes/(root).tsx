@@ -3,18 +3,8 @@ import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
 import { useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
 import { TNode } from 'db/schema';
-import {
-	createEffect,
-	createMemo,
-	For,
-	JSXElement,
-	Match,
-	onMount,
-	Show,
-	Suspense,
-	Switch
-} from 'solid-js';
-import { isServer, Portal } from 'solid-js/web';
+import { createEffect, createMemo, For, JSXElement, Match, Show, Suspense, Switch } from 'solid-js';
+import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { getCookie } from 'vinxi/http';
 

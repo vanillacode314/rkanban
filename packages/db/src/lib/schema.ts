@@ -1,12 +1,5 @@
 import { InferSelectModel, sql } from 'drizzle-orm';
-import {
-	index,
-	AnySQLiteColumn,
-	integer,
-	sqliteTable,
-	text,
-	unique
-} from 'drizzle-orm/sqlite-core';
+import { AnySQLiteColumn, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 import { createSelectSchema } from 'drizzle-zod';
 import { nanoid } from 'nanoid';
 import z from 'zod';

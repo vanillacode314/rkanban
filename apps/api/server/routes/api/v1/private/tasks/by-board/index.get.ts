@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
 	const query = await getValidatedQuery(event, querySchema);
 	if (query instanceof type.errors) {
-		throw createError({ statusCode: 400, message: query.summary });
+		throw createError({ message: query.summary, statusCode: 400 });
 	}
 
 	return await db

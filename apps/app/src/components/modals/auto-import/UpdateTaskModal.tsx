@@ -25,7 +25,7 @@ export default function UpdateTaskModal() {
 	const task = () => appContext.currentTask;
 	const [, { updateTask }] = useTask(() => ({ enabled: false, id: task()?.id }));
 	const [formErrors, setFormErrors] = createStore<
-		Record<keyof typeof formSchema.infer | 'form', string[]>
+		Record<'form' | keyof typeof formSchema.infer, string[]>
 	>({
 		form: [],
 		title: [],
@@ -89,7 +89,7 @@ export default function UpdateTaskModal() {
 					</TextField>
 					<Button class="flex items-center gap-2 self-end" type="submit">
 						<Show when={updateTask.isPending}>
-							<span class="i-svg-spinners:180-ring-with-bg text-lg"></span>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg" />
 						</Show>
 						<span>Submit</span>
 					</Button>

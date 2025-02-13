@@ -20,7 +20,8 @@ export default defineConfig({
 		},
 		devProxy: {
 			'/api': 'http://localhost:3002/api'
-		}
+		},
+    static: true
 	},
 	ssr: false,
 	middleware: 'src/middleware.ts',

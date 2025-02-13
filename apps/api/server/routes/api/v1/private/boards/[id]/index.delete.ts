@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
 	const user = event.context.auth!.user;
 	const result = await getValidatedRouterParams(event, paramsSchema);
 	if (result instanceof type.errors) {
-		throw createError({ statusCode: 400, message: result.summary });
+		throw createError({ message: result.summary, statusCode: 400 });
 	}
 	const { id } = result;
 

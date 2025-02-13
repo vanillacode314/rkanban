@@ -1,9 +1,10 @@
 import { createMutation, createQuery, queryOptions, useQueryClient } from '@tanstack/solid-query';
-import { TTask } from 'db/schema';
 import { type } from 'arktype';
-import { apiFetch } from '~/utils/fetchers';
-import { throwOnParseError } from '~/utils/arktype';
+import { TTask } from 'db/schema';
 import { createMemo } from 'solid-js';
+
+import { throwOnParseError } from '~/utils/arktype';
+import { apiFetch } from '~/utils/fetchers';
 
 const useTasksByBoardIdInputSchema = type({
 	boardId: 'string',
@@ -158,7 +159,7 @@ function useTasks(input: () => typeof useTasksInputSchema.inferIn) {
 	}));
 
 	const createTask = createMutation(() => ({
-		mutationFn: (data: Partial<TTask> & { boardId: string }) => {
+		mutationFn: (data: { boardId: string } & Partial<TTask>) => {
 			return apiFetch
 				.appendHeaders({ 'Content-Type': 'application/json' })
 				.as_json<{ task: TTask }>(`/api/v1/private/tasks`, {
@@ -175,7 +176,7 @@ function useTasks(input: () => typeof useTasksInputSchema.inferIn) {
 	}));
 
 	const shiftTask = createMutation(() => ({
-		mutationFn: (data: { id: string; direction: number }) => {
+		mutationFn: (data: { direction: number; id: string }) => {
 			return apiFetch.appendHeaders({ 'Content-Type': 'application/json' })(
 				`/api/v1/private/tasks/${data.id}/shift`,
 				{
@@ -193,7 +194,7 @@ function useTasks(input: () => typeof useTasksInputSchema.inferIn) {
 	}));
 
 	const changeBoard = createMutation(() => ({
-		mutationFn: (data: { id: string; boardId: string; index: number }) => {
+		mutationFn: (data: { boardId: string; id: string; index: number }) => {
 			return apiFetch.appendHeaders({ 'Content-Type': 'application/json' })(
 				`/api/v1/private/tasks/${data.id}/change-board`,
 				{
@@ -213,4 +214,4 @@ function useTasks(input: () => typeof useTasksInputSchema.inferIn) {
 	return [tasks, { changeBoard, shiftTask, createTask }] as const;
 }
 
-export { useTasksByBoardId, useTask, useTasks };
+export { useTask, useTasks, useTasksByBoardId };

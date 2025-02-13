@@ -16,18 +16,18 @@ export default defineEventHandler(async (event) => {
 
 	const params = await getValidatedRouterParams(event, paramsSchema);
 	if (params instanceof type.errors) {
-		throw createError({ statusCode: 400, message: params.summary });
+		throw createError({ message: params.summary, statusCode: 400 });
 	}
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
-		throw createError({ statusCode: 400, message: body.summary });
+		throw createError({ message: body.summary, statusCode: 400 });
 	}
 
 	const currentPath = await getPathByNodeId(params.id, user.id);
 	const newPath = body.name ? path.join(currentPath, '..', body.name) : currentPath;
 	if (body.name) {
 		if (RESERVED_PATHS.includes(newPath))
-			throw createError({ statusCode: 409, message: `Path ${newPath} is reserved` });
+			throw createError({ message: `Path ${newPath} is reserved`, statusCode: 409 });
 
 		if (newPath !== currentPath) {
 			const [existingNode] = await getNodeByPath(newPath, user.id);

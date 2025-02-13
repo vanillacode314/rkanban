@@ -7,8 +7,6 @@ import {
 	attachClosestEdge,
 	extractClosestEdge
 } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
-import { useAction } from '@solidjs/router';
-import { useQueryClient } from '@tanstack/solid-query';
 import { TBoard, TTask } from 'db/schema';
 import { Component, createSignal, For, onCleanup, onMount, Show } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -16,6 +14,8 @@ import { toast } from 'solid-sonner';
 import { useApp } from '~/context/app';
 import { useDirty } from '~/context/dirty';
 import { cn } from '~/lib/utils';
+import { useTask } from '~/queries/tasks';
+import { FetchError } from '~/utils/fetchers';
 import invariant from '~/utils/tiny-invariant';
 
 import Decrypt from './Decrypt';
@@ -34,8 +34,6 @@ import {
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
-import { FetchError } from '~/utils/fetchers';
-import { useTask } from '~/queries/tasks';
 
 export const Task: Component<{
 	boardId: TBoard['id'];
@@ -148,8 +146,6 @@ function TaskContextMenu(props: {
 		enabled: false,
 		id: props.task.id
 	}));
-	const $changeBoard = useAction(changeBoard);
-	const queryClient = useQueryClient();
 
 	return (
 		<div class={cn('flex-col', props.class)}>
