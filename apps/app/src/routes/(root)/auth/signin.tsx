@@ -1,6 +1,6 @@
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
-import env from '~/utils/env/client';
+import env from '~/utils/env';
 
 export default function SignInPage() {
 	const rsuiteUrl = new URL('https://account.raqueeb.com/auth');

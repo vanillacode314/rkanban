@@ -1,6 +1,8 @@
+import type { SQLocal } from 'sqlocal';
+
 import { CreateQueryResult, queryOptions, SolidQueryOptions } from '@tanstack/solid-query';
 import { createContext, createEffect, JSXElement, on, useContext } from 'solid-js';
-import { SQLocal } from 'sqlocal';
+import { isServer } from 'solid-js/web';
 
 const DBContext = createContext<SQLocal>();
 
@@ -11,8 +13,13 @@ function useDB() {
 }
 
 function DBProvider(props: { children: JSXElement }) {
-	const db = new SQLocal(':memory:');
-	seedDb(db);
+	let db: SQLocal | undefined = undefined;
+	if (!isServer) {
+		import('sqlocal').then((module) => {
+			db = new module.SQLocal(':memory:');
+			seedDb(db);
+		});
+	}
 	return <DBContext.Provider value={db}>{props.children}</DBContext.Provider>;
 }
 
