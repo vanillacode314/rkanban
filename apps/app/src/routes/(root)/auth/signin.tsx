@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/com
 import env from '~/utils/env';
 
 export default function SignInPage() {
-	const rsuiteUrl = new URL('https://account.raqueeb.com/auth');
+	const rsuiteUrl = new URL('https://accounts.raqueeb.com/auth');
 	rsuiteUrl.searchParams.set('client_id', env.PUBLIC_RSUITE_CLIENT_ID);
 	rsuiteUrl.searchParams.set('scope', 'read:profile');
 	rsuiteUrl.searchParams.set('state', 'abc');
