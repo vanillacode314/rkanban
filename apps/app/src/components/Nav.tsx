@@ -1,9 +1,10 @@
 import { useColorMode } from '@kobalte/core/color-mode';
 import { A } from '@solidjs/router';
 import { Show, Suspense } from 'solid-js';
+import { toast } from 'solid-sonner';
 
 import { cn } from '~/lib/utils';
-import { useUser } from '~/utils/auth';
+import { useUser } from '~/queries/user';
 
 import { Button } from './ui/button';
 
@@ -31,10 +32,21 @@ export default function Nav(props: { class?: string }) {
 }
 
 function UserCard() {
-	const user = useUser();
+	const [user, { signOut }] = useUser();
 	return (
 		<Show when={user.data}>
-			<form action="/api/v1/public/auth/signout" method="post">
+			<form
+				action="/api/v1/public/auth/signout"
+				method="post"
+				onSubmit={(e) => {
+					e.preventDefault();
+					toast.promise(() => signOut.mutateAsync(), {
+						error: 'Failed to sign out',
+						loading: 'Signing out...',
+						success: 'Signed out successfully'
+					});
+				}}
+			>
 				<Button class="flex items-center gap-2" type="submit" variant="outline">
 					<span>Sign Out</span>
 					<span class="i-heroicons:arrow-right-end-on-rectangle text-xl" />

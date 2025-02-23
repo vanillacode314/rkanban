@@ -8,7 +8,7 @@ const bodySchema = z.object({
 });
 const paramsSchema = z.object({ id: z.string() });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { tags, title } = await readValidatedBody(event, bodySchema.parse);
 	const { id } = await getValidatedRouterParams(event, paramsSchema.parse);
 

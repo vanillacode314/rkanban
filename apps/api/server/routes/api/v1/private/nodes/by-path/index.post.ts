@@ -11,7 +11,7 @@ const bodySchema = z.object({
 	parentPath: z.string().trim()
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.user;
+	const user = await isAuthenticated(event);
 	const { id, name, parentPath } = await readValidatedBody(event, bodySchema.parse);
 
 	const fullPath = path.join(parentPath, name);

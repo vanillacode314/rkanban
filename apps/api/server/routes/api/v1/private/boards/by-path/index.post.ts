@@ -9,7 +9,7 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { id, nodePath, title } = await readValidatedBody(event, bodySchema.parse);
 
 	const [node] = await getNodeByPath(nodePath, user.id);

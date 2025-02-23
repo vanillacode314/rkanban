@@ -11,19 +11,18 @@ const bodySchema = type({
 	parentId: 'string'
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
 		throw createError({ message: body.summary, statusCode: 400 });
 	}
 	const parentPath = await getPathByNodeId(body.parentId, user.id);
 	const fullPath = path.join(parentPath, body.name);
-	if (RESERVED_PATHS.includes(fullPath)) {
+	if (RESERVED_PATHS.includes(fullPath))
 		throw createError({
 			message: `Path ${fullPath} is reserved`,
 			statusCode: 409
 		});
-	}
 
 	const [node] = await getNodeByPath(fullPath, user.id);
 	if (node) throw createError({ statusCode: 409 });

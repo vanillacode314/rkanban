@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm';
 const bodySchema = type({ title: 'string.trim' });
 const paramsSchema = type({ id: 'string > 1' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
 		throw createError({ message: body.summary, statusCode: 400 });
@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
 		.returning();
 
 	if (!board) throw createError({ statusCode: 404, statusMessage: 'Not Found' });
+	const path = await getPathByNodeId(board.nodeId, user.id);
 
-	return board;
+	return { board, path };
 });

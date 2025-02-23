@@ -4,7 +4,7 @@ import { and, eq, gt, sql } from 'drizzle-orm';
 
 const paramsSchema = type({ id: 'string > 1' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const result = await getValidatedRouterParams(event, paramsSchema);
 	if (result instanceof type.errors) {
 		throw createError({ message: result.summary, statusCode: 400 });
@@ -32,6 +32,7 @@ export default defineEventHandler(async (event) => {
 	});
 
 	if (!board) throw createError({ statusCode: 404 });
+	const path = await getPathByNodeId(board.nodeId, user.id);
 
-	return board;
+	return { board, path };
 });

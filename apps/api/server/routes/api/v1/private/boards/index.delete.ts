@@ -4,7 +4,7 @@ import { and, eq, gt, sql } from 'drizzle-orm';
 
 const bodySchema = type({ id: 'string' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
 		throw createError({ message: body.summary, statusCode: 400 });

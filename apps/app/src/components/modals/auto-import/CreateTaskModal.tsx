@@ -12,7 +12,7 @@ import { useApp } from '~/context/app';
 import { useTasks } from '~/queries/tasks';
 import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
-import { FetchError } from '~/utils/fetchers';
+import { handleFetchError } from '~/utils/errors';
 
 export const [createTaskModalOpen, setCreateTaskModalOpen] = createSignal<boolean>(false);
 
@@ -54,17 +54,14 @@ export default function CreateTaskModal() {
 						}
 						result.title = await encryptWithUserKeys(result.title);
 						createTask.mutate(result, {
-							onError: async (error) => {
-								if (error instanceof FetchError) {
-									const data = await error.response.json();
-									if (data.message && data.message !== 'Error') {
-										setFormErrors('form', [data.message]);
-										return;
-									}
-								}
-								setFormErrors('form', [
-									`Failed to create task. Try again later if the issue persists`
-								]);
+							onError: (error) => {
+								const message = handleFetchError(
+									{
+										fallback: 'Failed to create task. Try again later if the issue persists'
+									},
+									error
+								);
+								setFormErrors({ form: [message] });
 							},
 							onSuccess: () => {
 								setId(nanoid());

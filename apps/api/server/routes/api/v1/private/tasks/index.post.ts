@@ -9,7 +9,7 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { boardId, id, title } = await readValidatedBody(event, bodySchema.parse);
 
 	const [board] = await db

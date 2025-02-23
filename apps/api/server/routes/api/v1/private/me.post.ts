@@ -9,7 +9,7 @@ const bodySchema = z.object({
 	tasks: tasksSchema.pick({ boardId: true, createdAt: true, index: true, title: true }).array()
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 
 	const result = await readValidatedBody(event, bodySchema.safeParse);
 	if (!result.success) {

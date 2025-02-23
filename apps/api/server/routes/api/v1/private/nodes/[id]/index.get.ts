@@ -11,7 +11,7 @@ const paramsSchema = z.object({
 	id: z.string()
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { id } = await getValidatedRouterParams(event, paramsSchema.parse);
 
 	const { includeChildren } = await getValidatedQuery(event, querySchema.parse);

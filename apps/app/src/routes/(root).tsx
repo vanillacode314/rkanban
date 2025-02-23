@@ -3,7 +3,7 @@ import { createConnectivitySignal } from '@solid-primitives/connectivity';
 import { Title } from '@solidjs/meta';
 import { useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
 import { TNode } from 'db/schema';
-import { createEffect, createMemo, For, JSXElement, Match, Show, Suspense, Switch } from 'solid-js';
+import { createEffect, For, JSXElement, Match, Show, Switch } from 'solid-js';
 import { isServer } from 'solid-js/web';
 import { toast } from 'solid-sonner';
 import { getCookie } from 'vinxi/http';
@@ -16,50 +16,13 @@ import { AppProvider, useApp } from '~/context/app';
 import { DBProvider } from '~/context/db';
 import { DirtyProvider } from '~/context/dirty';
 import { cn } from '~/lib/utils';
-import { useUser } from '~/utils/auth';
 import * as path from '~/utils/path';
-
-function CleanUpUser() {
-	return '';
-	// const user = useUser()
-	// createEffect(() => {
-	// 	if (!user.data) return;
-	// 	untrack(() => {
-	// 		if ($user.encryptedPrivateKey === null) {
-	// 			void localforage.removeMany(['privateKey', 'publicKey', 'salt']);
-	// 		}
-	// 	});
-	// });
-
-	return <></>;
-}
 
 function RouteGuards() {
 	const [_, { filterClipboard }] = useApp();
 	useBeforeLeave(() => toast.dismiss());
 	useBeforeLeave(() => {
 		filterClipboard((item) => item.mode !== 'selection');
-	});
-	return <></>;
-}
-
-function AuthGuard() {
-	const location = useLocation();
-	const user = useUser(location.pathname);
-	const isAuthRoute = createMemo(() => location.pathname.startsWith('/auth'));
-	const isLoggedIn = createMemo(() => user.data !== null);
-	const navigate = useNavigate();
-	createEffect(() => {
-		if (isAuthRoute() && isLoggedIn()) {
-			const redirectUrl = new URLSearchParams(location.search).get('redirect') ?? '/';
-			navigate(redirectUrl);
-			return;
-		}
-		if (!isAuthRoute() && !isLoggedIn()) {
-			const redirectUrl = location.search ? location.pathname + location.search : location.pathname;
-			navigate(`/auth/signin?redirect=${redirectUrl}`);
-			return;
-		}
 	});
 	return <></>;
 }
@@ -77,7 +40,6 @@ const RootLayout = (props: { children: JSXElement }) => {
 			<ColorModeProvider storageManager={storageManager}>
 				<AppProvider path={path()}>
 					<DBProvider>
-						<AuthGuard />
 						<RouteGuards />
 						<DirtyProvider>
 							<Title>RKanban</Title>
@@ -92,9 +54,6 @@ const RootLayout = (props: { children: JSXElement }) => {
 					</DBProvider>
 				</AppProvider>
 			</ColorModeProvider>
-			<Suspense>
-				<CleanUpUser />
-			</Suspense>
 		</>
 	);
 };

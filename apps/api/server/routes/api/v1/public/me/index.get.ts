@@ -1,5 +1,9 @@
 export default defineEventHandler(async (event) => {
-	if (event.context.auth === null)
-		return new Response('null', { headers: { 'Content-Type': 'application/json' } });
-	return event.context.auth;
+	const auth = await useAuth(event);
+	if (auth === null)
+		return new Response(JSON.stringify(auth), {
+			headers: { 'Content-Type': 'application/json' },
+			status: 401
+		});
+	return auth;
 });

@@ -1,40 +1,27 @@
-import { createMutation, createQuery, queryOptions, useQueryClient } from '@tanstack/solid-query';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/solid-query';
 import { type } from 'arktype';
 import { TBoard, TTask } from 'db/schema';
+import { create } from 'mutative';
 import { createMemo } from 'solid-js';
 
 import { throwOnParseError } from '~/utils/arktype';
 import { apiFetch } from '~/utils/fetchers';
+
+import { queries } from '.';
 
 const useBoardsByPathInputSchema = type({
 	enabled: 'boolean = true',
 	includeTasks: 'boolean = false',
 	'path?': 'string | undefined'
 });
-const useBoardsByPathQueryOptions = ({
-	path,
-	includeTasks
-}: typeof useBoardsByPathInputSchema.infer) =>
-	queryOptions({
-		enabled: path !== undefined,
-		queryFn: ({ queryKey }) => {
-			const searchParams = new URLSearchParams({
-				includeTasks: String(queryKey[3]),
-				path: String(queryKey[2])
-			});
-			return apiFetch
-				.forwardHeaders()
-				.as_json<
-					Array<{ tasks: TTask[] } & TBoard>
-				>(`/api/v1/private/boards/by-path?${searchParams.toString()}`);
-		},
-		queryKey: ['boards', 'by-path', path, includeTasks] as const
-	});
 function useBoardsByPath(input: () => typeof useBoardsByPathInputSchema.inferIn) {
 	const queryClient = useQueryClient();
 	const parsedInput = createMemo(() => throwOnParseError(useBoardsByPathInputSchema(input())));
 	const boards = createQuery(() => ({
-		...useBoardsByPathQueryOptions(parsedInput()),
+		...queries.boards.byPath({
+			path: parsedInput().path!,
+			includeTasks: parsedInput().includeTasks
+		}),
 		enabled: parsedInput().enabled && parsedInput().path !== undefined
 	}));
 
@@ -42,7 +29,7 @@ function useBoardsByPath(input: () => typeof useBoardsByPathInputSchema.inferIn)
 		mutationFn: (data: { nodePath: string } & Partial<TBoard>) => {
 			return apiFetch
 				.appendHeaders({ 'Content-Type': 'application/json' })
-				.as_json<{ board: TBoard; path: string }>(`/api/v1/private/boards/by-path`, {
+				.as_json<TBoard>(`/api/v1/private/boards/by-path`, {
 					body: JSON.stringify({ ...data, nodePath: input().path }),
 					method: 'POST'
 				});
@@ -50,8 +37,16 @@ function useBoardsByPath(input: () => typeof useBoardsByPathInputSchema.inferIn)
 		onMutate: () => {
 			if (!input().path) throw new Error('No path');
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['boards'] });
+		onSuccess: (data) => {
+			const push = create((draft: Array<{ tasks: TTask[] } & TBoard> | undefined) => {
+				if (!draft) return;
+				draft.push({ ...data, tasks: [] });
+			});
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byPath({ path: input().path! }).queryKey },
+				push
+			);
+			queryClient.setQueriesData({ queryKey: queries.boards.byId({ id: data.id }).queryKey }, data);
 		}
 	}));
 
@@ -63,26 +58,11 @@ const useBoardInputSchema = type({
 	includeTasks: 'boolean = false',
 	enabled: 'boolean = true'
 });
-const useBoardQueryOptions = ({ id, includeTasks }: typeof useBoardInputSchema.infer) =>
-	queryOptions({
-		enabled: id !== undefined,
-		queryFn: ({ queryKey }) => {
-			const searchParams = new URLSearchParams({
-				includeTasks: String(queryKey[2])
-			});
-			return apiFetch
-				.forwardHeaders()
-				.as_json<
-					{ tasks: TTask[] } & TBoard
-				>(`/api/v1/private/boards/${queryKey[1]}?${searchParams.toString()}`);
-		},
-		queryKey: ['boards', id, includeTasks]
-	});
 function useBoard(input: () => typeof useBoardInputSchema.inferIn) {
 	const queryClient = useQueryClient();
 	const parsedInput = createMemo(() => throwOnParseError(useBoardInputSchema(input())));
 	const board = createQuery(() => ({
-		...useBoardQueryOptions(parsedInput()),
+		...queries.boards.byId({ id: parsedInput().id!, includeTasks: parsedInput().includeTasks }),
 		enabled: parsedInput().enabled && parsedInput().id !== undefined
 	}));
 
@@ -94,25 +74,54 @@ function useBoard(input: () => typeof useBoardInputSchema.inferIn) {
 		onMutate: () => {
 			if (!input().id) throw new Error('No id');
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['boards'] });
+		onSuccess: (data) => {
+			const splice = create((draft: TBoard[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((board) => board.id === input().id);
+				if (index === -1) return;
+				draft.splice(index, 1);
+			});
+			queryClient.setQueryData(queries.boards.all.queryKey, splice);
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byPath({ path: data.path }).queryKey },
+				splice
+			);
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byId({ id: data.board.id }).queryKey },
+				undefined
+			);
 		}
 	}));
 
 	const updateBoard = createMutation(() => ({
 		mutationFn: (data: Partial<TBoard>) => {
-			return apiFetch
-				.appendHeaders({ 'Content-Type': 'application/json' })
-				.as_json<{ board: TBoard; path: string }>(`/api/v1/private/boards/${input().id}`, {
-					body: JSON.stringify(data),
-					method: 'PUT'
-				});
+			return apiFetch.appendHeaders({ 'Content-Type': 'application/json' }).as_json<{
+				board: TBoard;
+				original: { board: TBoard; path: string };
+				path: string;
+			}>(`/api/v1/private/boards/${input().id}`, {
+				body: JSON.stringify(data),
+				method: 'PUT'
+			});
 		},
 		onMutate: () => {
 			if (!input().id) throw new Error('No id');
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['boards'] });
+		onSuccess: (data) => {
+			const update = create((draft: Array<{ tasks: TTask[] } & TBoard> | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((board) => board.id === input().id);
+				if (index === -1) return;
+				Object.assign(draft[index], data.board);
+			});
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byPath({ path: data.path }).queryKey },
+				update
+			);
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byId({ id: data.board.id }).queryKey },
+				data.board
+			);
 		}
 	}));
 
@@ -130,7 +139,7 @@ function useBoard(input: () => typeof useBoardInputSchema.inferIn) {
 			if (!input().id) throw new Error('No id');
 		},
 		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['boards'] });
+			return queryClient.invalidateQueries({ queryKey: queries.boards._def });
 		}
 	}));
 
@@ -140,19 +149,11 @@ function useBoard(input: () => typeof useBoardInputSchema.inferIn) {
 const useBoardsInputSchema = type({
 	enabled: 'boolean = true'
 });
-const useBoardsQueryOptions = () =>
-	queryOptions({
-		queryFn: () =>
-			apiFetch
-				.forwardHeaders()
-				.as_json<Array<{ tasks: TTask[] } & TBoard>>(`/api/v1/private/boards`),
-		queryKey: ['boards']
-	});
 function useBoards(input: () => typeof useBoardsInputSchema.inferIn) {
 	const queryClient = useQueryClient();
 	const parsedInput = createMemo(() => throwOnParseError(useBoardsInputSchema(input())));
 	const boards = createQuery(() => ({
-		...useBoardsQueryOptions(),
+		...queries.boards.all,
 		enabled: parsedInput().enabled
 	}));
 
@@ -165,8 +166,19 @@ function useBoards(input: () => typeof useBoardsInputSchema.inferIn) {
 					method: 'POST'
 				});
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['boards'] });
+		onSuccess: (data) => {
+			const push = create((draft: Array<{ tasks: TTask[] } & TBoard> | undefined) => {
+				if (!draft) return;
+				draft.push({ ...data.board, tasks: [] });
+			});
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byPath({ path: data.path }).queryKey },
+				push
+			);
+			queryClient.setQueriesData(
+				{ queryKey: queries.boards.byId({ id: data.board.id }) },
+				data.board
+			);
 		}
 	}));
 
@@ -181,7 +193,7 @@ function useBoards(input: () => typeof useBoardsInputSchema.inferIn) {
 			);
 		},
 		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['boards'] });
+			return queryClient.invalidateQueries({ queryKey: queries.boards._def });
 		}
 	}));
 

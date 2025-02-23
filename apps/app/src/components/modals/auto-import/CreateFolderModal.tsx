@@ -11,7 +11,7 @@ import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-
 import { useApp } from '~/context/app';
 import { useNodes } from '~/queries/nodes';
 import { parseFormErrors } from '~/utils/arktype';
-import { FetchError } from '~/utils/fetchers';
+import { handleFetchError } from '~/utils/errors';
 
 export const [createFolderModalOpen, setCreateFolderModalOpen] = createSignal<boolean>(false);
 
@@ -64,21 +64,15 @@ export default function CreateFolderModal() {
 							return;
 						}
 						createNode.mutate(result, {
-							onError: async (error) => {
-								if (error instanceof FetchError) {
-									const data = await error.response.json();
-									if (data.message && data.message !== 'Error') {
-										setFormErrors('form', [data.message]);
-										return;
-									}
-									if (error.response.status === 409) {
-										setFormErrors('form', ['Folder already exists']);
-										return;
-									}
-								}
-								setFormErrors('form', [
-									`Failed to create folder. Try again later if the issue persists`
-								]);
+							onError: (error) => {
+								const message = handleFetchError(
+									{
+										409: `Folder with name "${result.name}" already exists`,
+										fallback: 'Failed to create folder. Try again later if the issue persists'
+									},
+									error
+								);
+								setFormErrors({ form: [message] });
 							},
 							onSuccess: () => {
 								setId(nanoid());

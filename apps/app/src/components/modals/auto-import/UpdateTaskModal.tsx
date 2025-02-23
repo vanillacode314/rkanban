@@ -12,7 +12,7 @@ import { useApp } from '~/context/app';
 import { useTask } from '~/queries/tasks';
 import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
-import { FetchError } from '~/utils/fetchers';
+import { handleFetchError } from '~/utils/errors';
 
 export const [updateTaskModalOpen, setUpdateTaskModalOpen] = createSignal<boolean>(false);
 
@@ -48,17 +48,14 @@ export default function UpdateTaskModal() {
 
 						result.title = await encryptWithUserKeys(result.title);
 						updateTask.mutate(result, {
-							onError: async (error) => {
-								if (error instanceof FetchError) {
-									const data = await error.response.json();
-									if (data.message && data.message !== 'Error') {
-										setFormErrors('form', [data.message]);
-										return;
-									}
-								}
-								setFormErrors('form', [
-									`Failed to update task. Try again later if the issue persists`
-								]);
+							onError: (error) => {
+								const message = handleFetchError(
+									{
+										fallback: 'Failed to update task. Try again later if the issue persists'
+									},
+									error
+								);
+								setFormErrors({ form: [message] });
 							},
 							onSuccess: () => {
 								toast.success(`Task updated`);

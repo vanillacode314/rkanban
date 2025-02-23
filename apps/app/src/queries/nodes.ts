@@ -1,36 +1,27 @@
-import { createMutation, createQuery, queryOptions, useQueryClient } from '@tanstack/solid-query';
+import { createMutation, createQuery, useQueryClient } from '@tanstack/solid-query';
 import { type } from 'arktype';
 import { TNode } from 'db/schema';
+import { create } from 'mutative';
 import { createMemo } from 'solid-js';
 
 import { throwOnParseError } from '~/utils/arktype';
 import { apiFetch } from '~/utils/fetchers';
+import * as path from '~/utils/path';
+
+import { queries } from '.';
 
 const useNodesByPathInputSchema = type({
 	enabled: 'boolean = true',
 	includeChildren: 'boolean = false',
 	path: 'string'
 });
-const useNodesByPathQueryOptions = ({
-	path,
-	includeChildren
-}: typeof useNodesByPathInputSchema.infer) =>
-	queryOptions({
-		queryFn: ({ queryKey }) => {
-			const searchParams = new URLSearchParams({
-				includeChildren: String(queryKey[3]),
-				path: queryKey[2]
-			});
-			return apiFetch
-				.forwardHeaders()
-				.as_json<TNode[]>(`/api/v1/private/nodes/by-path?${searchParams.toString()}`);
-		},
-		queryKey: ['nodes', 'by-path', path, includeChildren] as const
-	});
 function useNodesByPath(input: () => typeof useNodesByPathInputSchema.inferIn) {
 	const parsedInput = createMemo(() => throwOnParseError(useNodesByPathInputSchema(input())));
 	const nodes = createQuery(() => ({
-		...useNodesByPathQueryOptions(parsedInput()),
+		...queries.nodes.byPath({
+			path: parsedInput().path,
+			includeChildren: parsedInput().includeChildren
+		}),
 		enabled: input().enabled
 	}));
 
@@ -40,19 +31,10 @@ function useNodesByPath(input: () => typeof useNodesByPathInputSchema.inferIn) {
 const useNodesInputSchema = type({
 	enabled: 'boolean = true'
 });
-const useNodesQueryOptions = () =>
-	queryOptions({
-		queryFn: () =>
-			apiFetch.forwardHeaders().as_json<{
-				children: TNode[];
-				node: TNode;
-			}>(`/api/v1/private/nodes`),
-		queryKey: ['nodes']
-	});
 function useNodes(input: () => typeof useNodesInputSchema.inferIn) {
 	const queryClient = useQueryClient();
 	const parsedInput = createMemo(() => throwOnParseError(useNodesInputSchema(input())));
-	const nodes = createQuery(() => ({ ...useNodesQueryOptions(), enabled: parsedInput().enabled }));
+	const nodes = createQuery(() => ({ ...queries.nodes.all, enabled: parsedInput().enabled }));
 
 	const createNode = createMutation(() => ({
 		mutationFn: (data: { id?: string; name: string; parentId: string }) =>
@@ -62,22 +44,84 @@ function useNodes(input: () => typeof useNodesInputSchema.inferIn) {
 					body: JSON.stringify(data),
 					method: 'POST'
 				}),
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['nodes'] });
+		onSuccess: (data) => {
+			queryClient.setQueryData<TNode[]>(
+				queries.nodes.all.queryKey,
+				create((draft) => {
+					draft?.push(data.node);
+				})
+			);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byPath({ path: data.path }), [data.node]);
+			queryClient.setQueriesData<TNode[]>(
+				queries.nodes.byPath({ path: path.join(data.path, '..') }),
+				create((draft) => {
+					if (draft === undefined) return;
+					draft.push(data.node);
+				})
+			);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.id }), [data.node]);
+			queryClient.setQueriesData<TNode[]>(
+				queries.nodes.byId({ id: data.node.parentId! }),
+				create((draft) => {
+					if (draft === undefined) return;
+					draft.push(data.node);
+				})
+			);
 		}
 	}));
 
 	const updateNode = createMutation(() => ({
 		mutationFn: ({ id, data }: { data: Partial<TNode>; id: string }) => {
-			return apiFetch
-				.appendHeaders({ 'Content-Type': 'application/json' })
-				.as_json<{ node: TNode; path: string }>(`/api/v1/private/nodes/${id}`, {
-					body: JSON.stringify({ ...data, id }),
-					method: 'PUT'
-				});
+			return apiFetch.appendHeaders({ 'Content-Type': 'application/json' }).as_json<{
+				node: TNode;
+				original: {
+					node: TNode;
+					path: string;
+				};
+				path: string;
+			}>(`/api/v1/private/nodes/${id}`, {
+				body: JSON.stringify({ ...data, id }),
+				method: 'PUT'
+			});
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['nodes'] });
+		onSuccess: (data) => {
+			const upsert = create((draft: TNode[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((node) => node.id === data.node.id);
+				if (index === -1) {
+					draft.push(data.node);
+					return;
+				}
+				Object.assign(draft[index], data.node);
+			});
+			const splice = create((draft: TNode[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((node) => node.id === data.node.id);
+				if (index === -1) return;
+				draft.splice(index, 1);
+			});
+			queryClient.setQueryData<TNode[]>(queries.nodes.all.queryKey, upsert);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byPath({ path: data.path }), [data.node]);
+			queryClient.setQueriesData<TNode[]>(
+				queries.nodes.byPath({ path: path.join(data.path, '..') }),
+				upsert
+			);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.id }), [data.node]);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.parentId! }), upsert);
+			if (data.original.node.parentId !== data.node.parentId) {
+				queryClient.setQueriesData<TNode[]>(
+					queries.nodes.byId({ id: data.original.node.parentId! }),
+					splice
+				);
+				queryClient.setQueriesData<TNode[]>(
+					queries.nodes.byPath({ path: path.join(data.original.path, '..') }),
+					splice
+				);
+				queryClient.setQueriesData<TNode[]>(
+					queries.nodes.byPath({ path: data.original.path }),
+					undefined
+				);
+			}
 		}
 	}));
 
@@ -89,8 +133,19 @@ function useNodes(input: () => typeof useNodesInputSchema.inferIn) {
 					method: 'DELETE',
 					body: JSON.stringify({ ids })
 				}),
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['nodes'] });
+		onSuccess: (data) => {
+			const splice = create((draft: TNode[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((node) => node.id === data.node.id);
+				if (index === -1) return;
+				draft.splice(index, 1);
+			});
+			queryClient.setQueryData<TNode[]>(queries.nodes.all.queryKey, splice);
+			queryClient.setQueriesData<TNode[]>(
+				queries.nodes.byPath({ path: path.join(data.path, '..') }),
+				splice
+			);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.parentId! }), splice);
 		}
 	}));
 
@@ -102,25 +157,14 @@ const useNodeInputSchema = type({
 	includeChildren: 'boolean = false',
 	enabled: 'boolean = true'
 });
-const useNodeQueryOptions = ({ id, includeChildren }: typeof useNodeInputSchema.infer) =>
-	queryOptions({
-		enabled: id !== undefined,
-		queryFn: ({ queryKey }) => {
-			const searchParams = new URLSearchParams({
-				includeChildren: String(queryKey[2])
-			});
-			return apiFetch.forwardHeaders().as_json<{
-				children: TNode[];
-				node: TNode;
-			}>(`/api/v1/private/nodes/${queryKey[1]}?${searchParams.toString()}`);
-		},
-		queryKey: ['nodes', id, includeChildren]
-	});
 function useNode(input: () => typeof useNodeInputSchema.inferIn) {
 	const queryClient = useQueryClient();
 	const parsedInput = createMemo(() => throwOnParseError(useNodeInputSchema(input())));
 	const node = createQuery(() => ({
-		...useNodeQueryOptions(parsedInput()),
+		...queries.nodes.byId({
+			id: parsedInput().id!,
+			includeChildren: parsedInput().includeChildren
+		}),
 		enabled: parsedInput().enabled && parsedInput().id !== undefined
 	}));
 
@@ -132,25 +176,77 @@ function useNode(input: () => typeof useNodeInputSchema.inferIn) {
 		onMutate: () => {
 			if (!input().id) throw new Error('No id');
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['nodes'] });
+		onSuccess: (data) => {
+			const splice = create((draft: TNode[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((node) => node.id === data.node.id);
+				if (index === -1) return;
+				draft.splice(index, 1);
+			});
+			queryClient.setQueryData<TNode[]>(queries.nodes.all.queryKey, splice);
+			queryClient.setQueriesData<TNode[]>(
+				queries.nodes.byPath({ path: path.join(data.path, '..') }),
+				splice
+			);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.parentId! }), splice);
 		}
 	}));
 
 	const updateNode = createMutation(() => ({
 		mutationFn: (data: Partial<TNode>) => {
-			return apiFetch
-				.appendHeaders({ 'Content-Type': 'application/json' })
-				.as_json<{ node: TNode; path: string }>(`/api/v1/private/nodes/${input().id}`, {
-					body: JSON.stringify(data),
-					method: 'PUT'
-				});
+			return apiFetch.appendHeaders({ 'Content-Type': 'application/json' }).as_json<{
+				node: TNode;
+				original: {
+					node: TNode;
+					path: string;
+				};
+				path: string;
+			}>(`/api/v1/private/nodes/${input().id}`, {
+				body: JSON.stringify(data),
+				method: 'PUT'
+			});
 		},
 		onMutate: () => {
 			if (!input().id) throw new Error('No id');
 		},
-		onSuccess: () => {
-			return queryClient.invalidateQueries({ queryKey: ['nodes'] });
+		onSuccess: (data) => {
+			const upsert = create((draft: TNode[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((node) => node.id === data.node.id);
+				if (index === -1) {
+					draft.push(data.node);
+					return;
+				}
+				Object.assign(draft[index], data.node);
+			});
+			const splice = create((draft: TNode[] | undefined) => {
+				if (!draft) return;
+				const index = draft.findIndex((node) => node.id === data.node.id);
+				if (index === -1) return;
+				draft.splice(index, 1);
+			});
+			queryClient.setQueryData<TNode[]>(queries.nodes.all.queryKey, upsert);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byPath({ path: data.path }), [data.node]);
+			queryClient.setQueriesData<TNode[]>(
+				queries.nodes.byPath({ path: path.join(data.path, '..') }),
+				upsert
+			);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.id }), [data.node]);
+			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.parentId! }), upsert);
+			if (data.original.node.parentId !== data.node.parentId) {
+				queryClient.setQueriesData<TNode[]>(
+					queries.nodes.byId({ id: data.original.node.parentId! }),
+					splice
+				);
+				queryClient.setQueriesData<TNode[]>(
+					queries.nodes.byPath({ path: path.join(data.original.path, '..') }),
+					splice
+				);
+				queryClient.setQueriesData<TNode[]>(
+					queries.nodes.byPath({ path: data.original.path }),
+					undefined
+				);
+			}
 		}
 	}));
 	return [node, { updateNode, deleteNode }] as const;

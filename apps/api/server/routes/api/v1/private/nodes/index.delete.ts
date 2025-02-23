@@ -4,7 +4,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 
 const bodySchema = type({ ids: 'string[]' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {

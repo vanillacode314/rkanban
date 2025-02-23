@@ -1,7 +1,7 @@
 import { MetaProvider } from '@solidjs/meta';
-import { Router } from '@solidjs/router';
+import { Router, useLocation, useNavigate } from '@solidjs/router';
 import { FileRoutes } from '@solidjs/start/router';
-import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
+import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/solid-query';
 import { SolidQueryDevtools } from '@tanstack/solid-query-devtools';
 import { Component, createSignal, ErrorBoundary, onMount, Show, Suspense } from 'solid-js';
 import 'virtual:uno.css';
@@ -9,9 +9,8 @@ import 'virtual:uno.css';
 import './app.css';
 import { Button } from './components/ui/button';
 import { cn } from './lib/utils';
+import { FetchError } from './utils/fetchers';
 import { listenForWaitingServiceWorker } from './utils/service-worker';
-
-const queryClient = new QueryClient({});
 
 const ErrorPage: Component = () => {
 	const [updateAvailable, setUpdateAvailable] = createSignal<boolean>(false);
@@ -45,7 +44,7 @@ const ErrorPage: Component = () => {
 			</nav>
 			<div class="grid h-full place-content-center place-items-center gap-4">
 				<span class="i-heroicons:exclamation-circle text-8xl" />
-				<p>An Error Occured</p>
+				<p>An Error Occurred</p>
 				<Show
 					fallback={
 						<Button onClick={() => window.location.reload()} size="lg">
@@ -66,16 +65,45 @@ const ErrorPage: Component = () => {
 export default function App() {
 	return (
 		<Router
-			root={(props) => (
-				<ErrorBoundary fallback={<ErrorPage />}>
-					<Suspense>
-						<QueryClientProvider client={queryClient}>
-							<MetaProvider>{props.children}</MetaProvider>
-							<SolidQueryDevtools buttonPosition="bottom-left" initialIsOpen={false} />
-						</QueryClientProvider>
-					</Suspense>
-				</ErrorBoundary>
-			)}
+			root={(props) => {
+				const navigate = useNavigate();
+				const location = useLocation();
+				const queryClient = new QueryClient({
+					defaultOptions: {
+						queries: {
+							retry: (count, error) => {
+								if (count >= 3) return false;
+								if (error instanceof FetchError) {
+									return [429, 500].includes(error.status);
+								}
+								return true;
+							}
+						}
+					},
+					queryCache: new QueryCache({
+						onError(error) {
+							if (error instanceof FetchError) {
+								if (error.status === 401) {
+									if (location.pathname !== '/auth/signin')
+										navigate(
+											`/auth/signin?redirect=${encodeURIComponent(`${location.pathname}${location.search}`)}`
+										);
+								}
+							}
+						}
+					})
+				});
+				return (
+					<ErrorBoundary fallback={<ErrorPage />}>
+						<Suspense>
+							<QueryClientProvider client={queryClient}>
+								<MetaProvider>{props.children}</MetaProvider>
+								<SolidQueryDevtools buttonPosition="bottom-left" initialIsOpen={false} />
+							</QueryClientProvider>
+						</Suspense>
+					</ErrorBoundary>
+				);
+			}}
 			singleFlight={false}
 		>
 			<FileRoutes />

@@ -7,7 +7,7 @@ const bodySchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { id } = await readValidatedBody(event, bodySchema.parse);
 
 	const task = await db.transaction(async (tx) => {

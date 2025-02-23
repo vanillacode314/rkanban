@@ -7,6 +7,12 @@ import { authSchema, TAuth } from 'schema';
 import { ACCESS_TOKEN_EXPIRES_IN_SECONDS, TOKEN_JWT_OPTIONS } from '~/consts';
 import env from '~/utils/env';
 
+async function isAuthenticated(event: H3Event) {
+	const auth = await useAuth(event);
+	if (!auth) throw createError({ statusCode: 401 });
+	return auth.user;
+}
+
 async function refreshAccessToken(event: H3Event) {
 	const authSource = getCookie(event, 'authSource');
 	const refreshToken = getCookie(event, 'refreshToken');
@@ -56,4 +62,4 @@ async function useAuth(event: H3Event): Promise<null | Pick<TAuth, 'user'>> {
 	}
 }
 
-export { refreshAccessToken, useAuth };
+export { isAuthenticated, refreshAccessToken, useAuth };

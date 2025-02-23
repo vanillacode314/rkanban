@@ -9,7 +9,7 @@ const bodySchema = type({
 	title: 'string.trim'
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
 		throw createError({ message: body.summary, statusCode: 400 });
@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
 		.from(nodes)
 		.where(and(eq(nodes.id, body.nodeId), eq(nodes.userId, user.id)));
 	if (!node) throw createError({ statusCode: 404 });
+	const path = await getPathByNodeId(node.id, user.id);
 
 	const index = await db
 		.select({ maxIndex: sql<null | number>`max(${boards.index})` })
@@ -41,5 +42,5 @@ export default defineEventHandler(async (event) => {
 		})
 		.returning();
 
-	return board;
+	return { board, path };
 });

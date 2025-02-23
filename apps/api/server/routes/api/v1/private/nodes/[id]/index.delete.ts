@@ -9,7 +9,7 @@ const paramsSchema = type({
 	id: 'string > 1'
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { id } = await getValidatedRouterParams(event, (v) => throwOnParseError(paramsSchema(v)));
 
 	const path = await getPathByNodeId(id, user.id);

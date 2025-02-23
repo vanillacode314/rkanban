@@ -12,7 +12,7 @@ import { useApp } from '~/context/app';
 import { useBoardsByPath } from '~/queries/boards';
 import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
-import { FetchError } from '~/utils/fetchers';
+import { handleFetchError } from '~/utils/errors';
 
 export const [createBoardModalOpen, setCreateBoardModalOpen] = createSignal<boolean>(false);
 
@@ -51,17 +51,14 @@ export default function CreateBoardModal() {
 						}
 						result.title = await encryptWithUserKeys(result.title);
 						createBoard.mutate(result, {
-							onError: async (error) => {
-								if (error instanceof FetchError) {
-									const data = await error.response.json();
-									if (data.message && data.message !== 'Error') {
-										setFormErrors('form', [data.message]);
-										return;
-									}
-								}
-								setFormErrors('form', [
-									`Failed to create board. Try again later if the issue persists`
-								]);
+							onError: (error) => {
+								const message = handleFetchError(
+									{
+										fallback: 'Failed to create board. Try again later if the issue persists'
+									},
+									error
+								);
+								setFormErrors({ form: [message] });
 							},
 							onSuccess: () => {
 								setId(nanoid());

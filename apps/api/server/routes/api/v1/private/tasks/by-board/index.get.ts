@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 
 const querySchema = type({ boardId: 'string' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 
 	const query = await getValidatedQuery(event, querySchema);
 	if (query instanceof type.errors) {

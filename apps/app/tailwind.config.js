@@ -1,5 +1,4 @@
 import plugin from 'tailwindcss/plugin';
-import animate from 'tailwindcss-animate';
 import motion from 'tailwindcss-motion';
 
 /**@type {import("tailwindcss").Config} */

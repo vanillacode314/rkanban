@@ -8,7 +8,7 @@ const querySchema = z.object({
 	path: z.string()
 });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const { includeTasks, path } = await getValidatedQuery(event, querySchema.parse);
 	return getBoardsByPath(path, user.id, { includeTasks });
 });

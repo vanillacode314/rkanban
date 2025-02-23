@@ -4,7 +4,7 @@ import { and, eq, gt, sql } from 'drizzle-orm';
 
 const paramsSchema = type({ id: 'string > 1' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 	const params = await getValidatedRouterParams(event, paramsSchema);
 	if (params instanceof type.errors) {
 		throw createError({ message: params.summary, statusCode: 400 });

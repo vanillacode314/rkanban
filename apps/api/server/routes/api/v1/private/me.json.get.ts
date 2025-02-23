@@ -2,7 +2,7 @@ import { boards, nodes, tasks } from 'db/schema';
 import { eq } from 'drizzle-orm';
 
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 
 	const [$nodes, $boards, $tasks] = await Promise.all([
 		db

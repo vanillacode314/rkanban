@@ -7,7 +7,7 @@ const TEMPORARY_LARGE_NUMBER_FOR_SHIFTING_SQL_INDICES = 99999;
 const bodySchema = type({ direction: 'number' });
 const paramsSchema = type({ id: 'string > 1' });
 export default defineEventHandler(async (event) => {
-	const user = event.context.auth!.user;
+	const user = await isAuthenticated(event);
 
 	const body = await readValidatedBody(event, bodySchema);
 	if (body instanceof type.errors) {
