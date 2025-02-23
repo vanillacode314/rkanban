@@ -1,6 +1,6 @@
 import { generateSW } from 'workbox-build';
 
-const BASE = process.env.NETLIFY ? 'dist' : '.output/public';
+const BASE = '.output/public';
 generateSW({
 	cacheId: 'rkanban',
 	cleanupOutdatedCaches: true,
@@ -10,6 +10,7 @@ generateSW({
 	globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
 	inlineWorkboxRuntime: true,
 	navigationPreload: true,
+	navigateFallback: '/index.html',
 	runtimeCaching: [
 		{
 			handler: 'NetworkOnly',
