@@ -4,7 +4,6 @@ import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-sc
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { reorderWithEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/util/reorder-with-edge';
 import { Key } from '@solid-primitives/keyed';
-import { createLazyMemo } from '@solid-primitives/memo';
 import { resolveElements } from '@solid-primitives/refs';
 import { makePersisted, messageSync } from '@solid-primitives/storage';
 import { createListTransition } from '@solid-primitives/transition-group';
@@ -18,12 +17,11 @@ import {
 	createEffect,
 	createSignal,
 	For,
-	Match,
 	onCleanup,
 	onMount,
 	ParentComponent,
 	Show,
-	Switch,
+	Suspense,
 	untrack
 } from 'solid-js';
 import { toast } from 'solid-sonner';
@@ -36,7 +34,6 @@ import { Button } from '~/components/ui/button';
 import { Skeleton } from '~/components/ui/skeleton';
 import { RESERVED_PATHS } from '~/consts/index';
 import { useApp } from '~/context/app';
-import { useDirty } from '~/context/dirty';
 import { cn } from '~/lib/utils';
 import { useBoards, useBoardsByPath } from '~/queries/boards';
 import { useTasks } from '~/queries/tasks';
@@ -59,19 +56,6 @@ export default function ProjectPage() {
 	const [boardsQuery] = useBoardsByPath(() => ({ includeTasks: true, path: appContext.path }));
 	const hasBoards = () => boardsQuery.data && boardsQuery.data.length > 0;
 
-	const boardsDirty = createLazyMemo(() => {
-		if (boardsQuery.isPending) return false;
-		const $boards = boardsQuery.data;
-		if ($boards === undefined) return false;
-		return $boards.some((board) =>
-			board.tasks.some((task, index) => task.index !== index || task.boardId !== board.id)
-		);
-	});
-
-	const [isDirty, setIsDirty] = useDirty();
-
-	createEffect(() => setIsDirty('project', boardsDirty()));
-
 	createEffect(() => {
 		const $boards = boardsQuery.data;
 		untrack(() => setBoards($boards ?? []));
@@ -83,8 +67,8 @@ export default function ProjectPage() {
 	);
 
 	return (
-		<Switch>
-			<Match when={boardsQuery.isPending}>
+		<Suspense
+			fallback={
 				<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
 					<div class="flex justify-end gap-4">
 						<Skeleton height={40} radius={5} width={150} />
@@ -106,89 +90,84 @@ export default function ProjectPage() {
 						</For>
 					</AnimatedBoardsList>
 				</div>
-			</Match>
-			<Match when={boardsQuery.isSuccess}>
-				<Show
-					fallback={
-						<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
-							<div>Project Not Found</div>
-							<Button as={A} href="/">
-								Go Home
+			}
+		>
+			<Show
+				fallback={
+					<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
+						<div>Project Not Found</div>
+						<Button as={A} href="/">
+							Go Home
+						</Button>
+					</div>
+				}
+				when={!(boardsQuery.data instanceof Error)}
+			>
+				<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
+					<Show when={hasBoards()}>
+						<div class="flex justify-end gap-4">
+							<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
+								<span class="i-heroicons:plus text-lg" />
+								<span>Create Board</span>
 							</Button>
 						</div>
-					}
-					when={!(boardsQuery.data instanceof Error)}
-				>
-					<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-						<Show when={hasBoards()}>
-							<div class="flex justify-end gap-4">
-								<Button
-									class="flex items-center gap-2"
-									disabled={isDirty('project')}
-									onClick={() => setCreateBoardModalOpen(true)}
-								>
-									<span class="i-heroicons:plus text-lg" />
-									<span>Create Board</span>
-								</Button>
-							</div>
-						</Show>
-						<PathCrumbs />
-						<Show
-							fallback={
-								<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
-									<img
-										class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
-										src="/empty.svg"
-									/>
-									<span>Empty Project</span>
-									<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
-										<Button
-											class="flex items-center gap-2"
-											onClick={() => setCreateBoardModalOpen(true)}
-										>
-											<span class="i-heroicons:plus text-lg" />
-											<span>Create Board</span>
-										</Button>
-									</div>
+					</Show>
+					<PathCrumbs />
+					<Show
+						fallback={
+							<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
+								<img
+									class="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 opacity-5"
+									src="/empty.svg"
+								/>
+								<span>Empty Project</span>
+								<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
+									<Button
+										class="flex items-center gap-2"
+										onClick={() => setCreateBoardModalOpen(true)}
+									>
+										<span class="i-heroicons:plus text-lg" />
+										<span>Create Board</span>
+									</Button>
 								</div>
-							}
-							when={hasBoards()}
-						>
-							<AnimatedBoardsList
-								boards={boardsQuery.data!}
-								collapsedBoards={
-									new Map(
-										Array.from(collapsedBoards()).filter(([id, _]) =>
-											boardsQuery.data!.some((board) => board.id === id)
-										)
+							</div>
+						}
+						when={hasBoards()}
+					>
+						<AnimatedBoardsList
+							boards={boardsQuery.data!}
+							collapsedBoards={
+								new Map(
+									Array.from(collapsedBoards()).filter(([id, _]) =>
+										boardsQuery.data!.some((board) => board.id === id)
 									)
-								}
-								setBoards={(setter) => {
-									queryClient.setQueryData(['boards', 'by-path', appContext.path, true], setter);
-								}}
-								setCollapsedBoards={(setter) => {
-									setCollapsedBoards(setter);
-								}}
+								)
+							}
+							setBoards={(setter) => {
+								queryClient.setQueryData(['boards', 'by-path', appContext.path, true], setter);
+							}}
+							setCollapsedBoards={(setter) => {
+								setCollapsedBoards(setter);
+							}}
+						>
+							<Key
+								by="id"
+								each={boardsQuery.data?.filter((board) => !collapsedBoards().has(board.id))}
 							>
-								<Key
-									by="id"
-									each={boardsQuery.data?.filter((board) => !collapsedBoards().has(board.id))}
-								>
-									{(board, index) => (
-										<Board
-											board={board()}
-											class="shrink-0 basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
-											index={index()}
-										/>
-									)}
-								</Key>
-								<SkeletonBoard class="hidden shrink-0 basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
-							</AnimatedBoardsList>
-						</Show>
-					</div>
-				</Show>
-			</Match>
-		</Switch>
+								{(board, index) => (
+									<Board
+										board={board()}
+										class="shrink-0 basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start"
+										index={index()}
+									/>
+								)}
+							</Key>
+							<SkeletonBoard class="hidden shrink-0 basis-[calc((90%-(var(--cols)-1)*var(--gap))/var(--cols))] snap-start md:flex" />
+						</AnimatedBoardsList>
+					</Show>
+				</div>
+			</Show>
+		</Suspense>
 	);
 }
 
@@ -236,7 +215,6 @@ const AnimatedBoardsList: ParentComponent<{
 	});
 
 	const [isBeingDragged, setIsBeingDragged] = createSignal<boolean>(false);
-	const [_isDirty, setIsDirty] = useDirty();
 
 	let ref!: HTMLDivElement;
 	onMount(() => {
@@ -270,19 +248,11 @@ const AnimatedBoardsList: ParentComponent<{
 					});
 					props.setBoards(() => reorderedBoards);
 
-					toast.promise(
-						async () => {
-							setIsDirty('project', true);
-							await shiftBoard
-								.mutateAsync({ id: source.data.boardId, direction })
-								.finally(() => setIsDirty('project', false));
-						},
-						{
-							error: 'Failed to move boards',
-							loading: 'Moving boards...',
-							success: 'Boards moved'
-						}
-					);
+					toast.promise(() => shiftBoard.mutateAsync({ id: source.data.boardId, direction }), {
+						error: 'Failed to move boards',
+						loading: 'Moving boards...',
+						success: 'Boards moved'
+					});
 				}
 			}),
 			// on drop task
@@ -341,16 +311,12 @@ const AnimatedBoardsList: ParentComponent<{
 					}
 
 					toast.promise(
-						async () => {
-							setIsDirty('project', true);
-							await changeBoard
-								.mutateAsync({
-									id: source.data.taskId,
-									boardId: destination.data.boardId,
-									index: destinationIndex
-								})
-								.finally(() => setIsDirty('project', false));
-						},
+						async () =>
+							changeBoard.mutateAsync({
+								id: source.data.taskId,
+								boardId: destination.data.boardId,
+								index: destinationIndex
+							}),
 						{
 							error: 'Failed to move task',
 							loading: 'Moving task...',
@@ -416,12 +382,9 @@ const AnimatedBoardsList: ParentComponent<{
 };
 
 function SkeletonBoard(props: { class?: string }) {
-	const [isDirty, _setIsDirty] = useDirty();
-
 	return (
 		<Button
 			class={cn('flex h-full w-full items-center gap-2', props.class)}
-			disabled={isDirty('project')}
 			onClick={() => setCreateBoardModalOpen(true)}
 			variant="ghost"
 		>

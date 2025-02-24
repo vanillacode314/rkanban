@@ -19,7 +19,6 @@ import { Component, createSignal, onCleanup, onMount, ParentComponent, Show } fr
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
-import { useDirty } from '~/context/dirty';
 import { cn } from '~/lib/utils';
 import { useBoard } from '~/queries/boards';
 import { FetchError } from '~/utils/fetchers';
@@ -49,7 +48,6 @@ export const Board: Component<{
 	const tasks = () => props.board.tasks;
 	const [dragState, setDragState] = createSignal<'boards-drop' | 'tasks-drop' | null>(null);
 	const [closestEdge, setClosestEdge] = createSignal<'left' | 'right'>('left');
-	const [isDirty, _setIsDirty] = useDirty();
 	let ref!: HTMLDivElement;
 	let dragHandleRef!: HTMLDivElement;
 
@@ -144,7 +142,6 @@ export const Board: Component<{
 						<div class={cn('flex items-center justify-end gap-2')}>
 							<Button
 								class="flex items-center gap-2"
-								disabled={isDirty(['project', props.board.id])}
 								onClick={() => {
 									setCollapsedBoards(
 										create((boards) => {
@@ -160,7 +157,6 @@ export const Board: Component<{
 							</Button>
 							<Button
 								class="flex items-center gap-2"
-								disabled={isDirty(['project', props.board.id])}
 								onClick={() => {
 									setCreateTaskModalOpen(true);
 									setCurrentBoard(props.board);
@@ -173,7 +169,6 @@ export const Board: Component<{
 							<BoardContextMenu
 								board={props.board}
 								collapsed={collapsedBoards().has(props.board.id)}
-								disabled={isDirty(['project', props.board.id])}
 								index={props.index}
 								setCollapsed={(collapsed) => {
 									setCollapsedBoards(

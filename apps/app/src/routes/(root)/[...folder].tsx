@@ -14,17 +14,15 @@ import { animate, spring } from 'motion';
 import { create } from 'mutative';
 import {
 	createEffect,
-	createMemo,
 	createSignal,
 	For,
 	JSXElement,
-	Match,
 	on,
 	onCleanup,
 	onMount,
 	ParentComponent,
 	Show,
-	Switch
+	Suspense
 } from 'solid-js';
 import { unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
@@ -75,14 +73,14 @@ export default function FolderPage() {
 		useApp();
 
 	const [nodes] = useNodesByPath(() => ({ includeChildren: true, path: appContext.path }));
+	const [, { deleteNodes, updateNode }] = useNodes(() => ({ enabled: false }));
 
 	const currentNode = () => nodes.data![0];
-	const children = createMemo(() => nodes.data?.slice(1) ?? []);
-	const folders = createMemo(() => children().filter((node) => !node.name.endsWith('.project')));
-	const files = createMemo(() => children().filter((node) => node.name.endsWith('.project')));
+	const children = () => nodes.data?.slice(1) ?? [];
+	const folders = () => children().filter((node) => !node.name.endsWith('.project'));
+	const files = () => children().filter((node) => node.name.endsWith('.project'));
 
 	const confirmModal = useConfirmModal();
-	const [_, { deleteNodes, updateNode }] = useNodes(() => ({ enabled: false }));
 
 	const nodesInClipboard = () =>
 		appContext.clipboard.filter(
@@ -92,7 +90,7 @@ export default function FolderPage() {
 	const selectedNodes = () =>
 		appContext.clipboard.filter((item) => item.mode === 'selection' && item.type === 'id/node');
 
-	const actions = createMemo<TAction[]>(() => {
+	const actions = (): TAction[] => {
 		if (appContext.mode === 'normal' && nodesInClipboard().length > 0) {
 			return [
 				{
@@ -255,7 +253,7 @@ export default function FolderPage() {
 				label: 'Create Folder'
 			}
 		];
-	});
+	};
 
 	function paste() {
 		const items = structuredClone(unwrap(nodesInClipboard()));
@@ -330,8 +328,8 @@ export default function FolderPage() {
 	return (
 		<>
 			<HelpOverlay />
-			<Switch>
-				<Match when={nodes.isPending}>
+			<Suspense
+				fallback={
 					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
 						<div class="flex justify-end gap-4">
 							<Skeleton height={40} radius={5} width={150} />
@@ -357,55 +355,54 @@ export default function FolderPage() {
 							</For>
 						</AnimatedNodesList>
 					</div>
-				</Match>
-				<Match when={nodes.isSuccess}>
-					<Fab actions={actions()} />
-					<Show fallback={<FolderNotFound />} when={!nodes.isError}>
-						<div class="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden py-4">
-							<Toolbar actions={actions()} currentNode={currentNode()!} nodes={children()} />
-							<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-								<Show when={appContext.path === '/'}>
-									<Button
-										as={A}
-										class="flex items-center justify-start gap-2"
-										href="/settings"
-										variant="outline"
-									>
-										<span class="i-heroicons:cog text-lg" />
-										<span>Settings</span>
-									</Button>
-								</Show>
-							</div>
-							<PathCrumbs />
-							<Show
-								fallback={<EmptyFolder currentNode={currentNode()} />}
-								when={children().length > 0}
-							>
-								<AnimatedNodesList>
-									<Show when={currentNode().parentId !== null}>
-										<FolderNode
-											node={{
-												createdAt: new Date(),
-												id: currentNode().parentId!,
-												name: '..',
-												parentId: '__parent__',
-												updatedAt: new Date(),
-												userId: currentNode().userId
-											}}
-										/>
-									</Show>
-									<Key by="id" each={folders()}>
-										{(node) => <FolderNode node={node()} />}
-									</Key>
-									<Key by="id" each={files()}>
-										{(node) => <FileNode node={node()} />}
-									</Key>
-								</AnimatedNodesList>
+				}
+			>
+				<Fab actions={actions()} />
+				<Show fallback={<FolderNotFound />} when={!nodes.isError}>
+					<div class="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden py-4">
+						<Toolbar actions={actions()} currentNode={currentNode()!} nodes={children()} />
+						<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+							<Show when={appContext.path === '/'}>
+								<Button
+									as={A}
+									class="flex items-center justify-start gap-2"
+									href="/settings"
+									variant="outline"
+								>
+									<span class="i-heroicons:cog text-lg" />
+									<span>Settings</span>
+								</Button>
 							</Show>
 						</div>
-					</Show>
-				</Match>
-			</Switch>
+						<PathCrumbs />
+						<Show
+							fallback={<EmptyFolder currentNode={currentNode()} />}
+							when={children().length > 0}
+						>
+							<AnimatedNodesList>
+								<Show when={currentNode().parentId !== null}>
+									<FolderNode
+										node={{
+											createdAt: new Date(),
+											id: currentNode().parentId!,
+											name: '..',
+											parentId: '__parent__',
+											updatedAt: new Date(),
+											userId: currentNode().userId
+										}}
+									/>
+								</Show>
+								<Key by="id" each={folders()}>
+									{(node) => <FolderNode node={node()} />}
+								</Key>
+								<Key by="id" each={files()}>
+									{(node) => <FileNode node={node()} />}
+								</Key>
+							</AnimatedNodesList>
+						</Show>
+					</div>
+				</Show>
+			</Suspense>
 		</>
 	);
 }

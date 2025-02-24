@@ -14,7 +14,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '~/componen
 import { Toaster } from '~/components/ui/sonner';
 import { AppProvider, useApp } from '~/context/app';
 import { DBProvider } from '~/context/db';
-import { DirtyProvider } from '~/context/dirty';
 import { cn } from '~/lib/utils';
 import * as path from '~/utils/path';
 
@@ -41,16 +40,14 @@ const RootLayout = (props: { children: JSXElement }) => {
 				<AppProvider path={path()}>
 					<DBProvider>
 						<RouteGuards />
-						<DirtyProvider>
-							<Title>RKanban</Title>
-							<Toaster closeButton duration={3000} position="top-center" />
-							<div class="flex h-full flex-col overflow-hidden">
-								<Nav class="full-width content-grid" />
-								<div class="content-grid h-full overflow-hidden">{props.children}</div>
-							</div>
-							<AutoImportModals />
-							<Clipboard />
-						</DirtyProvider>
+						<Title>RKanban</Title>
+						<Toaster closeButton duration={3000} position="top-center" />
+						<div class="flex h-full flex-col overflow-hidden">
+							<Nav class="full-width content-grid" />
+							<div class="content-grid h-full overflow-hidden">{props.children}</div>
+						</div>
+						<AutoImportModals />
+						<Clipboard />
 					</DBProvider>
 				</AppProvider>
 			</ColorModeProvider>

@@ -95,7 +95,13 @@ export default function App() {
 				});
 				return (
 					<ErrorBoundary fallback={<ErrorPage />}>
-						<Suspense>
+						<Suspense
+							fallback={
+								<div class="grid h-full w-full place-content-center">
+									<span class="i-svg-spinners:180-ring-with-bg text-6xl" />
+								</div>
+							}
+						>
 							<QueryClientProvider client={queryClient}>
 								<MetaProvider>{props.children}</MetaProvider>
 								<SolidQueryDevtools buttonPosition="bottom-left" initialIsOpen={false} />

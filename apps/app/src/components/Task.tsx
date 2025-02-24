@@ -12,7 +12,6 @@ import { Component, createSignal, For, onCleanup, onMount, Show } from 'solid-js
 import { toast } from 'solid-sonner';
 
 import { useApp } from '~/context/app';
-import { useDirty } from '~/context/dirty';
 import { cn } from '~/lib/utils';
 import { useTask } from '~/queries/tasks';
 import { FetchError } from '~/utils/fetchers';
@@ -44,7 +43,6 @@ export const Task: Component<{
 	const [dragging, setDragging] = createSignal<boolean>(false);
 	const [isBeingDraggedOver, setIsBeingDraggedOver] = createSignal<boolean>(false);
 	const [closestEdge, setClosestEdge] = createSignal<'bottom' | 'top'>('bottom');
-	const [isDirty, _setIsDirty] = useDirty();
 	let ref!: HTMLDivElement;
 
 	onMount(() => {
@@ -121,12 +119,7 @@ export const Task: Component<{
 					</HoverCard>
 				</span>
 				<span class="grow" />
-				<TaskContextMenu
-					class={cn('shrink-0')}
-					disabled={isDirty(['project', props.boardId, props.task.id])}
-					index={props.index}
-					task={props.task}
-				/>
+				<TaskContextMenu class={cn('shrink-0')} index={props.index} task={props.task} />
 			</div>
 			<div class="h-2" />
 		</div>
