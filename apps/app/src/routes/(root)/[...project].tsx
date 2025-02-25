@@ -28,6 +28,7 @@ import { toast } from 'solid-sonner';
 
 import Board from '~/components/Board';
 import Decrypt from '~/components/Decrypt';
+import { Fab, TAction } from '~/components/Fab';
 import { setCreateBoardModalOpen } from '~/components/modals/auto-import/CreateBoardModal';
 import PathCrumbs from '~/components/PathCrumbs';
 import { Button } from '~/components/ui/button';
@@ -65,6 +66,15 @@ export default function ProjectPage() {
 		createSignal<Map<string, TBoard>>(new Map()),
 		{ deserialize, name: 'collapsed-boards-v1', serialize, sync: messageSync() }
 	);
+	const actions = () => {
+		return [
+			{
+				handler: () => setCreateBoardModalOpen(true),
+				icon: 'i-heroicons:plus',
+				label: 'Create Board'
+			}
+		];
+	};
 
 	return (
 		<Suspense
@@ -92,6 +102,7 @@ export default function ProjectPage() {
 				</div>
 			}
 		>
+			<Fab actions={actions()} />
 			<Show
 				fallback={
 					<div class="grid h-full w-full place-content-center gap-4 text-lg font-medium">
@@ -105,12 +116,7 @@ export default function ProjectPage() {
 			>
 				<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
 					<Show when={hasBoards()}>
-						<div class="flex justify-end gap-4">
-							<Button class="flex items-center gap-2" onClick={() => setCreateBoardModalOpen(true)}>
-								<span class="i-heroicons:plus text-lg" />
-								<span>Create Board</span>
-							</Button>
-						</div>
+						<Toolbar actions={actions()} />
 					</Show>
 					<PathCrumbs />
 					<Show
@@ -391,5 +397,20 @@ function SkeletonBoard(props: { class?: string }) {
 			<span class="i-heroicons:plus text-lg" />
 			<span>Create Board</span>
 		</Button>
+	);
+}
+
+function Toolbar(props: { actions: TAction[] }) {
+	return (
+		<div class="hidden justify-end gap-4 empty:hidden md:flex">
+			<For each={props.actions}>
+				{(action) => (
+					<Button class="flex items-center gap-2" onClick={action.handler} variant={action.variant}>
+						<span class={cn(action.icon, 'text-lg')} />
+						<span>{action.label}</span>
+					</Button>
+				)}
+			</For>
+		</div>
 	);
 }
