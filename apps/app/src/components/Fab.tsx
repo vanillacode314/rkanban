@@ -1,9 +1,11 @@
 import { createEffect, createSignal, For, on, Show } from 'solid-js';
-import { Button } from './ui/button';
+
 import { cn } from '~/lib/utils';
 
+import { Button } from './ui/button';
+
 export type TAction = {
-	handler: () => void | Promise<void>;
+	handler: () => Promise<void> | void;
 	icon: string;
 	label: string;
 	variant?: Parameters<typeof Button>[0]['variant'];
