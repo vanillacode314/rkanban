@@ -24,8 +24,8 @@ import {
 } from 'solid-js';
 import { unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
-import { Fab, TAction } from '~/components/Fab';
 
+import { Fab, TAction } from '~/components/Fab';
 import { useConfirmModal } from '~/components/modals/auto-import/ConfirmModal';
 import { setCreateFileModalOpen } from '~/components/modals/auto-import/CreateFileModal';
 import { setCreateFolderModalOpen } from '~/components/modals/auto-import/CreateFolderModal';
@@ -323,7 +323,7 @@ export default function FolderPage() {
 			<Suspense
 				fallback={
 					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-						<div class="flex justify-end gap-4">
+						<div class="hidden justify-end gap-4 md:flex">
 							<Skeleton height={40} radius={5} width={150} />
 							<Skeleton height={40} radius={5} width={150} />
 						</div>

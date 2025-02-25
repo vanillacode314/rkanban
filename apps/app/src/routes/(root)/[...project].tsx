@@ -80,7 +80,7 @@ export default function ProjectPage() {
 		<Suspense
 			fallback={
 				<div class="relative flex h-full flex-col gap-4 overflow-hidden py-4">
-					<div class="flex justify-end gap-4">
+					<div class="hidden justify-end gap-4 md:flex">
 						<Skeleton height={40} radius={5} width={150} />
 					</div>
 					<PathCrumbs />
