@@ -287,7 +287,7 @@ const AnimatedBoardsList: ParentComponent<{
 					if (destinationBoard === sourceBoard) {
 						props.setBoards(
 							create((boards) => {
-								invariant(boards);
+								if (!boards) return;
 								const board = boards[destinationBoardIndex];
 								board.tasks = reorderWithEdge({
 									axis: 'vertical',
@@ -301,7 +301,7 @@ const AnimatedBoardsList: ParentComponent<{
 					} else {
 						props.setBoards(
 							create((boards) => {
-								invariant(boards);
+								if (!boards) return;
 								const destinationBoard = boards[destinationBoardIndex];
 								const sourceBoard = boards[sourceBoardIndex];
 								const tasks = sourceBoard.tasks.splice(sourceIndex, 1);
