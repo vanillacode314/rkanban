@@ -9,19 +9,8 @@ generateSW({
 	globIgnores: ['_server/**'],
 	globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
 	inlineWorkboxRuntime: true,
-	navigationPreload: true,
 	navigateFallback: '/index.html',
-	runtimeCaching: [
-		{
-			handler: 'NetworkOnly',
-			options: {
-				precacheFallback: {
-					fallbackURL: '/offline/index.html'
-				}
-			},
-			urlPattern: ({ request }) => request.mode === 'navigate'
-		}
-	],
+	navigateFallbackDenylist: [/^\/api\/.*/],
 	sourcemap: false,
 	// additionalManifestEntries: ['manifest.webmanifest'],
 	swDest: BASE + '/sw.js'
