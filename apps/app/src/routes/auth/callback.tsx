@@ -15,5 +15,10 @@ export default function CallbackPage() {
 		}
 		window.location.pathname = '/api/v1/public/auth/callback';
 	});
-	return <p>Logging you in</p>;
+	return (
+		<div class="grid h-full w-full place-content-center place-items-center gap-4">
+			<p>Logging you in</p>
+			<span class="i-svg-spinners:180-ring-with-bg text-6xl" />
+		</div>
+	);
 }
