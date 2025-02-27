@@ -1,4 +1,4 @@
-import { For } from 'solid-js';
+import { For, Show } from 'solid-js';
 
 import { useApp } from '~/context/app';
 import * as path from '~/utils/path';
@@ -22,19 +22,20 @@ export function PathCrumbs() {
 
 	return (
 		<div class="flex gap-1">
-			<span class="mr-2 text-sm text-muted-foreground">/</span>
+			<a class="mr-2 text-sm text-muted-foreground" href="/">
+				/<span class="sr-only">Home</span>
+			</a>
 			<Breadcrumb>
 				<BreadcrumbList>
-					<BreadcrumbItem>
-						<BreadcrumbLink href="/">home</BreadcrumbLink>
-					</BreadcrumbItem>
 					<For each={parts()}>
-						{({ name, path }) => (
+						{({ name, path }, index) => (
 							<>
-								<BreadcrumbSeparator />
 								<BreadcrumbItem>
 									<BreadcrumbLink href={path}>{name}</BreadcrumbLink>
 								</BreadcrumbItem>
+								<Show when={index() < parts().length - 1}>
+									<BreadcrumbSeparator />
+								</Show>
 							</>
 						)}
 					</For>
