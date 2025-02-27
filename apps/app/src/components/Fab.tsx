@@ -63,12 +63,12 @@ export function Fab(props: { actions: TAction[] }) {
 					</ul>
 				</Show>
 				<Button
-					class="self-end motion-duration-300 motion-ease-spring-bounciest/rotate"
+					class="size-12 self-end motion-duration-300 motion-ease-spring-bounciest/rotate"
 					onClick={toggle}
 					ref={ref}
 					size="icon"
 				>
-					<span class="i-heroicons:plus text-lg" />
+					<span class="i-heroicons:plus text-2xl" />
 				</Button>
 			</div>
 		</>
