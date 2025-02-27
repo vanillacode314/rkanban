@@ -16,11 +16,12 @@ import {
 	createSignal,
 	For,
 	JSXElement,
+	Match,
 	onCleanup,
 	onMount,
 	ParentComponent,
 	Show,
-	Suspense
+	Switch
 } from 'solid-js';
 import { unwrap } from 'solid-js/store';
 import { toast } from 'solid-sonner';
@@ -320,37 +321,9 @@ export default function FolderPage() {
 	return (
 		<>
 			<HelpOverlay />
-			<Suspense
-				fallback={
-					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
-						<div class="hidden justify-end gap-4 md:flex">
-							<Skeleton height={40} radius={5} width={150} />
-							<Skeleton height={40} radius={5} width={150} />
-						</div>
-						<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
-							<Show when={appContext.path === '/'}>
-								<Button
-									as={A}
-									class="flex items-center justify-start gap-2"
-									href="/settings"
-									variant="outline"
-								>
-									<span class="i-heroicons:cog text-lg" />
-									<span>Settings</span>
-								</Button>
-							</Show>
-						</div>
-						<PathCrumbs />
-						<AnimatedNodesList>
-							<For each={Array.from({ length: 4 })}>
-								{() => <Skeleton height={40} radius={5} />}
-							</For>
-						</AnimatedNodesList>
-					</div>
-				}
-			>
-				<Fab actions={actions()} />
-				<Show fallback={<FolderNotFound />} when={!nodes.isError}>
+			<Switch fallback={<FolderNotFound />}>
+				<Match when={nodes.isSuccess}>
+					<Fab actions={actions()} />
 					<div class="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden py-4">
 						<Toolbar actions={actions()} currentNode={currentNode()!} nodes={children()} />
 						<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
@@ -393,8 +366,35 @@ export default function FolderPage() {
 							</AnimatedNodesList>
 						</Show>
 					</div>
-				</Show>
-			</Suspense>
+				</Match>
+				<Match when={nodes.isPending}>
+					<div class="flex h-full flex-col gap-4 overflow-hidden py-4">
+						<div class="hidden justify-end gap-4 md:flex">
+							<Skeleton height={40} radius={5} width={150} />
+							<Skeleton height={40} radius={5} width={150} />
+						</div>
+						<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+							<Show when={appContext.path === '/'}>
+								<Button
+									as={A}
+									class="flex items-center justify-start gap-2"
+									href="/settings"
+									variant="outline"
+								>
+									<span class="i-heroicons:cog text-lg" />
+									<span>Settings</span>
+								</Button>
+							</Show>
+						</div>
+						<PathCrumbs />
+						<AnimatedNodesList>
+							<For each={Array.from({ length: 4 })}>
+								{() => <Skeleton height={40} radius={5} />}
+							</For>
+						</AnimatedNodesList>
+					</div>
+				</Match>
+			</Switch>
 		</>
 	);
 }
