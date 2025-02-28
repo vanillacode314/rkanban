@@ -78,45 +78,32 @@ export const Task: Component<{
 
 	return (
 		<div
-			class={cn(
-				'relative shrink-0 overflow-hidden',
-				dragging() ? 'opacity-30' : 'opacity-100',
-				props.class
-			)}
+			class={cn('relative shrink-0', dragging() ? 'opacity-30' : 'opacity-100', props.class)}
 			ref={ref}
 		>
 			<div
 				class={cn(
-					'absolute inset-x-0 h-px w-full bg-blue-300',
+					'absolute inset-x-0 z-10 h-px w-full bg-blue-300',
 					isBeingDraggedOver() ? 'opacity-100' : 'opacity-0',
-					closestEdge() === 'top' ? 'top-0' : 'bottom-2'
+					closestEdge() === 'top' ? 'top-0' : '-bottom-1'
 				)}
 			/>
-			<div class="relative flex h-10 cursor-move items-center border-l-4 pl-4 transition-colors hover:border-blue-300">
-				<span class="flex items-center gap-2 overflow-hidden">
+			<div class="relative flex cursor-move items-center rounded bg-secondary">
+				<span class="flex items-center gap-2 overflow-hidden py-2 pl-4">
 					<span
 						class={cn(
 							'i-heroicons:arrow-path-rounded-square shrink-0 animate-spin',
 							props.task.userId !== 'pending' && '!hidden'
 						)}
 					/>
-					<HoverCard>
-						<HoverCardTrigger class="truncate">
-							<Show
-								fallback={<span class="text-sm">{props.task.title}</span>}
-								when={props.task.userId !== 'pending'}
-							>
-								<Decrypt fallback value={props.task.title}>
-									{(title) => <span class="text-sm">{title()}</span>}
-								</Decrypt>
-							</Show>
-						</HoverCardTrigger>
-						<HoverCardContent>
-							<Decrypt fallback value={props.task.title}>
-								{(title) => <span class="text-sm">{title()}</span>}
-							</Decrypt>
-						</HoverCardContent>
-					</HoverCard>
+					<Show
+						fallback={<span class="text-sm">{props.task.title}</span>}
+						when={props.task.userId !== 'pending'}
+					>
+						<Decrypt fallback value={props.task.title}>
+							{(title) => <span class="text-sm">{title()}</span>}
+						</Decrypt>
+					</Show>
 				</span>
 				<span class="grow" />
 				<TaskContextMenu class={cn('shrink-0')} index={props.index} task={props.task} />
