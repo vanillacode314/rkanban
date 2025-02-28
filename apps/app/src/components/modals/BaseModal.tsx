@@ -1,3 +1,4 @@
+import { useLocation } from '@solidjs/router';
 import { animate, AnimationPlaybackControls, spring } from 'motion';
 import {
 	createEffect,
@@ -36,6 +37,7 @@ type Props = {
 };
 
 export function Modal(props: Props) {
+	const location = useLocation();
 	const internalId = createUniqueId();
 	const [internalOpen, setInternalOpen] = createSignal<boolean>(false);
 	const mergedProps = mergeProps(
@@ -55,6 +57,15 @@ export function Modal(props: Props) {
 	let animation: AnimationPlaybackControls | null = null;
 
 	createEffect(() => {
+		const { hash } = location;
+
+		untrack(() => {
+			if (hash === `#modal-${internalId}`) return;
+			el()?.close();
+		});
+	});
+
+	createEffect(() => {
 		const { open, source, onOpenChange } = mergedProps;
 		const $el = el();
 		untrack(() => {
@@ -62,6 +73,7 @@ export function Modal(props: Props) {
 			if (!$el) return;
 			const modalContentEl = $el.querySelector('[data-dialog-content]')! as HTMLElement;
 			if (open) {
+				window.location.hash = `modal-${internalId}`;
 				$el.showModal();
 				if (isMobile()) return;
 
