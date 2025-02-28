@@ -158,12 +158,12 @@ export const Board: Component<{
 							<Button
 								class="flex items-center gap-2"
 								onClick={(event) => {
+									setCurrentBoard(props.board);
 									if (event && event.currentTarget instanceof HTMLElement) {
 										setCreateTaskModalOpen(true, event.currentTarget);
 										return;
 									}
 									setCreateTaskModalOpen(true);
-									setCurrentBoard(props.board);
 								}}
 								size="icon"
 								title="Create Task"
