@@ -32,7 +32,6 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger
 } from './ui/dropdown-menu';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card';
 
 export const Task: Component<{
 	boardId: TBoard['id'];
@@ -107,7 +106,7 @@ export const Task: Component<{
 				</span>
 				<span class="grow" />
 				<TaskContextMenu
-					class="shrink-0 can-hover:invisible group-hover:can-hover:visible"
+					class="can-hover:invisible group-hover:can-hover:visible shrink-0"
 					index={props.index}
 					task={props.task}
 				/>
