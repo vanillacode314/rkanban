@@ -88,7 +88,7 @@ export const Task: Component<{
 					closestEdge() === 'top' ? 'top-0' : '-bottom-1'
 				)}
 			/>
-			<div class="relative flex cursor-move items-center rounded bg-secondary">
+			<div class="group relative flex min-h-10 cursor-move items-center rounded bg-secondary">
 				<span class="flex items-center gap-2 overflow-hidden py-2 pl-4">
 					<span
 						class={cn(
@@ -106,7 +106,11 @@ export const Task: Component<{
 					</Show>
 				</span>
 				<span class="grow" />
-				<TaskContextMenu class={cn('shrink-0')} index={props.index} task={props.task} />
+				<TaskContextMenu
+					class="shrink-0 can-hover:invisible group-hover:can-hover:visible"
+					index={props.index}
+					task={props.task}
+				/>
 			</div>
 			<div class="h-2" />
 		</div>

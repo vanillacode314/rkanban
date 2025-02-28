@@ -10,6 +10,7 @@ export default {
 		plugin(function ({ addVariant }) {
 			addVariant('hocus', ['&:hover', '&:focus']);
 			addVariant('group-hocus', ['.group:hover &', '.group:focus &']);
+			addVariant('can-hover', ['@media (any-hover: hover) { & }']);
 		})
 	],
 	theme: {
