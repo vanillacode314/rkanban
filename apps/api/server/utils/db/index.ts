@@ -7,7 +7,7 @@ import { ms } from '~/utils/ms';
 const IS_BUILDING = process.env.TURSO_BUILDING !== undefined;
 
 let client;
-if (env.TURSO_SYNC_URL !== undefined) {
+if (env.TURSO_SYNC_URL) {
 	client =
 		!IS_BUILDING ?
 			createClient({
