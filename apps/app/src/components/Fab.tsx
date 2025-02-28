@@ -1,4 +1,5 @@
-import { createEffect, createSignal, For, on, Show } from 'solid-js';
+import { useLocation } from '@solidjs/router';
+import { createEffect, createSignal, For, on, Show, untrack } from 'solid-js';
 
 import { cn } from '~/lib/utils';
 
@@ -12,6 +13,7 @@ export type TAction = {
 };
 
 export function Fab(props: { actions: TAction[] }) {
+	const location = useLocation();
 	let ref!: HTMLButtonElement;
 	const [open, setOpen] = createSignal<boolean>(false);
 
@@ -19,11 +21,20 @@ export function Fab(props: { actions: TAction[] }) {
 		setOpen(!open());
 	}
 
+	createEffect(() => {
+		const { hash } = location;
+		untrack(() => {
+			if (hash === `#fab`) return;
+			setOpen(false);
+		});
+	});
+
 	createEffect(
 		on(
 			open,
 			($open) => {
 				if ($open) {
+					window.location.hash = '#fab';
 					ref.classList.remove('motion-rotate-in-45');
 					ref.classList.add('motion-rotate-out-45');
 				} else {
