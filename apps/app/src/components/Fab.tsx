@@ -5,7 +5,7 @@ import { cn } from '~/lib/utils';
 import { Button } from './ui/button';
 
 export type TAction = {
-	handler: () => Promise<unknown> | unknown;
+	handler: (event?: Event) => Promise<unknown> | unknown;
 	icon: string;
 	label: string;
 	variant?: Parameters<typeof Button>[0]['variant'];

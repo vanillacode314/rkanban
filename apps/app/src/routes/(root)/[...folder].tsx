@@ -230,16 +230,24 @@ export default function FolderPage() {
 				variant: 'secondary'
 			},
 			{
-				handler: () => {
+				handler: (event) => {
 					setCurrentNode(currentNode());
+					if (event && event.currentTarget instanceof HTMLElement) {
+						setCreateFileModalOpen(true, event.currentTarget);
+						return;
+					}
 					setCreateFileModalOpen(true);
 				},
 				icon: 'i-heroicons:document-plus',
 				label: 'Create Project'
 			},
 			{
-				handler: () => {
+				handler: (event) => {
 					setCurrentNode(currentNode());
+					if (event && event.currentTarget instanceof HTMLElement) {
+						setCreateFolderModalOpen(true, event.currentTarget);
+						return;
+					}
 					setCreateFolderModalOpen(true);
 				},
 				icon: 'i-heroicons:folder-plus',
@@ -752,9 +760,9 @@ function EmptyFolder(props: { currentNode: TNode }) {
 			<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
 				<Button
 					class="flex items-center gap-2"
-					onClick={() => {
+					onClick={(event) => {
 						setCurrentNode(props.currentNode);
-						setCreateFileModalOpen(true);
+						setCreateFileModalOpen(true, event.currentTarget);
 					}}
 				>
 					<span class="i-heroicons:document-plus text-lg" />
@@ -763,9 +771,9 @@ function EmptyFolder(props: { currentNode: TNode }) {
 				OR
 				<Button
 					class="flex items-center gap-2"
-					onClick={() => {
+					onClick={(event) => {
 						setCurrentNode(props.currentNode);
-						setCreateFolderModalOpen(true);
+						setCreateFolderModalOpen(true, event.currentTarget);
 					}}
 				>
 					<span class="i-heroicons:folder-plus text-lg" />

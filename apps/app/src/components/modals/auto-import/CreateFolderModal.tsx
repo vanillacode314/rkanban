@@ -5,7 +5,7 @@ import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
 import ValidationErrors from '~/components/form/ValidationErrors';
-import BaseModal from '~/components/modals/BaseModal';
+import BaseModal, { TModalSource } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
@@ -13,7 +13,16 @@ import { useNodes } from '~/queries/nodes';
 import { parseFormErrors } from '~/utils/arktype';
 import { handleFetchError } from '~/utils/errors';
 
-export const [createFolderModalOpen, setCreateFolderModalOpen] = createSignal<boolean>(false);
+const [modalData, setModalData] = createStore<{
+	open: boolean;
+	source: TModalSource;
+}>({
+	open: false,
+	source: null
+});
+export const setCreateFolderModalOpen = (open: boolean, source: TModalSource = null) => {
+	setModalData({ open, source });
+};
 
 const formSchema = type({
 	name: type('string.trim')
@@ -47,8 +56,9 @@ export default function CreateFolderModal() {
 
 	return (
 		<BaseModal
-			open={createFolderModalOpen()}
-			setOpen={setCreateFolderModalOpen}
+			open={modalData.open}
+			setOpen={(value) => setCreateFolderModalOpen(value, modalData.source)}
+			source={modalData.source}
 			title="Create Folder"
 		>
 			{(close) => (

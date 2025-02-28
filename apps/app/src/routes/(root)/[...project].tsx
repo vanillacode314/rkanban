@@ -66,10 +66,16 @@ export default function ProjectPage() {
 		createSignal<Map<string, TBoard>>(new Map()),
 		{ deserialize, name: 'collapsed-boards-v1', serialize, sync: messageSync() }
 	);
-	const actions = () => {
+	const actions = (): TAction[] => {
 		return [
 			{
-				handler: () => setCreateBoardModalOpen(true),
+				handler: (event) => {
+					if (event && event.currentTarget instanceof HTMLElement) {
+						setCreateBoardModalOpen(true, event.currentTarget);
+						return;
+					}
+					setCreateBoardModalOpen(true);
+				},
 				icon: 'i-heroicons:plus',
 				label: 'Create Board'
 			}
@@ -130,7 +136,9 @@ export default function ProjectPage() {
 								<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
 									<Button
 										class="flex items-center gap-2"
-										onClick={() => setCreateBoardModalOpen(true)}
+										onClick={(event) => {
+											setCreateBoardModalOpen(true, event.currentTarget);
+										}}
 									>
 										<span class="i-heroicons:plus text-lg" />
 										<span>Create Board</span>
@@ -391,7 +399,13 @@ function SkeletonBoard(props: { class?: string }) {
 	return (
 		<Button
 			class={cn('flex h-full w-full items-center gap-2', props.class)}
-			onClick={() => setCreateBoardModalOpen(true)}
+			onClick={(event) => {
+				if (event && event.currentTarget instanceof HTMLElement) {
+					setCreateBoardModalOpen(true, event.currentTarget);
+					return;
+				}
+				setCreateBoardModalOpen(true);
+			}}
 			variant="ghost"
 		>
 			<span class="i-heroicons:plus text-lg" />

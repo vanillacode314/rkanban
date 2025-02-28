@@ -6,7 +6,7 @@ import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
 import ValidationErrors from '~/components/form/ValidationErrors';
-import BaseModal from '~/components/modals/BaseModal';
+import BaseModal, { TModalSource } from '~/components/modals/BaseModal';
 import { Button } from '~/components/ui/button';
 import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from '~/components/ui/switch';
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
@@ -16,7 +16,16 @@ import { parseFormErrors, throwOnParseError } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
 import { handleFetchError } from '~/utils/errors';
 
-export const [createBoardModalOpen, setCreateBoardModalOpen] = createSignal<boolean>(false);
+const [modalData, setModalData] = createStore<{
+	open: boolean;
+	source: TModalSource;
+}>({
+	open: false,
+	source: null
+});
+export const setCreateBoardModalOpen = (open: boolean, source: TModalSource = null) => {
+	setModalData({ open, source });
+};
 
 const formSchema = type({
 	appId: 'string',
@@ -61,7 +70,12 @@ export default function CreateBoardModal() {
 	});
 
 	return (
-		<BaseModal open={createBoardModalOpen()} setOpen={setCreateBoardModalOpen} title="Create Board">
+		<BaseModal
+			open={modalData.open}
+			setOpen={(value) => setCreateBoardModalOpen(value, modalData.source)}
+			source={modalData.source}
+			title="Create Board"
+		>
 			{(close) => (
 				<form
 					class="flex flex-col gap-4"

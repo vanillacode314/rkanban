@@ -1,3 +1,4 @@
+import { animate, AnimationPlaybackControls, spring } from 'motion';
 import {
 	createEffect,
 	createSignal,
@@ -11,6 +12,17 @@ import { Portal } from 'solid-js/web';
 
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import Untrack from '~/components/Untrack';
+import { isMobile } from '~/utils/media-queries';
+
+export type TModalSource =
+	| {
+			height: number;
+			left: number;
+			top: number;
+			width: number;
+	  }
+	| HTMLElement
+	| null;
 
 type Props = {
 	children: (close: () => void) => JSXElement;
@@ -19,6 +31,7 @@ type Props = {
 	onOpenChange?: (value: boolean) => void;
 	open: boolean;
 	setOpen: (open: boolean) => void;
+	source?: TModalSource;
 	title: string;
 };
 
@@ -33,21 +46,59 @@ export function Modal(props: Props) {
 			get open() {
 				return internalOpen();
 			},
-			setOpen: setInternalOpen
+			setOpen: setInternalOpen,
+			source: null
 		},
 		props
 	);
-
 	const [el, setEl] = createSignal<HTMLDialogElement>();
+	let animation: AnimationPlaybackControls | null = null;
 
 	createEffect(() => {
-		const { open } = mergedProps;
+		const { open, source, onOpenChange } = mergedProps;
+		const $el = el();
 		untrack(() => {
-			mergedProps.onOpenChange(open);
+			onOpenChange(open);
+			if (!$el) return;
+			const modalContentEl = $el.querySelector('[data-dialog-content]')! as HTMLElement;
 			if (open) {
-				el()?.showModal();
+				$el.showModal();
+				if (isMobile()) return;
+
+				if (source instanceof HTMLElement) {
+					const sourceRect = source.getBoundingClientRect();
+					const destinationRect = modalContentEl.getBoundingClientRect();
+					Object.assign(modalContentEl.style, {
+						position: 'absolute',
+						minWidth: '0px',
+						minHeight: '0px'
+					});
+					animation = animate(
+						modalContentEl,
+						{
+							top: [sourceRect.top, destinationRect.top],
+							left: [sourceRect.left, destinationRect.left],
+							width: [sourceRect.width, destinationRect.width],
+							height: [sourceRect.height, destinationRect.height]
+						},
+						{ type: spring, mass: 0.5 }
+					);
+					animation.then(() => {
+						Object.assign(modalContentEl.style, {
+							position: '',
+							minWidth: '',
+							minHeight: '',
+							top: '',
+							left: '',
+							width: '',
+							height: ''
+						});
+						animation = null;
+					});
+				}
 			} else {
-				el()?.close();
+				animation?.complete();
+				$el.close();
 			}
 		});
 	});
@@ -76,7 +127,10 @@ export function Modal(props: Props) {
 						}
 					}}
 				>
-					<Card class="w-full rounded-none border-0 border-t sm:min-w-96 sm:rounded-sm sm:border">
+					<Card
+						class="w-full overflow-hidden rounded-none border-0 border-t sm:min-w-96 sm:rounded-sm sm:border"
+						data-dialog-content
+					>
 						<CardHeader>
 							<CardTitle>{props.title}</CardTitle>
 						</CardHeader>

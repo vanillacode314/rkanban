@@ -12,10 +12,11 @@ import { cn } from './lib/utils';
 import { FetchError } from './utils/fetchers';
 import { listenForWaitingServiceWorker } from './utils/service-worker';
 
-const ErrorPage: Component = () => {
+const ErrorPage: Component<{ err: unknown }> = (props) => {
 	const [updateAvailable, setUpdateAvailable] = createSignal<boolean>(false);
 
 	onMount(async () => {
+		console.error(props.err);
 		if ('serviceWorker' in navigator) {
 			const registration = await navigator.serviceWorker.getRegistration();
 			if (!registration) return;
@@ -94,7 +95,7 @@ export default function App() {
 					})
 				});
 				return (
-					<ErrorBoundary fallback={<ErrorPage />}>
+					<ErrorBoundary fallback={(err) => <ErrorPage err={err} />}>
 						<Suspense
 							fallback={
 								<div class="grid h-full w-full place-content-center">
