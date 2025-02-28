@@ -566,13 +566,13 @@ function FolderNode(props: { node: TNode }) {
 
 	return (
 		<Node
-			class={dragState() === 'dragging-over' ? 'border-blue-300' : ''}
+			class={cn('group', dragState() === 'dragging-over' ? 'border-blue-300' : '')}
 			dragHandleRef={dragHandleRef}
 			dropdownMenu={
 				<DropdownMenu>
 					<DropdownMenuTrigger
 						as={Button<'button'>}
-						class="rounded-none"
+						class="rounded-none can-hover:invisible group-hover:can-hover:visible"
 						size="icon"
 						variant="ghost"
 					>
@@ -669,12 +669,13 @@ function FileNode(props: { node: TNode }) {
 
 	return (
 		<Node
+			class="group"
 			dragHandleRef={dragHandleRef}
 			dropdownMenu={
 				<DropdownMenu>
 					<DropdownMenuTrigger
 						as={Button<'button'>}
-						class="rounded-none"
+						class="rounded-none can-hover:invisible group-hover:can-hover:visible"
 						size="icon"
 						variant="ghost"
 					>
