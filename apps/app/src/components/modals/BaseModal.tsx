@@ -140,7 +140,7 @@ export function Modal(props: Props) {
 					}}
 				>
 					<Card
-						class="w-full overflow-hidden rounded-none border-0 border-t sm:min-w-96 sm:rounded-sm sm:border"
+						class="w-full overflow-hidden rounded-none border-0 border-t sm:min-w-96 sm:rounded-lg sm:border"
 						data-dialog-content
 					>
 						<CardHeader>
