@@ -13,6 +13,7 @@ import { Portal } from 'solid-js/web';
 
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import Untrack from '~/components/Untrack';
+import { cn } from '~/lib/utils';
 import { isMobile } from '~/utils/media-queries';
 
 export type TModalSource =
@@ -26,8 +27,9 @@ export type TModalSource =
 	| null;
 
 type Props = {
-	children: (close: () => void) => JSXElement;
+	children: ((close: () => void) => JSXElement) | JSXElement;
 	closeOnOutsideClick?: boolean;
+	fluid?: boolean;
 	id?: string;
 	onOpenChange?: (value: boolean) => void;
 	open: boolean;
@@ -124,15 +126,11 @@ export function Modal(props: Props) {
 			<dialog
 				class="relative isolate m-0 h-full max-h-full w-full max-w-full bg-transparent"
 				id={mergedProps.id}
-				onClose={() => {
-					mergedProps.setOpen(false);
-					const forms = el()?.querySelectorAll('form');
-					forms?.forEach((form) => form.reset());
-				}}
+				onClose={() => mergedProps.setOpen(false)}
 				ref={setEl}
 			>
 				<div
-					class="grid h-full w-full items-end sm:place-content-center"
+					class={cn('content-grid h-full w-full items-end sm:items-center sm:justify-items-center')}
 					onClick={(event) => {
 						if (mergedProps.closeOnOutsideClick && event.target === event.currentTarget) {
 							mergedProps.setOpen(false);
@@ -140,16 +138,21 @@ export function Modal(props: Props) {
 					}}
 				>
 					<Card
-						class="w-full overflow-hidden rounded-none border-0 border-t sm:min-w-96 sm:rounded-lg sm:border"
+						class={cn(
+							'flex max-h-[90%] w-full flex-col overflow-hidden rounded-none border-0 border-t sm:rounded-lg sm:border',
+							mergedProps.fluid ? 'h-full' : 'max-w-96'
+						)}
 						data-dialog-content
 					>
 						<CardHeader>
 							<CardTitle>{props.title}</CardTitle>
 						</CardHeader>
-						<CardContent>
-							<div>
-								<Untrack>{props.children(() => mergedProps.setOpen(false))}</Untrack>
-							</div>
+						<CardContent class="grow">
+							<Untrack>
+								{typeof props.children === 'function' ?
+									props.children(() => mergedProps.setOpen(false))
+								:	props.children}
+							</Untrack>
 						</CardContent>
 					</Card>
 				</div>

@@ -1,6 +1,7 @@
 import { type } from 'arktype';
+import { create } from 'mutative';
 import { nanoid } from 'nanoid';
-import { createSignal, Show } from 'solid-js';
+import { Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
@@ -12,6 +13,7 @@ import { useApp } from '~/context/app';
 import { useNodes } from '~/queries/nodes';
 import { parseFormErrors } from '~/utils/arktype';
 import { handleFetchError } from '~/utils/errors';
+import { createForm } from '~/utils/form';
 
 const [modalData, setModalData] = createStore<{
 	open: boolean;
@@ -32,25 +34,30 @@ const formSchema = type({
 				problem: `cannot contain / (was "${name}")`
 			});
 		})
-		.pipe((name) => (name.endsWith('.project') ? name : name + '.project')),
+		.pipe((name) => {
+			if (name === '') return name;
+			if (name.endsWith('.project')) return name;
+			return name + '.project';
+		}),
 	id: type('string | undefined').pipe((v) => v ?? nanoid()),
 	parentId: 'string'
 });
 export default function CreateFileModal() {
 	const [appContext, _setAppContext] = useApp();
-	const [id, setId] = createSignal(nanoid());
 	const [_nodes, { createNode }] = useNodes(() => ({ enabled: false }));
-	const [formErrors, setFormErrors] = createStore<
-		Record<'form' | keyof typeof formSchema.infer, string[]>
-	>({
-		form: [],
-		name: [],
-		id: [],
-		parentId: []
-	});
+
+	const [{ form, formErrors }, { resetForm, setForm, setFormErrors }] = createForm(
+		formSchema,
+		() => ({
+			name: '',
+			parentId: appContext.currentNode?.id ?? '',
+			id: nanoid()
+		})
+	);
 
 	return (
 		<BaseModal
+			onOpenChange={(open) => open && resetForm()}
 			open={modalData.open}
 			setOpen={(value) => setCreateFileModalOpen(value, modalData.source)}
 			source={modalData.source}
@@ -80,7 +87,11 @@ export default function CreateFileModal() {
 								setFormErrors({ form: [message] });
 							},
 							onSuccess: () => {
-								setId(nanoid());
+								setForm(
+									create((draft) => {
+										draft.id = nanoid();
+									})
+								);
 								toast.success(`File created: ${result.name}`);
 								close();
 							}
@@ -88,9 +99,8 @@ export default function CreateFileModal() {
 					}}
 				>
 					<ValidationErrors errors={formErrors.form} />
-					<input name="parentId" type="hidden" value={appContext.currentNode?.id} />
-					<input name="id" type="hidden" value={id()} />
-					<input name="appId" type="hidden" value={appContext.id} />
+					<input name="parentId" type="hidden" value={form.parentId} />
+					<input name="id" type="hidden" value={form.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>
 						<TextFieldInput
@@ -98,9 +108,17 @@ export default function CreateFileModal() {
 							autofocus
 							id="name"
 							name="name"
+							onInput={(event) =>
+								setForm(
+									create((draft) => {
+										draft.name = event.currentTarget.value;
+									})
+								)
+							}
 							placeholder="Name"
 							required
 							type="text"
+							value={form.name}
 						/>
 						<ValidationErrors errors={formErrors.name} />
 					</TextField>

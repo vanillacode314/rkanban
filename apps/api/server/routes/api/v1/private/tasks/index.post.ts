@@ -1,21 +1,22 @@
+import { type } from 'arktype';
 import { boards, tasks } from 'db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 
-const bodySchema = z.object({
-	appId: z.string().optional(),
-	boardId: z.string().trim(),
-	id: z.string().optional(),
-	title: z.string().trim()
+const bodySchema = type({
+	boardId: 'string.trim',
+	'body?': 'string.trim',
+	'id?': 'string',
+	title: 'string.trim'
 });
 
 export default defineEventHandler(async (event) => {
 	const user = await isAuthenticated(event);
-	const { boardId, id, title } = await readValidatedBody(event, bodySchema.parse);
+	const body = await readValidatedBody(event, throwOnParseError(bodySchema));
 
 	const [board] = await db
 		.select()
 		.from(boards)
-		.where(and(eq(boards.id, boardId), eq(boards.userId, user.id)));
+		.where(and(eq(boards.id, body.boardId), eq(boards.userId, user.id)));
 	if (!board)
 		throw createError({ message: 'Board not found', statusCode: 404, statusMessage: 'Not Found' });
 
@@ -31,10 +32,11 @@ export default defineEventHandler(async (event) => {
 	const [task] = await db
 		.insert(tasks)
 		.values({
-			boardId,
-			id,
+			boardId: body.boardId,
+			body: body.body,
+			id: body.id,
 			index,
-			title,
+			title: body.title,
 			userId: user.id
 		})
 		.returning();

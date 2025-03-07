@@ -169,8 +169,8 @@ importers:
         specifier: ^10.3.1
         version: 10.3.1
       arktype:
-        specifier: ^2.1.0
-        version: 2.1.0
+        specifier: ^2.1.1
+        version: 2.1.1
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.20(postcss@8.5.3)
@@ -638,14 +638,14 @@ packages:
   '@ark/schema@0.39.0':
     resolution: {integrity: sha512-LQbQUb3Sj461LgklXObAyUJNtsUUCBxZlO2HqRLYvRSqpStm0xTMrXn51DwBNNxeSULvKVpXFwoxiSec9kwKww==}
 
-  '@ark/schema@0.40.0':
-    resolution: {integrity: sha512-vD78TCZkoMWYDVfJVyoBI4ndxaR5jGUeYQuhFNZHXV8Ve2pKrwb4vQFD/VHg7GgF8Pd1pxy0CPouerKNR3y79g==}
+  '@ark/schema@0.42.0':
+    resolution: {integrity: sha512-6eIUJrnnNSetwsgOKDl6lOjancX91oR8ToOaDDr/Xcn2Tli6qi/C922Xrn6ukO1dmhrUiPZTrqhLuNNWuulhpg==}
 
   '@ark/util@0.39.0':
     resolution: {integrity: sha512-90APHVklk8BP4kku7hIh1BgrhuyKYqoZ4O7EybtFRo7cDl9mIyc/QUbGvYDg//73s0J2H0I/gW9pzroA1R4IBQ==}
 
-  '@ark/util@0.40.0':
-    resolution: {integrity: sha512-YN+qWGs1q5Pl19VcnCWZMUpDEKW9aST6kuSOs0iAswDDe494xjgmg+DJeX0OF2MspH5yY03VqitNcvkywqXNpw==}
+  '@ark/util@0.42.0':
+    resolution: {integrity: sha512-3AuxY7e7v6OJRlBmEqCpWYuefyA4vzkxDKD/Yus4yfNRMtuRWq1pioLlqE2g3nEBge61u4zNl3tBRFv/SUnEjQ==}
 
   '@asamuzakjp/css-color@2.8.3':
     resolution: {integrity: sha512-GIc76d9UI1hCvOATjZPyHFmE5qhRccp3/zGfMPapK3jBi+yocEzp6BBB0UnfRYP9NP4FANqUZYb0hnfs3TM3hw==}
@@ -4258,8 +4258,8 @@ packages:
   arktype@2.0.4:
     resolution: {integrity: sha512-S68rWVDnJauwH7/QCm8zCUM3aTe9Xk6oRihdcc3FSUAtxCo/q1Fwq46JhcwB5Ufv1YStwdQRz+00Y/URlvbhAQ==}
 
-  arktype@2.1.0:
-    resolution: {integrity: sha512-BjXPbh4S8nBSuHmlakrQ+ViiGIhTcxAw7dWuJjW3nlHdY8wGktuuKfP52eWjmC3Y/Og1BbbRYEDGr/H0Kg26Mg==}
+  arktype@2.1.1:
+    resolution: {integrity: sha512-pZyz1A8rstBPsh0xVt4HkpZOYveY5BYXX36sZFHouJSmsf5yaLRhq1napva5yt9818QiYcE6GSd7v9RuMVUDrw==}
 
   array-buffer-byte-length@1.0.2:
     resolution: {integrity: sha512-LHE+8BuR7RYGDKvnrmcuSq3tDcKv9OFEXQt/HpbZhY7V6h0zlUXutnAD82GiFx9rdieCMjkvtcsPqBwgUl1Iiw==}
@@ -8646,11 +8646,11 @@ packages:
     resolution: {integrity: sha512-n1cw8k1k0x4pgA2+9XrOkFydTerNcJ1zWCO5Nn9scWHTD+5tp8dghT2x1uduQePZTZgd3Tupf+x9BxJjeJi77Q==}
     engines: {node: '>=14.0.0'}
 
-  tldts-core@6.1.78:
-    resolution: {integrity: sha512-jS0svNsB99jR6AJBmfmEWuKIgz91Haya91Z43PATaeHJ24BkMoNRb/jlaD37VYjb0mYf6gRL/HOnvS1zEnYBiw==}
+  tldts-core@6.1.82:
+    resolution: {integrity: sha512-Jabl32m21tt/d/PbDO88R43F8aY98Piiz6BVH9ShUlOAiiAELhEqwrAmBocjAqnCfoUeIsRU+h3IEzZd318F3w==}
 
-  tldts@6.1.78:
-    resolution: {integrity: sha512-fSgYrW0ITH0SR/CqKMXIruYIPpNu5aDgUp22UhYoSrnUQwc7SBqifEBFNce7AAcygUPBo6a/gbtcguWdmko4RQ==}
+  tldts@6.1.82:
+    resolution: {integrity: sha512-KCTjNL9F7j8MzxgfTgjT+v21oYH38OidFty7dH00maWANAI2IsLw2AnThtTJi9HKALHZKQQWnNebYheadacD+g==}
     hasBin: true
 
   to-data-view@1.1.0:
@@ -8668,8 +8668,8 @@ packages:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
     engines: {node: '>=6'}
 
-  tough-cookie@5.1.1:
-    resolution: {integrity: sha512-Ek7HndSVkp10hmHP9V4qZO1u+pn1RU5sI0Fw+jCU3lyvuMZcgqsNgc6CmJJZyByK4Vm/qotGRJlfgAX8q+4JiA==}
+  tough-cookie@5.1.2:
+    resolution: {integrity: sha512-FVDYdxtnj0G6Qm/DhNPSb8Ju59ULcup3tuJxkFb5K8Bv2pUXILbf0xZWU8PX8Ov19OXljbUyveOFwRMwkXzO+A==}
     engines: {node: '>=16'}
 
   tr46@0.0.3:
@@ -9644,13 +9644,13 @@ snapshots:
     dependencies:
       '@ark/util': 0.39.0
 
-  '@ark/schema@0.40.0':
+  '@ark/schema@0.42.0':
     dependencies:
-      '@ark/util': 0.40.0
+      '@ark/util': 0.42.0
 
   '@ark/util@0.39.0': {}
 
-  '@ark/util@0.40.0': {}
+  '@ark/util@0.42.0': {}
 
   '@asamuzakjp/css-color@2.8.3':
     dependencies:
@@ -13331,10 +13331,10 @@ snapshots:
       '@ark/schema': 0.39.0
       '@ark/util': 0.39.0
 
-  arktype@2.1.0:
+  arktype@2.1.1:
     dependencies:
-      '@ark/schema': 0.40.0
-      '@ark/util': 0.40.0
+      '@ark/schema': 0.42.0
+      '@ark/util': 0.42.0
 
   array-buffer-byte-length@1.0.2:
     dependencies:
@@ -15998,7 +15998,7 @@ snapshots:
       rrweb-cssom: 0.7.1
       saxes: 6.0.0
       symbol-tree: 3.2.4
-      tough-cookie: 5.1.1
+      tough-cookie: 5.1.2
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 7.0.0
       whatwg-encoding: 3.1.1
@@ -18967,12 +18967,12 @@ snapshots:
 
   tinyspy@3.0.2: {}
 
-  tldts-core@6.1.78:
+  tldts-core@6.1.82:
     optional: true
 
-  tldts@6.1.78:
+  tldts@6.1.82:
     dependencies:
-      tldts-core: 6.1.78
+      tldts-core: 6.1.82
     optional: true
 
   to-data-view@1.1.0: {}
@@ -18985,9 +18985,9 @@ snapshots:
 
   totalist@3.0.1: {}
 
-  tough-cookie@5.1.1:
+  tough-cookie@5.1.2:
     dependencies:
-      tldts: 6.1.78
+      tldts: 6.1.82
     optional: true
 
   tr46@0.0.3: {}

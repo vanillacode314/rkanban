@@ -1,6 +1,6 @@
 import { type } from 'arktype';
+import { create } from 'mutative';
 import { createSignal, Show } from 'solid-js';
-import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
 import Decrypt from '~/components/Decrypt';
@@ -13,11 +13,11 @@ import { useBoard } from '~/queries/boards';
 import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
 import { handleFetchError } from '~/utils/errors';
+import { createForm } from '~/utils/form';
 
 export const [updateBoardModalOpen, setUpdateBoardModalOpen] = createSignal<boolean>(false);
 
 const formSchema = type({
-	appId: 'string',
 	id: type('string'),
 	title: type('string.trim')
 });
@@ -28,20 +28,17 @@ export default function UpdateBoardModal() {
 	const board = () => appContext.currentBoard;
 
 	const [, { updateBoard }] = useBoard(() => ({ enabled: false, id: board()?.id }));
-	const [formErrors, setFormErrors] = createStore<
-		Record<'form' | keyof typeof formSchema.infer, string[]>
-	>({
-		form: [],
-		title: [],
-		id: [],
-		appId: []
-	});
+	const [{ form, formErrors }, { resetForm, setForm, setFormErrors }] = createForm(
+		formSchema,
+		() => ({
+			title: board()?.title ?? '',
+			id: board()?.id ?? ''
+		})
+	);
 
 	return (
 		<BaseModal
-			onOpenChange={(isOpen) =>
-				isOpen && (el.querySelector('input[name="title"]') as HTMLInputElement).select()
-			}
+			onOpenChange={(open) => open && resetForm()}
 			open={updateBoardModalOpen()}
 			setOpen={setUpdateBoardModalOpen}
 			title="Update Board"
@@ -77,16 +74,22 @@ export default function UpdateBoardModal() {
 					ref={el}
 				>
 					<ValidationErrors errors={formErrors.form} />
-					<input name="id" type="hidden" value={board()?.id} />
-					<input name="appId" type="hidden" value={appContext.id} />
+					<input name="id" type="hidden" value={form.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="title">Title</TextFieldLabel>
-						<Decrypt value={board()?.title}>
+						<Decrypt value={form.title}>
 							{(title) => (
 								<TextFieldInput
 									autofocus
 									id="title"
 									name="title"
+									onInput={(event) =>
+										setForm(
+											create((draft) => {
+												draft.title = event.currentTarget.value;
+											})
+										)
+									}
 									placeholder="Title"
 									required
 									type="text"

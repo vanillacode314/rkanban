@@ -1,7 +1,7 @@
 import { type } from 'arktype';
 import { create } from 'mutative';
 import { nanoid } from 'nanoid';
-import { createEffect, createSignal, Show } from 'solid-js';
+import { createSignal, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
@@ -12,9 +12,10 @@ import { Switch, SwitchControl, SwitchLabel, SwitchThumb } from '~/components/ui
 import { TextField, TextFieldInput, TextFieldLabel } from '~/components/ui/text-field';
 import { useApp } from '~/context/app';
 import { useBoardsByPath } from '~/queries/boards';
-import { parseFormErrors, throwOnParseError } from '~/utils/arktype';
+import { parseFormErrors } from '~/utils/arktype';
 import { encryptWithUserKeys } from '~/utils/auth.server';
 import { handleFetchError } from '~/utils/errors';
+import { createForm } from '~/utils/form';
 
 const [modalData, setModalData] = createStore<{
 	open: boolean;
@@ -36,41 +37,22 @@ const formSchema = type({
 export default function CreateBoardModal() {
 	const [appContext, _] = useApp();
 	const [, { createBoard }] = useBoardsByPath(() => ({ enabled: false, path: appContext.path }));
-	const [formErrors, setFormErrors] = createStore<
-		Record<'form' | keyof typeof formSchema.infer, string[]>
-	>({
-		form: [],
-		title: [],
-		id: [],
-		appId: [],
-		nodePath: []
-	});
-
-	const [form, setForm] = createStore(
-		throwOnParseError(
-			formSchema({
-				title: '',
-				appId: appContext.id,
-				nodePath: appContext.path,
-				id: nanoid()
-			})
-		)
-	);
 
 	const [createMore, setCreateMore] = createSignal(false);
 
-	createEffect(() => {
-		setForm(
-			create((draft) => {
-				draft.appId = appContext.id;
-				draft.nodePath = appContext.path;
-				draft.id = nanoid();
-			})
-		);
-	});
+	const [{ form, formErrors }, { resetForm, setForm, setFormErrors }] = createForm(
+		formSchema,
+		() => ({
+			title: '',
+			appId: appContext.id,
+			nodePath: appContext.path,
+			id: nanoid()
+		})
+	);
 
 	return (
 		<BaseModal
+			onOpenChange={(open) => open && resetForm()}
 			open={modalData.open}
 			setOpen={(value) => setCreateBoardModalOpen(value, modalData.source)}
 			source={modalData.source}

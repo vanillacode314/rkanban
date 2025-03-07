@@ -1,6 +1,7 @@
 import { type } from 'arktype';
+import { create } from 'mutative';
 import { nanoid } from 'nanoid';
-import { createSignal, Show } from 'solid-js';
+import { Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { toast } from 'solid-sonner';
 
@@ -12,6 +13,7 @@ import { useApp } from '~/context/app';
 import { useNodes } from '~/queries/nodes';
 import { parseFormErrors } from '~/utils/arktype';
 import { handleFetchError } from '~/utils/errors';
+import { createForm } from '~/utils/form';
 
 const [modalData, setModalData] = createStore<{
 	open: boolean;
@@ -43,19 +45,20 @@ const formSchema = type({
 });
 export default function CreateFolderModal() {
 	const [appContext, _] = useApp();
-	const [id, setId] = createSignal(nanoid());
 	const [_nodes, { createNode }] = useNodes(() => ({ enabled: false }));
-	const [formErrors, setFormErrors] = createStore<
-		Record<'form' | keyof typeof formSchema.infer, string[]>
-	>({
-		form: [],
-		name: [],
-		id: [],
-		parentId: []
-	});
+
+	const [{ form, formErrors }, { resetForm, setForm, setFormErrors }] = createForm(
+		formSchema,
+		() => ({
+			name: '',
+			parentId: appContext.currentNode?.id ?? '',
+			id: nanoid()
+		})
+	);
 
 	return (
 		<BaseModal
+			onOpenChange={(open) => open && resetForm()}
 			open={modalData.open}
 			setOpen={(value) => setCreateFolderModalOpen(value, modalData.source)}
 			source={modalData.source}
@@ -85,7 +88,11 @@ export default function CreateFolderModal() {
 								setFormErrors({ form: [message] });
 							},
 							onSuccess: () => {
-								setId(nanoid());
+								setForm(
+									create((draft) => {
+										draft.id = nanoid();
+									})
+								);
 								toast.success(`Folder created: ${result.name}`);
 								close();
 							}
@@ -93,9 +100,8 @@ export default function CreateFolderModal() {
 					}}
 				>
 					<ValidationErrors errors={formErrors.form} />
-					<input name="parentId" type="hidden" value={appContext.currentNode?.id} />
-					<input name="id" type="hidden" value={id()} />
-					<input name="appId" type="hidden" value={appContext.id} />
+					<input name="parentId" type="hidden" value={form.parentId} />
+					<input name="id" type="hidden" value={form.id} />
 					<TextField class="grid w-full items-center gap-1.5">
 						<TextFieldLabel for="name">Name</TextFieldLabel>
 						<TextFieldInput
@@ -103,9 +109,17 @@ export default function CreateFolderModal() {
 							autofocus
 							id="name"
 							name="name"
+							onInput={(event) => {
+								setForm(
+									create((draft) => {
+										draft.name = event.currentTarget.value;
+									})
+								);
+							}}
 							placeholder="Name"
 							required
 							type="text"
+							value={form.name}
 						/>
 						<ValidationErrors errors={formErrors.name} />
 					</TextField>

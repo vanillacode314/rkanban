@@ -39,6 +39,7 @@ export const Task: Component<{
 	index: number;
 	task: TTask;
 }> = (props) => {
+	//const [, { setCurrentTask }] = useApp();
 	const [dragging, setDragging] = createSignal<boolean>(false);
 	const [isBeingDraggedOver, setIsBeingDraggedOver] = createSignal<boolean>(false);
 	const [closestEdge, setClosestEdge] = createSignal<'bottom' | 'top'>('bottom');
@@ -87,7 +88,7 @@ export const Task: Component<{
 					closestEdge() === 'top' ? 'top-0' : '-bottom-1'
 				)}
 			/>
-			<div class="group relative flex min-h-10 cursor-move items-center rounded bg-secondary">
+			<div class="group relative flex min-h-10 w-full cursor-move items-center rounded bg-secondary">
 				<span class="flex items-center gap-2 overflow-hidden py-2 pl-4">
 					<span
 						class={cn(
@@ -105,8 +106,19 @@ export const Task: Component<{
 					</Show>
 				</span>
 				<span class="grow" />
+				{/* <Button */}
+				{/* 	class="shrink-0 can-hover:invisible group-hover:can-hover:visible" */}
+				{/* 	onClick={(event) => { */}
+				{/* 		setCurrentTask(props.task); */}
+				{/* 		setUpdateTaskModalOpen(true, event.currentTarget); */}
+				{/* 	}} */}
+				{/* 	size="icon" */}
+				{/* 	variant="ghost" */}
+				{/* > */}
+				{/* 	<span class="i-heroicons:arrow-up-on-square text-lg" /> */}
+				{/* </Button> */}
 				<TaskContextMenu
-					class="can-hover:invisible group-hover:can-hover:visible shrink-0"
+					class="shrink-0 can-hover:invisible group-hover:can-hover:visible"
 					index={props.index}
 					task={props.task}
 				/>
@@ -129,6 +141,7 @@ function TaskContextMenu(props: {
 		enabled: false,
 		id: props.task.id
 	}));
+	const otherBoards = () => appContext.boards.filter((board) => board.id !== props.task.boardId);
 
 	return (
 		<div class={cn('flex-col', props.class)}>
@@ -176,39 +189,41 @@ function TaskContextMenu(props: {
 							<span class="i-heroicons:trash" />
 						</DropdownMenuShortcut>
 					</DropdownMenuItem>
-					<DropdownMenuSub overlap>
-						<DropdownMenuSubTrigger>
-							<span>Move to</span>
-						</DropdownMenuSubTrigger>
-						<DropdownMenuPortal>
-							<DropdownMenuSubContent>
-								<For each={appContext.boards.filter((board) => board.id !== props.task.boardId)}>
-									{(board) => (
-										<DropdownMenuItem
-											onSelect={() => {
-												toast.promise(
-													() =>
-														changeBoard.mutateAsync({
-															boardId: board.id,
-															index: board.tasks.length
-														}),
-													{
-														error: 'Error',
-														loading: 'Moving Task',
-														success: 'Moved Task'
-													}
-												);
-											}}
-										>
-											<Decrypt fallback value={board.title}>
-												{(title) => <>{title()}</>}
-											</Decrypt>
-										</DropdownMenuItem>
-									)}
-								</For>
-							</DropdownMenuSubContent>
-						</DropdownMenuPortal>
-					</DropdownMenuSub>
+					<Show when={otherBoards().length > 0}>
+						<DropdownMenuSub overlap>
+							<DropdownMenuSubTrigger>
+								<span>Move to</span>
+							</DropdownMenuSubTrigger>
+							<DropdownMenuPortal>
+								<DropdownMenuSubContent>
+									<For each={otherBoards()}>
+										{(board) => (
+											<DropdownMenuItem
+												onSelect={() => {
+													toast.promise(
+														() =>
+															changeBoard.mutateAsync({
+																boardId: board.id,
+																index: board.tasks.length
+															}),
+														{
+															error: 'Error',
+															loading: 'Moving Task',
+															success: 'Moved Task'
+														}
+													);
+												}}
+											>
+												<Decrypt fallback value={board.title}>
+													{(title) => <>{title()}</>}
+												</Decrypt>
+											</DropdownMenuItem>
+										)}
+									</For>
+								</DropdownMenuSubContent>
+							</DropdownMenuPortal>
+						</DropdownMenuSub>
+					</Show>
 					<Show when={props.index < allTasks().length - 1}>
 						<DropdownMenuItem
 							onSelect={() => {
