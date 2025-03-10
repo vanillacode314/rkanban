@@ -42,8 +42,8 @@ export default defineEventHandler(async (event) => {
 	accessToken = jwt.sign(authSchema.parse({ type: 'access', user }), env.AUTH_SECRET, {
 		expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS
 	});
-	setCookie(event, 'authSource', 'rsuite', TOKEN_JWT_OPTIONS);
-	setCookie(event, 'accessToken', accessToken, TOKEN_JWT_OPTIONS);
-	setCookie(event, 'refreshToken', refreshToken, TOKEN_JWT_OPTIONS);
+	setCookie(event, 'rKanbanAuthSource', 'rsuite', TOKEN_JWT_OPTIONS);
+	setCookie(event, 'rKanbanAccessToken', accessToken, TOKEN_JWT_OPTIONS);
+	setCookie(event, 'rKanbanRefreshToken', refreshToken, TOKEN_JWT_OPTIONS);
 	return sendRedirect(event, '/');
 });

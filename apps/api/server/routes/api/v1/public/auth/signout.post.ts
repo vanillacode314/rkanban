@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
-	deleteCookie(event, 'authSource');
-	deleteCookie(event, 'accessToken');
-	deleteCookie(event, 'refreshToken');
+	deleteCookie(event, 'rKanbanAuthSource');
+	deleteCookie(event, 'rKanbanAccessToken');
+	deleteCookie(event, 'rKanbanRefreshToken');
 	return sendRedirect(event, '/');
 });

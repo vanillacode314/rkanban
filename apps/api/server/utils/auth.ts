@@ -14,8 +14,8 @@ async function isAuthenticated(event: H3Event) {
 }
 
 async function refreshAccessToken(event: H3Event) {
-	const authSource = getCookie(event, 'authSource');
-	const refreshToken = getCookie(event, 'refreshToken');
+	const authSource = getCookie(event, 'rKanbanAuthSource');
+	const refreshToken = getCookie(event, 'rKanbanRefreshToken');
 	if (!refreshToken || !authSource) throw new Error('Missing refresh token');
 	switch (authSource) {
 		case 'rsuite': {
@@ -31,7 +31,7 @@ async function refreshAccessToken(event: H3Event) {
 			const accessToken = jwt.sign(payload, env.AUTH_SECRET, {
 				expiresIn: ACCESS_TOKEN_EXPIRES_IN_SECONDS
 			});
-			setCookie(event, 'accessToken', accessToken, TOKEN_JWT_OPTIONS);
+			setCookie(event, 'rKanbanAccessToken', accessToken, TOKEN_JWT_OPTIONS);
 			return payload;
 		}
 		default:
@@ -40,7 +40,7 @@ async function refreshAccessToken(event: H3Event) {
 }
 
 async function useAuth(event: H3Event): Promise<null | Pick<TAuth, 'user'>> {
-	const accessToken = getCookie(event, 'accessToken');
+	const accessToken = getCookie(event, 'rKanbanAccessToken');
 
 	try {
 		if (!accessToken) throw new Error('Missing access token');
@@ -54,9 +54,9 @@ async function useAuth(event: H3Event): Promise<null | Pick<TAuth, 'user'>> {
 			return await refreshAccessToken(event);
 		} catch (error) {
 			event.node.req.log.info({ error }, 'Auth Refresh Error');
-			deleteCookie(event, 'authSource');
-			deleteCookie(event, 'refreshToken');
-			deleteCookie(event, 'accessToken');
+			deleteCookie(event, 'rKanbanAuthSource');
+			deleteCookie(event, 'rKanbanRefreshToken');
+			deleteCookie(event, 'rKanbanAccessToken');
 			return null;
 		}
 	}
