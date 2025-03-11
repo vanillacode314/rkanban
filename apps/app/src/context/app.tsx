@@ -68,10 +68,11 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 			value={[
 				appContext,
 				{
-					addToClipboard(...item) {
+					addToClipboard(...items) {
 						setAppContext(
 							create((app) => {
-								app.clipboard.push(...item);
+								app.clipboard.push(...items);
+								if (items.some((item) => item.mode === 'selection')) app.mode = 'selection';
 							})
 						);
 					},
@@ -79,6 +80,7 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 						setAppContext(
 							create((app) => {
 								app.clipboard.length = 0;
+								app.mode = 'normal';
 							})
 						);
 					},

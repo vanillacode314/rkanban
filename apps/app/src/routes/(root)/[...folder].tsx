@@ -149,11 +149,12 @@ export default function FolderPage() {
 				},
 				{
 					handler: () => {
+						const $selectedNodes = selectedNodes();
 						confirmModal.open({
 							message: `Are you sure you want to delete the selected files and folders.`,
 							onYes: () =>
 								deleteNodes
-									.mutateAsync(selectedNodes().map((item) => item.data))
+									.mutateAsync($selectedNodes.map((item) => item.data))
 									.then(() => clearClipboard())
 									.catch(async (error) => {
 										if (error instanceof FetchError) {
@@ -416,7 +417,7 @@ function Node(props: {
 	node: TNode;
 	ref: HTMLDivElement;
 }) {
-	const [appContext, { addToClipboard, filterClipboard, setMode }] = useApp();
+	const [appContext, { addToClipboard, filterClipboard }] = useApp();
 	const navigate = useNavigate();
 	const shiftKey = createKeyHold('Shift', { preventDefault: false });
 	const isSelected = () =>
@@ -444,7 +445,6 @@ function Node(props: {
 						if (props.node.name === '..') return;
 
 						if (!isSelected()) {
-							setMode('selection');
 							addToClipboard({
 								data: props.node.id,
 								meta: {
