@@ -141,10 +141,9 @@ function useNodes(input: () => typeof useNodesInputSchema.inferIn) {
 				draft.splice(index, 1);
 			});
 			queryClient.setQueryData<TNode[]>(queries.nodes.all.queryKey, splice);
-			queryClient.setQueriesData<TNode[]>(
-				queries.nodes.byPath({ path: path.join(data.path, '..') }),
-				splice
-			);
+			queryClient.invalidateQueries({
+				queryKey: queries.nodes.byPath._def
+			});
 			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.parentId! }), splice);
 		}
 	}));
