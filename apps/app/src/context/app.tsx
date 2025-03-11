@@ -65,9 +65,10 @@ function AppProvider(props: { children: JSXElement; path: string }) {
 
 	createComputed(() => {
 		const { clipboard } = appContext;
-		const selectionLength = clipboard.filter((item) => item.mode === 'selection').length;
-		untrack(() => setAppContext('mode', selectionLength > 0 ? 'selection' : 'normal'));
+		const hasSelection = clipboard.some((item) => item.mode === 'selection');
+		untrack(() => setAppContext('mode', hasSelection ? 'selection' : 'normal'));
 	});
+
 	return (
 		<AppContext.Provider
 			value={[
