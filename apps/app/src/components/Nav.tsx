@@ -34,7 +34,7 @@ export default function Nav(props: { class?: string }) {
 function UserCard() {
 	const [user, { signOut }] = useUser();
 	return (
-		<Show when={user.data}>
+		<Show when={user.isSuccess && user.data}>
 			<form
 				action="/api/v1/public/auth/signout"
 				method="post"
