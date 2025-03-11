@@ -133,19 +133,7 @@ function useNodes(input: () => typeof useNodesInputSchema.inferIn) {
 					method: 'DELETE',
 					body: JSON.stringify({ ids })
 				}),
-		onSuccess: (data) => {
-			const splice = create((draft: TNode[] | undefined) => {
-				if (!draft) return;
-				const index = draft.findIndex((node) => node.id === data.node.id);
-				if (index === -1) return;
-				draft.splice(index, 1);
-			});
-			queryClient.setQueryData<TNode[]>(queries.nodes.all.queryKey, splice);
-			queryClient.invalidateQueries({
-				queryKey: queries.nodes.byPath._def
-			});
-			queryClient.setQueriesData<TNode[]>(queries.nodes.byId({ id: data.node.parentId! }), splice);
-		}
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: queries.nodes._def })
 	}));
 
 	return [nodes, { deleteNodes, createNode, updateNode }] as const;
