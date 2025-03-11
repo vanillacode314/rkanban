@@ -13,6 +13,7 @@ import { TNode } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
 import {
+	createEffect,
 	createSignal,
 	For,
 	JSXElement,
@@ -158,13 +159,14 @@ export default function FolderPage() {
 									.catch(async (error) => {
 										if (error instanceof FetchError) {
 											const data = await error.response.json();
-											if (data.message) {
-												toast.error(data.message);
+											if (!data.message) {
+												toast.error('Something went wrong');
 												return;
 											}
+											toast.error(data.message);
 										}
 									}),
-							title: 'Delete Folder'
+							title: 'Delete Selected Files and Folders'
 						});
 					},
 					icon: 'i-heroicons:trash',
@@ -790,7 +792,12 @@ function Toolbar(props: { actions: TAction[]; currentNode: TNode; nodes: TNode[]
 		<div class="hidden justify-end gap-4 empty:hidden md:flex">
 			<For each={props.actions}>
 				{(action) => (
-					<Button class="flex items-center gap-2" onClick={action.handler} variant={action.variant}>
+					<Button
+						class="flex items-center gap-2"
+						onClick={() => action.handler()}
+						type="button"
+						variant={action.variant}
+					>
 						<span class={cn(action.icon, 'text-lg')} />
 						<span>{action.label}</span>
 					</Button>
