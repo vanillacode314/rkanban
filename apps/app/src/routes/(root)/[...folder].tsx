@@ -13,7 +13,6 @@ import { TNode } from 'db/schema';
 import { animate, spring } from 'motion';
 import { create } from 'mutative';
 import {
-	createEffect,
 	createSignal,
 	For,
 	JSXElement,

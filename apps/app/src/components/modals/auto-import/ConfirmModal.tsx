@@ -22,13 +22,13 @@ const [confirmModalState, setConfirmModalState] = createStore<TConfirmModalState
 export function useConfirmModal() {
 	return {
 		close: () =>
-			setConfirmModalState({
+			setConfirmModalState(() => ({
 				message: '',
 				onNo: () => {},
 				onYes: () => {},
 				open: false,
 				title: ''
-			}),
+			})),
 		open: ({
 			message,
 			onNo = () => {},
@@ -36,13 +36,13 @@ export function useConfirmModal() {
 			title
 		}: Omit<TConfirmModalState, 'onNo' | 'onYes' | 'open'> &
 			Partial<Pick<TConfirmModalState, 'onNo' | 'onYes'>>) =>
-			setConfirmModalState({
+			setConfirmModalState(() => ({
 				message,
 				onNo,
 				onYes,
 				open: true,
 				title
-			})
+			}))
 	};
 }
 
@@ -56,42 +56,40 @@ export function ConfirmModal() {
 			setOpen={(value) => setConfirmModalState('open', value)}
 			title={confirmModalState.title}
 		>
-			{() => (
-				<form
-					class="flex flex-col gap-4"
-					onSubmit={(event) => {
-						event.preventDefault();
-						setLoading(true);
-						const process = confirmModalState.onYes();
-						if (process instanceof Promise) {
-							process.finally(() => {
-								setLoading(false);
-								confirmModal.close();
-							});
-							return;
-						}
-					}}
-				>
-					<p>{confirmModalState.message}</p>
-					<div class="flex justify-end gap-4">
-						<Button
-							onClick={() => {
-								confirmModalState.onNo();
-								confirmModal.close();
-							}}
-							variant="outline"
-						>
-							No
-						</Button>
-						<Button autofocus class="flex items-center gap-2 self-end" type="submit">
-							<Show when={loading()}>
-								<span class="i-svg-spinners:180-ring-with-bg text-lg" />
-							</Show>
-							<span>Yes</span>
-						</Button>
-					</div>
-				</form>
-			)}
+			<form
+				class="flex flex-col gap-4"
+				onSubmit={(event) => {
+					event.preventDefault();
+					setLoading(true);
+					const process = confirmModalState.onYes();
+					if (process instanceof Promise) {
+						process.finally(() => {
+							setLoading(false);
+							confirmModal.close();
+						});
+						return;
+					}
+				}}
+			>
+				<p>{confirmModalState.message}</p>
+				<div class="flex justify-end gap-4">
+					<Button
+						onClick={() => {
+							confirmModalState.onNo();
+							confirmModal.close();
+						}}
+						variant="outline"
+					>
+						No
+					</Button>
+					<Button autofocus class="flex items-center gap-2 self-end" type="submit">
+						<Show when={loading()}>
+							<span class="i-svg-spinners:180-ring-with-bg text-lg" />
+						</Show>
+						<span>Yes</span>
+					</Button>
+				</div>
+			</form>
 		</BaseModal>
 	);
 }
