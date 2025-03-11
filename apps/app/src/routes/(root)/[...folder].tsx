@@ -158,12 +158,12 @@ export default function FolderPage() {
 									.catch(async (error) => {
 										if (error instanceof FetchError) {
 											const data = await error.response.json();
-											if (!data.message) {
-												toast.error('Something went wrong');
+											if (data.message) {
+												toast.error(data.message);
 												return;
 											}
-											toast.error(data.message);
 										}
+										toast.error('Something went wrong');
 									}),
 							title: 'Delete Selected Files and Folders'
 						});
@@ -629,6 +629,7 @@ function FolderNode(props: { node: TNode }) {
 													return;
 												}
 											}
+											toast.error('Something went wrong');
 										}),
 									title: 'Delete Folder'
 								});
@@ -732,6 +733,7 @@ function FileNode(props: { node: TNode }) {
 													return;
 												}
 											}
+											toast.error('Something went wrong');
 										}),
 									title: 'Delete File'
 								});

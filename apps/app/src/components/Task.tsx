@@ -179,6 +179,7 @@ function TaskContextMenu(props: {
 												return;
 											}
 										}
+										toast.error('Something went wrong');
 									}),
 								title: 'Delete Task'
 							});
