@@ -416,7 +416,7 @@ function Node(props: {
 	node: TNode;
 	ref: HTMLDivElement;
 }) {
-	const [appContext, { addToClipboard, filterClipboard }] = useApp();
+	const [appContext, { addToClipboard, filterClipboard, setMode }] = useApp();
 	const navigate = useNavigate();
 	const shiftKey = createKeyHold('Shift', { preventDefault: false });
 	const isSelected = () =>
@@ -442,7 +442,9 @@ function Node(props: {
 						event.preventDefault();
 						event.stopPropagation();
 						if (props.node.name === '..') return;
-						if (!isSelected())
+
+						if (!isSelected()) {
+							setMode('selection');
 							addToClipboard({
 								data: props.node.id,
 								meta: {
@@ -452,16 +454,17 @@ function Node(props: {
 								mode: 'selection',
 								type: 'id/node'
 							});
-						else {
-							filterClipboard(
-								(item) =>
-									!(
-										item.data === props.node.id &&
-										item.type === 'id/node' &&
-										item.mode === 'selection'
-									)
-							);
+							return;
 						}
+
+						filterClipboard(
+							(item) =>
+								!(
+									item.data === props.node.id &&
+									item.type === 'id/node' &&
+									item.mode === 'selection'
+								)
+						);
 					}}
 				/>
 			</Show>
