@@ -136,6 +136,7 @@ export default function FolderPage() {
 								item.mode !== 'selection' &&
 								!($selectedNodes.some((node) => node.data === item.data) && item.type === 'id/node')
 						);
+						setMode('normal');
 						addToClipboard(
 							...$selectedNodes.map(
 								create((item) => {
