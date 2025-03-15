@@ -130,7 +130,7 @@ export function Modal(props: Props) {
 				ref={setEl}
 			>
 				<div
-					class={cn('content-grid h-full w-full items-end sm:items-center sm:justify-items-center')}
+					class={cn('grid sm:content-grid h-full w-full items-end sm:items-center sm:justify-items-center')}
 					onClick={(event) => {
 						if (mergedProps.closeOnOutsideClick && event.target === event.currentTarget) {
 							mergedProps.setOpen(false);
@@ -140,7 +140,7 @@ export function Modal(props: Props) {
 					<Card
 						class={cn(
 							'flex max-h-[90%] w-full flex-col overflow-hidden rounded-none border-0 border-t sm:rounded-lg sm:border',
-							mergedProps.fluid ? 'h-full' : 'max-w-96'
+							mergedProps.fluid ? 'h-full' : 'sm:max-w-96'
 						)}
 						data-dialog-content
 					>
