@@ -1,4 +1,5 @@
 import { type } from 'arktype';
+import { create } from 'mutative';
 import { createStore } from 'solid-js/store';
 
 import { throwOnParseError } from './arktype';
@@ -13,7 +14,13 @@ function createForm<TSchema extends type.Any<object>>(
 	>({});
 	function resetForm() {
 		setForm(throwOnParseError(schema(initial())));
-		setFormErrors({});
+		setFormErrors(
+			create((draft) => {
+				for (const key in draft) {
+					draft[key] = undefined!;
+				}
+			})
+		);
 	}
 
 	return [
