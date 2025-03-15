@@ -130,7 +130,9 @@ export function Modal(props: Props) {
 				ref={setEl}
 			>
 				<div
-					class={cn('grid sm:content-grid h-full w-full items-end sm:items-center sm:justify-items-center')}
+					class={cn(
+						'sm:content-grid grid h-full w-full items-end sm:items-center sm:justify-items-center'
+					)}
 					onClick={(event) => {
 						if (mergedProps.closeOnOutsideClick && event.target === event.currentTarget) {
 							mergedProps.setOpen(false);
