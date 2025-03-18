@@ -763,7 +763,7 @@ function EmptyFolder(props: { currentNode: TNode }) {
 
 	return (
 		<div class="relative isolate grid h-full place-content-center place-items-center gap-4 font-medium">
-			<img class="absolute -z-10 h-full w-full object-contain opacity-5" src="/empty.svg" />
+			<img class="pointer-events-none absolute -z-10 h-full w-full object-contain opacity-5" src="/empty.svg" />
 			<span>Empty Folder</span>
 			<div class="flex flex-col items-center justify-end gap-4 sm:flex-row">
 				<Button
